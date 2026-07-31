@@ -13,9 +13,11 @@ function UpdateProfileInformationForm({ user, status }: { user: any, status?: st
         email: user.email,
     });
 
-    const submit: FormEventHandler = (e) => {
+    const submit = (e: any) => {
         e.preventDefault();
-        patch('/profile');
+        patch('/profile', {
+            onSuccess: () => alert('Profile updated successfully!'),
+        });
     };
 
     return (
@@ -60,7 +62,7 @@ function UpdateProfileInformationForm({ user, status }: { user: any, status?: st
                     </div>
 
                     <div className="flex items-center gap-4 pt-4">
-                        <Button disabled={processing} className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-200 transition-all duration-300">
+                        <Button type="submit" disabled={processing} className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-200 transition-all duration-300">
                             Save Changes
                         </Button>
 
@@ -92,7 +94,10 @@ function UpdatePasswordForm() {
 
         put('/profile/password', {
             preserveScroll: true,
-            onSuccess: () => reset(),
+            onSuccess: () => {
+                reset();
+                alert('Password updated successfully!');
+            },
             onError: (errors) => {
                 if (errors.password) {
                     reset('password', 'password_confirmation');
@@ -162,7 +167,7 @@ function UpdatePasswordForm() {
                     </div>
 
                     <div className="flex items-center gap-4 pt-4">
-                        <Button disabled={processing} className="bg-slate-800 hover:bg-slate-900 text-white shadow-md transition-all duration-300">
+                        <Button type="submit" disabled={processing} className="bg-slate-800 hover:bg-slate-900 text-white shadow-md transition-all duration-300">
                             Change Password
                         </Button>
 

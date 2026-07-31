@@ -21,7 +21,7 @@ class CreateAdminUser extends Command
             return self::FAILURE;
         }
 
-        $password = Str::password(16); // random secure password
+        $password = Str::password(16);
 
         User::create([
             'name'     => $name,

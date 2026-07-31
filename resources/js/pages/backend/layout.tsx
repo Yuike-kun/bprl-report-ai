@@ -60,8 +60,8 @@ function Sidebar({ collapsed }: { collapsed: boolean }) {
             <div className="p-4 border-t border-slate-800 bg-slate-900/50 relative">
                 {profileDropdownOpen && (
                     <div className="absolute bottom-full left-4 right-4 mb-2 bg-slate-800 border border-slate-700 rounded-lg shadow-xl overflow-hidden z-50">
-                        <Link 
-                            href="/profile" 
+                        <Link
+                            href="/profile"
                             className="w-full flex items-center px-4 py-3 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition-colors text-left border-b border-slate-700"
                             onClick={() => setProfileDropdownOpen(false)}
                         >
@@ -71,10 +71,10 @@ function Sidebar({ collapsed }: { collapsed: boolean }) {
                             </svg>
                             Profile Details
                         </Link>
-                        <Link 
-                            href="/logout" 
-                            method="post" 
-                            as="button" 
+                        <Link
+                            href="/logout"
+                            method="post"
+                            as="button"
                             className="w-full flex items-center px-4 py-3 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition-colors text-left"
                             onClick={() => setProfileDropdownOpen(false)}
                         >
@@ -87,7 +87,7 @@ function Sidebar({ collapsed }: { collapsed: boolean }) {
                         </Link>
                     </div>
                 )}
-                <button 
+                <button
                     onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
                     className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer text-left focus:outline-none"
                 >
@@ -108,38 +108,39 @@ function Sidebar({ collapsed }: { collapsed: boolean }) {
 
 // Added pageTitle prop
 function Navbar({ onToggleSidebar, pageTitle }: { onToggleSidebar: () => void, pageTitle?: string }) {
-    const BUTTONS = [
-        {
-            icon: Settings,
-            label: "Konfigurasi AI",
-            variant: "outline" as const,
-            className: "border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-        },
-        {
-            icon: Upload,
-            label: "Import JSON",
-            variant: "outline" as const,
-            className: "border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-        },
-        {
-            icon: Download,
-            label: "Export JSON",
-            variant: "outline" as const,
-            className: "border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-        },
-        {
-            icon: Trash2,
-            label: "Bersihkan",
-            variant: "ghost" as const,
-            className: "text-red-500 hover:bg-red-50 hover:text-red-600"
-        },
-        {
-            icon: FileText,
-            label: "Unduh Draft (.doc)",
-            variant: "default" as const,
-            className: "bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-200"
-        }
-    ];
+    // const BUTTONS = [
+    //     {
+    //         icon: Settings,
+    //         label: "Konfigurasi AI",
+    //         variant: "outline" as const,
+    //         className: "border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+    //     },
+    //     {
+    //         icon: Upload,
+    //         label: "Import JSON",
+    //         variant: "outline" as const,
+    //         className: "border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+    //     },
+    //     {
+    //         icon: Download,
+    //         label: "Export JSON",
+    //         variant: "outline" as const,
+    //         className: "border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+    //     },
+    //     {
+    //         icon: Trash2,
+    //         label: "Bersihkan",
+    //         variant: "ghost" as const,
+    //         className: "text-red-500 hover:bg-red-50 hover:text-red-600"
+    //     },
+    //     {
+    //         icon: FileText,
+    //         label: "Unduh Draft (.doc)",
+    //         variant: "default" as const,
+    //         className: "bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-200"
+    //     }
+    // ];
+    const BUTTONS: any[] = [];
 
     return (
         <header className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-4 sticky top-0 z-10">
