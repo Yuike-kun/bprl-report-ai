@@ -13,10 +13,12 @@ import {
 } from "lucide-react";
 import { ReactNode, useState } from "react";
 import MENU from './menu.json';
-import { usePage } from "@inertiajs/react";
+import { usePage, Link } from "@inertiajs/react";
 
 function Sidebar({ collapsed }: { collapsed: boolean }) {
-    const { url, component } = usePage()
+    const { url, component, props } = usePage<any>()
+    const user = props.auth?.user;
+    const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
 
     return (
         <aside
@@ -55,17 +57,39 @@ function Sidebar({ collapsed }: { collapsed: boolean }) {
             </nav>
 
             {/* User Profile Footer */}
-            <div className="p-4 border-t border-slate-800 bg-slate-900/50">
-                <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer">
-                    <Avatar className="h-9 w-9 border border-slate-700">
-                        <AvatarImage src="https://github.com/shadcn.png" />
-                        <AvatarFallback className="bg-slate-800 text-slate-400">CN</AvatarFallback>
+            <div className="p-4 border-t border-slate-800 bg-slate-900/50 relative">
+                {profileDropdownOpen && (
+                    <div className="absolute bottom-full left-4 right-4 mb-2 bg-slate-800 border border-slate-700 rounded-lg shadow-xl overflow-hidden z-50">
+                        <Link 
+                            href="/logout" 
+                            method="post" 
+                            as="button" 
+                            className="w-full flex items-center px-4 py-3 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition-colors text-left"
+                            onClick={() => setProfileDropdownOpen(false)}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                                <polyline points="16 17 21 12 16 7"></polyline>
+                                <line x1="21" y1="12" x2="9" y2="12"></line>
+                            </svg>
+                            Logout
+                        </Link>
+                    </div>
+                )}
+                <button 
+                    onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+                    className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer text-left focus:outline-none"
+                >
+                    <Avatar className="h-9 w-9 border border-slate-700 shrink-0">
+                        <AvatarFallback className="bg-slate-800 text-slate-400">
+                            {user?.name?.charAt(0)?.toUpperCase() || 'A'}
+                        </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-white truncate">Admin User</p>
-                        <p className="text-xs text-slate-500 truncate">admin@example.com</p>
+                        <p className="text-sm font-medium text-white truncate">{user?.name || "Admin User"}</p>
+                        <p className="text-xs text-slate-500 truncate">{user?.email || "admin@example.com"}</p>
                     </div>
-                </div>
+                </button>
             </div>
         </aside>
     );
