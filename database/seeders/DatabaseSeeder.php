@@ -22,5 +22,11 @@ class DatabaseSeeder extends Seeder
             "email"    => "yui@gmail.com",
             "password" => "yuisaiko",
         ]);
+
+        User::create([
+            "name"     => "M. Resha",
+            "email"    => "m.resha@gmail.com",
+            "password" => "trikac16",
+        ]);
     }
 }
