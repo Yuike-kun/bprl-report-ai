@@ -9,10 +9,9 @@ createInertiaApp({
         color: '#2E86AB',
     },
     resolve: (name) => {
-        const pages = import.meta.glob('./pages/**/*.tsx', { eager: true });
-        const page = pages[`./pages/${name}.tsx`] as any;
-        if (!page) throw new Error(`Page not found: ${name}`);
-        return page;
+        const pages = import.meta.glob('./pages/**/*.tsx');
+        if (!pages[`./pages/${name}.tsx`]) throw new Error(`Page not found: ${name}`);
+        return pages[`./pages/${name}.tsx`]() as any;
     },
     setup({ el, App, props }) {
         createRoot(el).render(<App {...props} />);
