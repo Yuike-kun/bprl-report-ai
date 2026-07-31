@@ -1,7 +1,6 @@
 <?php
 namespace Database\Seeders;
 
-use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -16,17 +15,5 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         DB::unprepared(file_get_contents(database_path('dump/indonesia.sql')));
-
-        User::create([
-            "name"     => "Yui",
-            "email"    => "yui@gmail.com",
-            "password" => "yuisaiko",
-        ]);
-
-        User::create([
-            "name"     => "M. Resha",
-            "email"    => "m.resha@gmail.com",
-            "password" => "trikac16",
-        ]);
     }
 }
