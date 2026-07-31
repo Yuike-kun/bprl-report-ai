@@ -1,0 +1,10 @@
+[
+    {
+        "label": "Dashboard",
+        "url": "/dashboard"
+    },
+    {
+        "label": "General Draft Proposal",
+        "url": "/general-draft"
+    }
+]
