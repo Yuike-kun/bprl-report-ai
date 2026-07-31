@@ -61,6 +61,17 @@ function Sidebar({ collapsed }: { collapsed: boolean }) {
                 {profileDropdownOpen && (
                     <div className="absolute bottom-full left-4 right-4 mb-2 bg-slate-800 border border-slate-700 rounded-lg shadow-xl overflow-hidden z-50">
                         <Link 
+                            href="/profile" 
+                            className="w-full flex items-center px-4 py-3 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition-colors text-left border-b border-slate-700"
+                            onClick={() => setProfileDropdownOpen(false)}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                            Profile Details
+                        </Link>
+                        <Link 
                             href="/logout" 
                             method="post" 
                             as="button" 

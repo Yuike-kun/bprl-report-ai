@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\GeneralDraftController;
 use App\Http\Controllers\GenerateDocxController;
+use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'welcome')->name('home');
@@ -20,6 +21,11 @@ Route::middleware('auth')->group(function () {
         Route::get('/', [GeneralDraftController::class, 'index'])->name('index');
         Route::post('/store', [GeneralDraftController::class, 'store'])->name('store');
     });
+
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('password.update');
+
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 });
 
