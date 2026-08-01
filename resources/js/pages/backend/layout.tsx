@@ -117,7 +117,7 @@ function Sidebar({ collapsed }: { collapsed: boolean }) {
             {!collapsed && (
                 <div className="p-3 border-t border-slate-800/80 shrink-0">
                     <div className="bg-white/5 rounded-xl px-3 py-2.5 text-center">
-                        <p className="text-[11px] font-semibold text-slate-400 truncate">BPRL Report AI © 2025</p>
+                        <p className="text-[11px] font-semibold text-slate-400 truncate">Trika Media Solusindo © {new Date().getFullYear()}</p>
                     </div>
                 </div>
             )}

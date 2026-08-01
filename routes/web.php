@@ -8,6 +8,7 @@ use App\Http\Controllers\Master\LokasiKonsultasiController;
 use App\Http\Controllers\Master\PermohonanKonsultasiController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RequestFormController;
+use App\Http\Controllers\UsersController;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'welcome')->name('home');
@@ -61,6 +62,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('password.update');
+
+    Route::resource('users', UsersController::class);
 
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 });

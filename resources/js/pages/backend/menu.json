@@ -18,5 +18,9 @@
     {
         "label": "Master Jadwal Konsultasi",
         "url": "/master/jadwal-konsultasi"
+    },
+    {
+        "label": "Users",
+        "url": "/users"
     }
 ]

@@ -27,6 +27,7 @@ class CreateAdminUser extends Command
             'name'     => $name,
             'email'    => $email,
             'password' => Hash::make($password),
+            'role'     => 'admin',
         ]);
 
         $this->info("Admin user created.");
