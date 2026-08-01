@@ -1,13 +1,10 @@
 import MainLayout from "../layout";
-import { Head, Link, router, usePage } from "@inertiajs/react";
+import { Head, Link, router } from "@inertiajs/react";
 import {
     FileText,
     Plus,
     Trash2,
     Pencil,
-    Search,
-    ChevronLeft,
-    ChevronRight,
     Building2,
     Calendar,
     Hash,
@@ -16,7 +13,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import { cn } from "@/lib/utils";
+import { PaginatedTable } from "@/components/backend/paginated-table";
+import { Pagination } from "@/components/backend/pagination";
 
 type Draft = {
     id: number;
@@ -139,174 +137,117 @@ export default function GeneralDraftIndex({ drafts, success }: Props) {
             )}
 
             {/* Table Card */}
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                {/* Toolbar */}
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 border-b border-slate-100">
-                    <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 w-full sm:w-72 focus-within:ring-2 focus-within:ring-indigo-200 focus-within:border-indigo-300 transition-all">
-                        <Search className="w-4 h-4 text-slate-400 shrink-0" />
-                        <input
-                            type="text"
-                            placeholder="Cari nama perusahaan atau referensi..."
-                            value={search}
-                            onChange={e => setSearch(e.target.value)}
-                            className="bg-transparent text-sm text-slate-700 w-full outline-none placeholder:text-slate-400"
-                        />
-                    </div>
-                    <p className="text-xs text-slate-400 shrink-0">
+            <PaginatedTable
+                searchValue={search}
+                onSearchChange={setSearch}
+                searchPlaceholder="Cari nama perusahaan atau referensi..."
+                summary={
+                    <>
                         Menampilkan <span className="font-semibold text-slate-600">{drafts.from}–{drafts.to}</span> dari <span className="font-semibold text-slate-600">{drafts.total}</span> draft
-                    </p>
-                </div>
-
-                {/* Table */}
-                <div className="overflow-x-auto">
-                    <table className="min-w-full text-sm">
-                        <thead>
-                            <tr className="border-b border-slate-100 bg-slate-50/60">
-                                <th className="text-left px-5 py-3 font-semibold text-slate-500 text-xs uppercase tracking-wider whitespace-nowrap">#</th>
-                                <th className="text-left px-5 py-3 font-semibold text-slate-500 text-xs uppercase tracking-wider whitespace-nowrap">Perusahaan</th>
-                                <th className="text-left px-5 py-3 font-semibold text-slate-500 text-xs uppercase tracking-wider whitespace-nowrap">No. Referensi</th>
-                                <th className="text-left px-5 py-3 font-semibold text-slate-500 text-xs uppercase tracking-wider whitespace-nowrap">Jenis Kegiatan</th>
-                                <th className="text-left px-5 py-3 font-semibold text-slate-500 text-xs uppercase tracking-wider whitespace-nowrap">Tanggal</th>
-                                <th className="text-center px-5 py-3 font-semibold text-slate-500 text-xs uppercase tracking-wider whitespace-nowrap">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                            {filtered.length === 0 ? (
-                                <tr>
-                                    <td colSpan={6} className="text-center py-16 text-slate-400">
-                                        <FileText className="w-10 h-10 mx-auto mb-3 text-slate-200" />
-                                        <p className="font-medium">Belum ada data draft.</p>
-                                        <p className="text-xs mt-1">Klik "Buat Draft Baru" untuk memulai.</p>
-                                    </td>
-                                </tr>
-                            ) : (
-                                filtered.map((draft, idx) => (
-                                    <tr key={draft.id} className="hover:bg-slate-50/70 transition-colors group">
-                                        <td className="px-5 py-4 text-slate-400 font-mono text-xs">{drafts.from + idx}</td>
-                                        <td className="px-5 py-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center shrink-0">
-                                                    <Building2 className="w-4 h-4 text-indigo-500" />
-                                                </div>
-                                                <div>
-                                                    <p className="font-semibold text-slate-800">{draft.nama_perusahaan}</p>
-                                                    <p className="text-xs text-slate-400">{draft.email}</p>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="px-5 py-4">
-                                            <span className="inline-flex items-center gap-1.5 bg-slate-100 text-slate-600 text-xs font-mono font-semibold px-2.5 py-1 rounded-lg">
-                                                <Hash className="w-3 h-3" />
-                                                {draft.no_referensi}
-                                            </span>
-                                        </td>
-                                        <td className="px-5 py-4">
-                                            <span className="inline-block bg-indigo-50 text-indigo-700 text-xs font-semibold px-2.5 py-1 rounded-lg max-w-[180px] truncate">
-                                                {draft.jenis_kegiatan}
-                                            </span>
-                                        </td>
-                                        <td className="px-5 py-4">
-                                            <div className="flex items-center gap-1.5 text-slate-500 text-xs">
-                                                <Calendar className="w-3.5 h-3.5" />
-                                                {formatDate(draft.tanggal_penyusunan)}
-                                            </div>
-                                        </td>
-                                        <td className="px-5 py-4">
-                                            <div className="flex items-center justify-center gap-1.5">
-                                                <Link href={`/general-draft/${draft.id}/edit`}>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="h-8 w-8 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50"
-                                                        title="Edit"
-                                                    >
-                                                        <Pencil className="w-4 h-4" />
-                                                    </Button>
-                                                </Link>
-                                                <a
-                                                    href={`/pkkprl/download-proposal/${draft.id}`}
-                                                    target="_blank"
-                                                    rel="noreferrer"
-                                                >
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="h-8 w-8 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50"
-                                                        title="Unduh Laporan"
-                                                    >
-                                                        <Download className="w-4 h-4" />
-                                                    </Button>
-                                                </a>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="h-8 w-8 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50"
-                                                    title="Hapus"
-                                                    onClick={() => setDeleteTarget(draft)}
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </Button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-
-                {/* Pagination */}
-                {drafts.last_page > 1 && (
-                    <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/40">
-                        <p className="text-xs text-slate-500">
-                            Halaman <span className="font-bold text-slate-700">{drafts.current_page}</span> dari {drafts.last_page}
-                        </p>
-                        <div className="flex items-center gap-1">
-                            {drafts.links.map((link, i) => {
-                                if (link.label.includes('Previous')) {
-                                    return (
-                                        <Button
-                                            key={i}
-                                            variant="outline"
-                                            size="icon"
-                                            className="h-8 w-8 rounded-lg"
-                                            disabled={!link.url}
-                                            onClick={() => link.url && router.get(link.url)}
-                                        >
-                                            <ChevronLeft className="w-4 h-4" />
-                                        </Button>
-                                    );
-                                }
-                                if (link.label.includes('Next')) {
-                                    return (
-                                        <Button
-                                            key={i}
-                                            variant="outline"
-                                            size="icon"
-                                            className="h-8 w-8 rounded-lg"
-                                            disabled={!link.url}
-                                            onClick={() => link.url && router.get(link.url)}
-                                        >
-                                            <ChevronRight className="w-4 h-4" />
-                                        </Button>
-                                    );
-                                }
-                                return (
+                    </>
+                }
+                tableHead={
+                    <tr className="border-b border-slate-100 bg-slate-50/60">
+                        <th className="text-left px-5 py-3 font-semibold text-slate-500 text-xs uppercase tracking-wider whitespace-nowrap">#</th>
+                        <th className="text-left px-5 py-3 font-semibold text-slate-500 text-xs uppercase tracking-wider whitespace-nowrap">Perusahaan</th>
+                        <th className="text-left px-5 py-3 font-semibold text-slate-500 text-xs uppercase tracking-wider whitespace-nowrap">No. Referensi</th>
+                        <th className="text-left px-5 py-3 font-semibold text-slate-500 text-xs uppercase tracking-wider whitespace-nowrap">Jenis Kegiatan</th>
+                        <th className="text-left px-5 py-3 font-semibold text-slate-500 text-xs uppercase tracking-wider whitespace-nowrap">Tanggal</th>
+                        <th className="text-center px-5 py-3 font-semibold text-slate-500 text-xs uppercase tracking-wider whitespace-nowrap">Aksi</th>
+                    </tr>
+                }
+                isEmpty={filtered.length === 0}
+                emptyState={
+                    <tr>
+                        <td colSpan={6} className="text-center py-16 text-slate-400">
+                            <FileText className="w-10 h-10 mx-auto mb-3 text-slate-200" />
+                            <p className="font-medium">Belum ada data draft.</p>
+                            <p className="text-xs mt-1">Klik "Buat Draft Baru" untuk memulai.</p>
+                        </td>
+                    </tr>
+                }
+                pagination={
+                    drafts.last_page > 1 ? (
+                        <Pagination
+                            links={drafts.links}
+                            currentPage={drafts.current_page}
+                            lastPage={drafts.last_page}
+                            onNavigate={url => router.get(url)}
+                        />
+                    ) : null
+                }
+            >
+                {filtered.map((draft, idx) => (
+                    <tr key={draft.id} className="hover:bg-slate-50/70 transition-colors group">
+                        <td className="px-5 py-4 text-slate-400 font-mono text-xs">{drafts.from + idx}</td>
+                        <td className="px-5 py-4">
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center shrink-0">
+                                    <Building2 className="w-4 h-4 text-indigo-500" />
+                                </div>
+                                <div>
+                                    <p className="font-semibold text-slate-800">{draft.nama_perusahaan}</p>
+                                    <p className="text-xs text-slate-400">{draft.email}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td className="px-5 py-4">
+                            <span className="inline-flex items-center gap-1.5 bg-slate-100 text-slate-600 text-xs font-mono font-semibold px-2.5 py-1 rounded-lg">
+                                <Hash className="w-3 h-3" />
+                                {draft.no_referensi}
+                            </span>
+                        </td>
+                        <td className="px-5 py-4">
+                            <span className="inline-block bg-indigo-50 text-indigo-700 text-xs font-semibold px-2.5 py-1 rounded-lg max-w-45 truncate">
+                                {draft.jenis_kegiatan}
+                            </span>
+                        </td>
+                        <td className="px-5 py-4">
+                            <div className="flex items-center gap-1.5 text-slate-500 text-xs">
+                                <Calendar className="w-3.5 h-3.5" />
+                                {formatDate(draft.tanggal_penyusunan)}
+                            </div>
+                        </td>
+                        <td className="px-5 py-4">
+                            <div className="flex items-center justify-center gap-1.5">
+                                <Link href={`/general-draft/${draft.id}/edit`}>
                                     <Button
-                                        key={i}
-                                        variant={link.active ? "default" : "outline"}
+                                        variant="ghost"
                                         size="icon"
-                                        className={cn("h-8 w-8 rounded-lg text-xs", link.active && "bg-indigo-600 hover:bg-indigo-700 border-indigo-600")}
-                                        onClick={() => link.url && router.get(link.url)}
+                                        className="h-8 w-8 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50"
+                                        title="Edit"
                                     >
-                                        {link.label}
+                                        <Pencil className="w-4 h-4" />
                                     </Button>
-                                );
-                            })}
-                        </div>
-                    </div>
-                )}
-            </div>
+                                </Link>
+                                <a
+                                    href={`/pkkprl/download-proposal/${draft.id}`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                >
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50"
+                                        title="Unduh Laporan"
+                                    >
+                                        <Download className="w-4 h-4" />
+                                    </Button>
+                                </a>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50"
+                                    title="Hapus"
+                                    onClick={() => setDeleteTarget(draft)}
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                </Button>
+                            </div>
+                        </td>
+                    </tr>
+                ))}
+            </PaginatedTable>
         </MainLayout>
     );
 }

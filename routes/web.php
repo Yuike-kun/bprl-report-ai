@@ -3,6 +3,9 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\GeneralDraftController;
 use App\Http\Controllers\GenerateDocxController;
+use App\Http\Controllers\Master\JadwalKonsultasiController;
+use App\Http\Controllers\Master\LokasiKonsultasiController;
+use App\Http\Controllers\Master\PermohonanKonsultasiController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RequestFormController;
 use Illuminate\Support\Facades\Route;
@@ -10,6 +13,7 @@ use Illuminate\Support\Facades\Route;
 Route::inertia('/', 'welcome')->name('home');
 
 Route::get('/request-form', [RequestFormController::class, 'index'])->name('request-form');
+Route::post('/request-form', [RequestFormController::class, 'store'])->name('request-form.store');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
@@ -26,6 +30,32 @@ Route::middleware('auth')->group(function () {
         Route::post('/store', [GeneralDraftController::class, 'store'])->name('store');
         Route::get('/{generalDraft}/edit', [GeneralDraftController::class, 'edit'])->name('edit');
         Route::delete('/{generalDraft}', [GeneralDraftController::class, 'destroy'])->name('destroy');
+    });
+
+    Route::prefix('master/lokasi-konsultasi')->as('master.lokasi-konsultasi.')->group(function () {
+        Route::get('/', [LokasiKonsultasiController::class, 'index'])->name('index');
+        Route::get('/create', [LokasiKonsultasiController::class, 'create'])->name('create');
+        Route::post('/', [LokasiKonsultasiController::class, 'store'])->name('store');
+        Route::get('/{lokasiKonsultasi}/edit', [LokasiKonsultasiController::class, 'edit'])->name('edit');
+        Route::put('/{lokasiKonsultasi}', [LokasiKonsultasiController::class, 'update'])->name('update');
+        Route::delete('/{lokasiKonsultasi}', [LokasiKonsultasiController::class, 'destroy'])->name('destroy');
+    });
+
+    Route::prefix('master/jadwal-konsultasi')->as('master.jadwal-konsultasi.')->group(function () {
+        Route::get('/', [JadwalKonsultasiController::class, 'index'])->name('index');
+        Route::get('/create', [JadwalKonsultasiController::class, 'create'])->name('create');
+        Route::post('/', [JadwalKonsultasiController::class, 'store'])->name('store');
+        Route::get('/{jadwalKonsultasi}/edit', [JadwalKonsultasiController::class, 'edit'])->name('edit');
+        Route::put('/{jadwalKonsultasi}', [JadwalKonsultasiController::class, 'update'])->name('update');
+        Route::delete('/{jadwalKonsultasi}', [JadwalKonsultasiController::class, 'destroy'])->name('destroy');
+    });
+
+    Route::prefix('master/permohonan-konsultasi')->as('master.permohonan-konsultasi.')->group(function () {
+        Route::get('/', [PermohonanKonsultasiController::class, 'index'])->name('index');
+        Route::get('/{permohonanKonsultasi}', [PermohonanKonsultasiController::class, 'show'])->name('show');
+        Route::get('/{permohonanKonsultasi}/edit', [PermohonanKonsultasiController::class, 'edit'])->name('edit');
+        Route::put('/{permohonanKonsultasi}', [PermohonanKonsultasiController::class, 'update'])->name('update');
+        Route::delete('/{permohonanKonsultasi}', [PermohonanKonsultasiController::class, 'destroy'])->name('destroy');
     });
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

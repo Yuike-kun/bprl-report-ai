@@ -12,3 +12,4 @@ class DokumenKonsultasi extends Model
         return $this->belongsTo(PermohonanKonsultasi::class, 'permohonan_id');
     }
 }
+ 
