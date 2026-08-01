@@ -16,19 +16,45 @@ class GeneralDraftController extends Controller
 {
     public function index(Request $request)
     {
-        $draft = GeneralDraft::with([
+        $drafts = GeneralDraft::latest()->paginate(15);
+
+        return inertia('backend/general-draft/index', [
+            'drafts'  => $drafts,
+            'success' => session('success'),
+        ]);
+    }
+
+    public function create()
+    {
+        return inertia('backend/general-draft/create');
+    }
+
+    public function edit(GeneralDraft $generalDraft)
+    {
+        $generalDraft->load([
             'seaConstructionAndInstallation',
             'spaceUtilizationInfo',
             'currentLocationData',
             'reclamationRequirement',
-        ])->latest()->first();
-
-        return inertia('backend/general-draft/index', [
-            'draft'    => $draft,
-            'draftId'  => $draft?->id,
-            'success'  => session('success'),
-            'draft_id' => session('draft_id'),
         ]);
+
+        return inertia('backend/general-draft/create', [
+            'draft'   => $generalDraft,
+            'draftId' => $generalDraft->id,
+        ]);
+    }
+
+    public function destroy(GeneralDraft $generalDraft)
+    {
+        $generalDraft->seaConstructionAndInstallation?->delete();
+        $generalDraft->spaceUtilizationInfo?->delete();
+        $generalDraft->currentLocationData?->delete();
+        $generalDraft->reclamationRequirement?->delete();
+        $generalDraft->aiAnalysisResult?->delete();
+        $generalDraft->delete();
+
+        return redirect()->route('general-draft.index')
+            ->with('success', 'Draft berhasil dihapus.');
     }
 
     public function store_applicant_identity(Request $request)

@@ -1,221 +1,329 @@
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
-    PanelRightClose,
-    PanelRightOpen,
     Settings,
-    Upload,
-    Download,
-    Trash2,
     FileText,
-    Menu
+    Menu,
+    LogOut,
+    User,
+    Bell,
+    Search,
+    PlusCircle,
+    LayoutDashboard,
+    ChevronDown,
+    ChevronRight,
 } from "lucide-react";
-import { ReactNode, useState } from "react";
+import { ReactNode, useState, useEffect, useRef } from "react";
 import MENU from './menu.json';
 import { usePage, Link } from "@inertiajs/react";
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip";
 
+/* ------------------------------------------------------------------ */
+/*  Sidebar                                                             */
+/* ------------------------------------------------------------------ */
 function Sidebar({ collapsed }: { collapsed: boolean }) {
-    const { url, component, props } = usePage<any>()
-    const user = props.auth?.user;
-    const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+    const { url } = usePage<any>();
 
     return (
         <aside
             className={cn(
-                "bg-slate-950 text-slate-300 flex flex-col transition-all duration-300 ease-in-out border-r border-slate-800",
-                collapsed ? "w-0 opacity-0 overflow-hidden" : "w-72 opacity-100"
+                "bg-slate-950 text-slate-300 flex flex-col transition-all duration-300 ease-in-out border-r border-slate-800/80 z-20 shrink-0 overflow-hidden",
+                collapsed ? "w-18" : "w-64"
             )}
         >
-            {/* Brand Header */}
-            <div className="h-16 flex items-center px-6 border-b border-slate-800 bg-slate-950">
-                <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-linear-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+            {/* Brand */}
+            <div className="h-16 flex items-center border-b border-slate-800/80 bg-slate-950 px-4 shrink-0">
+                <div className={cn("flex items-center gap-3 w-full", collapsed && "justify-center")}>
+                    <div className="w-8 h-8 shrink-0 rounded-lg bg-linear-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
                         <FileText className="w-4 h-4 text-white" />
                     </div>
-                    <span className="font-bold text-white tracking-tight text-lg">
-                        DraftGen
-                    </span>
+                    {!collapsed && (
+                        <div className="flex flex-col leading-tight overflow-hidden">
+                            <span className="font-bold text-white tracking-tight text-[15px] truncate">BPRL Panel</span>
+                            <span className="text-[10px] text-slate-500 font-medium">Admin v2.0</span>
+                        </div>
+                    )}
                 </div>
             </div>
 
             {/* Navigation */}
-            <nav className="flex-1 p-4 space-y-1 overflow-y-auto custom-scrollbar">
-                <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 px-2">
-                    Menu Utama
-                </div>
-                {MENU.map((menu, index) => (
-                    <a
-                        key={index}
-                        href={menu.url}
-                        className={"group flex items-center gap-3 px-3 py-2.5 rounded-none text-sm font-medium transition-all duration-200 hover:bg-slate-800 hover:text-white" + (url == menu.url ? ' bg-slate-800/50 border-l-2 border-slate-500' : '')}
-                    >
-                        <span className={"w-1.5 h-1.5 rounded-full group-hover:bg-indigo-400 transition-colors" + (url == menu.url ? ' bg-indigo-400' : 'bg-slate-600')} />
-                        {menu.label}
-                    </a>
-                ))}
+            <nav className="flex-1 py-3 flex flex-col gap-0.5 overflow-y-auto px-2">
+                {!collapsed && (
+                    <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest px-3 py-2 mt-1">
+                        Navigasi
+                    </p>
+                )}
+
+                {MENU.map((menu, index) => {
+                    const isActive = url === menu.url || url.startsWith(menu.url + '/');
+
+                    const inner = (
+                        <Link
+                            href={menu.url}
+                            className={cn(
+                                "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 group relative",
+                                isActive
+                                    ? "bg-indigo-500/15 text-indigo-300"
+                                    : "text-slate-400 hover:bg-white/5 hover:text-slate-100",
+                                collapsed && "justify-center"
+                            )}
+                        >
+                            <LayoutDashboard
+                                className={cn(
+                                    "w-[18px] h-[18px] shrink-0",
+                                    isActive ? "text-indigo-400" : "text-slate-500 group-hover:text-slate-300"
+                                )}
+                            />
+                            {!collapsed && (
+                                <>
+                                    <span className="truncate flex-1">{menu.label}</span>
+                                    {isActive && <ChevronRight className="w-3 h-3 text-indigo-500 shrink-0" />}
+                                </>
+                            )}
+                            {/* Active bar */}
+                            {isActive && (
+                                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-indigo-500 rounded-r-full" />
+                            )}
+                        </Link>
+                    );
+
+                    if (collapsed) {
+                        return (
+                            <Tooltip key={index}>
+                                <TooltipTrigger
+                                    className="block rounded-xl"
+                                    render={<span />}
+                                >
+                                    {inner}
+                                </TooltipTrigger>
+                                <TooltipContent side="right">
+                                    {menu.label}
+                                </TooltipContent>
+                            </Tooltip>
+                        );
+                    }
+
+                    return <div key={index}>{inner}</div>;
+                })}
             </nav>
 
-            {/* User Profile Footer */}
-            <div className="p-4 border-t border-slate-800 bg-slate-900/50 relative">
-                {profileDropdownOpen && (
-                    <div className="absolute bottom-full left-4 right-4 mb-2 bg-slate-800 border border-slate-700 rounded-lg shadow-xl overflow-hidden z-50">
-                        <Link
-                            href="/profile"
-                            className="w-full flex items-center px-4 py-3 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition-colors text-left border-b border-slate-700"
-                            onClick={() => setProfileDropdownOpen(false)}
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
-                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="12" cy="7" r="4"></circle>
-                            </svg>
-                            Profile Details
-                        </Link>
-                        <Link
-                            href="/logout"
-                            method="post"
-                            as="button"
-                            className="w-full flex items-center px-4 py-3 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition-colors text-left"
-                            onClick={() => setProfileDropdownOpen(false)}
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
-                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                                <polyline points="16 17 21 12 16 7"></polyline>
-                                <line x1="21" y1="12" x2="9" y2="12"></line>
-                            </svg>
-                            Logout
-                        </Link>
+            {/* Footer */}
+            {!collapsed && (
+                <div className="p-3 border-t border-slate-800/80 shrink-0">
+                    <div className="bg-white/5 rounded-xl px-3 py-2.5 text-center">
+                        <p className="text-[11px] font-semibold text-slate-400 truncate">BPRL Report AI © 2025</p>
                     </div>
-                )}
-                <button
-                    onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
-                    className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer text-left focus:outline-none"
-                >
-                    <Avatar className="h-9 w-9 border border-slate-700 shrink-0">
-                        <AvatarFallback className="bg-slate-800 text-slate-400">
-                            {user?.name?.charAt(0)?.toUpperCase() || 'A'}
-                        </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-white truncate">{user?.name || "Admin User"}</p>
-                        <p className="text-xs text-slate-500 truncate">{user?.email || "admin@example.com"}</p>
-                    </div>
-                </button>
-            </div>
+                </div>
+            )}
         </aside>
     );
 }
 
-// Added pageTitle prop
-function Navbar({ onToggleSidebar, pageTitle }: { onToggleSidebar: () => void, pageTitle?: string }) {
-    // const BUTTONS = [
-    //     {
-    //         icon: Settings,
-    //         label: "Konfigurasi AI",
-    //         variant: "outline" as const,
-    //         className: "border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-    //     },
-    //     {
-    //         icon: Upload,
-    //         label: "Import JSON",
-    //         variant: "outline" as const,
-    //         className: "border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-    //     },
-    //     {
-    //         icon: Download,
-    //         label: "Export JSON",
-    //         variant: "outline" as const,
-    //         className: "border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-    //     },
-    //     {
-    //         icon: Trash2,
-    //         label: "Bersihkan",
-    //         variant: "ghost" as const,
-    //         className: "text-red-500 hover:bg-red-50 hover:text-red-600"
-    //     },
-    //     {
-    //         icon: FileText,
-    //         label: "Unduh Draft (.doc)",
-    //         variant: "default" as const,
-    //         className: "bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-200"
-    //     }
-    // ];
-    const BUTTONS: any[] = [];
+/* ------------------------------------------------------------------ */
+/*  Profile Dropdown                                                    */
+/* ------------------------------------------------------------------ */
+function ProfileDropdown({ user }: { user: any }) {
+    const [open, setOpen] = useState(false);
+    const ref = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handle = (e: MouseEvent) => {
+            if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+        };
+        document.addEventListener("mousedown", handle);
+        return () => document.removeEventListener("mousedown", handle);
+    }, []);
+
+    const firstName = user?.name?.split(' ')[0] || "Admin";
+    const initial = user?.name?.charAt(0)?.toUpperCase() || 'A';
 
     return (
-        <header className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-4 sticky top-0 z-10">
-            <div className="flex items-center gap-4">
-                <button
+        <div className="relative" ref={ref}>
+            <button
+                onClick={() => setOpen(v => !v)}
+                className="flex items-center gap-2 rounded-xl py-1.5 px-2 pr-3 hover:bg-slate-100 transition-colors focus:outline-none"
+            >
+                <Avatar className="h-8 w-8 border-2 border-indigo-100 shadow-sm">
+                    <AvatarFallback className="bg-indigo-600 text-white font-bold text-xs">
+                        {initial}
+                    </AvatarFallback>
+                </Avatar>
+                <div className="hidden sm:block text-left leading-tight">
+                    <p className="text-sm font-semibold text-slate-800 leading-none">{firstName}</p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">Admin</p>
+                </div>
+                <ChevronDown className={cn("w-3.5 h-3.5 text-slate-400 hidden sm:block transition-transform duration-200", open && "rotate-180")} />
+            </button>
+
+            {open && (
+                <div className="absolute right-0 mt-2 w-60 bg-white rounded-2xl border border-slate-200 shadow-2xl shadow-slate-300/30 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                    {/* Header */}
+                    <div className="flex items-center gap-3 px-4 py-3.5 border-b border-slate-100 bg-slate-50">
+                        <Avatar className="h-10 w-10 border-2 border-indigo-100">
+                            <AvatarFallback className="bg-indigo-600 text-white font-bold text-sm">
+                                {initial}
+                            </AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0">
+                            <p className="text-sm font-bold text-slate-800 truncate">{user?.name || "Admin User"}</p>
+                            <p className="text-xs text-slate-500 truncate">{user?.email || "admin@bprl.go.id"}</p>
+                        </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="p-1.5">
+                        <Link
+                            href="/profile"
+                            className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-slate-700 hover:bg-slate-100 rounded-xl transition-colors w-full font-medium"
+                            onClick={() => setOpen(false)}
+                        >
+                            <User className="w-4 h-4 text-slate-400" />
+                            Profil Saya
+                        </Link>
+                        <Link
+                            href="/settings"
+                            className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-slate-700 hover:bg-slate-100 rounded-xl transition-colors w-full font-medium"
+                            onClick={() => setOpen(false)}
+                        >
+                            <Settings className="w-4 h-4 text-slate-400" />
+                            Pengaturan Akun
+                        </Link>
+                    </div>
+
+                    <div className="p-1.5 border-t border-slate-100">
+                        <Link
+                            href="/logout"
+                            method="post"
+                            as="button"
+                            className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 rounded-xl transition-colors"
+                            onClick={() => setOpen(false)}
+                        >
+                            <LogOut className="w-4 h-4" />
+                            Keluar dari Akun
+                        </Link>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Navbar                                                              */
+/* ------------------------------------------------------------------ */
+function Navbar({
+    onToggleSidebar,
+    pageTitle,
+    user,
+}: {
+    onToggleSidebar: () => void;
+    pageTitle?: string;
+    user?: any;
+}) {
+    return (
+        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 lg:px-6 sticky top-0 z-30 shrink-0">
+            {/* Left */}
+            <div className="flex items-center gap-3">
+                <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={onToggleSidebar}
-                    className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors"
-                    aria-label="Toggle Sidebar"
+                    className="text-slate-500 hover:bg-slate-100 rounded-xl shrink-0"
+                    aria-label="Toggle sidebar"
                 >
                     <Menu className="w-5 h-5" />
-                </button>
-                {/* Use the prop instead of document.title */}
-                <h2 className="text-lg font-semibold text-slate-800 hidden sm:block">
-                    {pageTitle || "Dashboard"}
-                </h2>
+                </Button>
+                <div className="hidden sm:block">
+                    <h1 className="text-base font-bold text-slate-800 leading-none truncate">{pageTitle || "Dashboard"}</h1>
+                    <p className="text-[11px] text-slate-400 mt-0.5 font-medium">BPRL Report AI Admin</p>
+                </div>
             </div>
 
-            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 sm:pb-0">
-                {BUTTONS.map((button, index) => (
-                    <Button
-                        key={index}
-                        variant={button.variant}
-                        size="sm"
-                        onClick={button.label.includes("Unduh") ? () => {
-                            const form = document.createElement("form");
-                            form.method = "POST";
-                            form.action = "/pkkprl/generate-docx-from-report";
-                            form.target = "_blank";
-                            const csrfMeta = document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement;
-                            if (csrfMeta?.content) {
-                                const csrfInput = document.createElement("input");
-                                csrfInput.type = "hidden";
-                                csrfInput.name = "_token";
-                                csrfInput.value = csrfMeta.content;
-                                form.appendChild(csrfInput);
-                            }
-                            document.body.appendChild(form);
-                            form.submit();
-                            document.body.removeChild(form);
-                        } : undefined}
-                        className={cn(
-                            "whitespace-nowrap flex items-center gap-2 transition-all duration-200",
-                            button.className
-                        )}
-                    >
-                        <button.icon className="w-4 h-4" />
-                        <span className="hidden md:inline">{button.label}</span>
-                    </Button>
-                ))}
+            {/* Right */}
+            <div className="flex items-center gap-1 sm:gap-2">
+                {/* Search */}
+                <div className="hidden lg:flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 w-56 xl:w-72 focus-within:ring-2 focus-within:ring-indigo-200 focus-within:border-indigo-400 transition-all">
+                    <Search className="w-4 h-4 text-slate-400 shrink-0" />
+                    <input
+                        type="text"
+                        placeholder="Cari laporan..."
+                        className="bg-transparent text-sm text-slate-700 w-full outline-none placeholder:text-slate-400"
+                    />
+                    <kbd className="hidden xl:inline-flex items-center gap-1 rounded-md bg-slate-100 border border-slate-200 px-1.5 py-0.5 text-[10px] text-slate-500 font-mono shrink-0">
+                        ⌘K
+                    </kbd>
+                </div>
+
+                {/* Quick actions */}
+                <div className="flex items-center gap-1 ml-1">
+                    <Tooltip>
+                        <TooltipTrigger
+                            className="inline-flex items-center justify-center rounded-xl w-9 h-9 text-slate-500 hover:bg-slate-100 hover:text-indigo-600 transition-colors"
+                            render={<button />}
+                        >
+                            <PlusCircle className="w-5 h-5" />
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom">Buat Laporan Baru</TooltipContent>
+                    </Tooltip>
+
+                    <Tooltip>
+                        <TooltipTrigger
+                            className="inline-flex items-center justify-center rounded-xl w-9 h-9 text-slate-500 hover:bg-slate-100 hover:text-indigo-600 transition-colors relative"
+                            render={<button />}
+                        >
+                            <Bell className="w-5 h-5" />
+                            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white" />
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom">Notifikasi</TooltipContent>
+                    </Tooltip>
+                </div>
+
+                <div className="w-px h-6 bg-slate-200 mx-1 shrink-0" />
+
+                <ProfileDropdown user={user} />
             </div>
         </header>
     );
 }
 
-// Added pageTitle prop to MainLayout
-export default function MainLayout({ children, pageTitle }: { children: ReactNode, pageTitle?: string }) {
-    const [sidebarCollapse, setSidebarCollapse] = useState(false);
+/* ------------------------------------------------------------------ */
+/*  Root Layout                                                         */
+/* ------------------------------------------------------------------ */
+export default function MainLayout({
+    children,
+    pageTitle,
+}: {
+    children: ReactNode;
+    pageTitle?: string;
+}) {
+    const [collapsed, setCollapsed] = useState(false);
+    const { props } = usePage<any>();
+    const user = props.auth?.user;
 
     return (
-        <div className="flex h-screen w-full bg-slate-50 overflow-hidden font-sans">
-            <Sidebar collapsed={sidebarCollapse} />
+        <TooltipProvider delay={100}>
+            <div className="flex h-screen w-full bg-slate-50 overflow-hidden antialiased">
+                <Sidebar collapsed={collapsed} />
 
-            <div className="flex-1 flex flex-col min-w-0 transition-all duration-300">
-                {/* Pass the title down to Navbar */}
-                <Navbar
-                    onToggleSidebar={() => setSidebarCollapse(!sidebarCollapse)}
-                    pageTitle={pageTitle}
-                />
-
-                <main className="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth">
-                    <div className="max-w-7xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        {children}
-                    </div>
-                </main>
+                <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+                    <Navbar
+                        onToggleSidebar={() => setCollapsed(v => !v)}
+                        pageTitle={pageTitle}
+                        user={user}
+                    />
+                    <main className="flex-1 overflow-y-auto">
+                        <div className="max-w-7xl mx-auto p-4 md:p-8 animate-in fade-in zoom-in-[0.98] duration-300">
+                            {children}
+                        </div>
+                    </main>
+                </div>
             </div>
-        </div>
+        </TooltipProvider>
     );
 }

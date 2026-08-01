@@ -4,9 +4,12 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\GeneralDraftController;
 use App\Http\Controllers\GenerateDocxController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\RequestFormController;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'welcome')->name('home');
+
+Route::get('/request-form', [RequestFormController::class, 'index'])->name('request-form');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
@@ -19,7 +22,10 @@ Route::middleware('auth')->group(function () {
     })->name('dashboard');
     Route::prefix('general-draft')->as('general-draft.')->group(function () {
         Route::get('/', [GeneralDraftController::class, 'index'])->name('index');
+        Route::get('/create', [GeneralDraftController::class, 'create'])->name('create');
         Route::post('/store', [GeneralDraftController::class, 'store'])->name('store');
+        Route::get('/{generalDraft}/edit', [GeneralDraftController::class, 'edit'])->name('edit');
+        Route::delete('/{generalDraft}', [GeneralDraftController::class, 'destroy'])->name('destroy');
     });
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

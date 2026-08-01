@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { Check, PanelLeftClose, PanelLeftOpen } from "lucide-react";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Check, ChevronRight, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import {
     Tooltip,
     TooltipContent,
@@ -24,28 +24,28 @@ export const TAB_MENU: TabMenuItem[] = [
     },
     {
         id: "bab_i",
-        title: "I. Rencana Bangunan & Instalasi Laut",
-        description: "Uraian rencana kegiatan utama/penunjang, koordinat, dan luasan.",
+        title: "I. Rencana Bangunan & Instalasi",
+        description: "Uraian rencana kegiatan, koordinat, dan luasan.",
     },
     {
         id: "bab_ii",
-        title: "II. Informasi Pemanfaatan Ruang Laut",
-        description: "Deskripsi aktivitas pemanfaatan ruang laut lain di sekitar lokasi dan jaraknya.",
+        title: "II. Pemanfaatan Ruang Laut",
+        description: "Aktivitas pemanfaatan ruang laut di sekitar lokasi.",
     },
     {
         id: "bab_iii",
-        title: "III. Data Kondisi Terkini Lokasi",
-        description: "Unggah dokumen laporan hidro-oseanografi (PDF/Word) sebagai lampiran kondisi terkini.",
+        title: "III. Kondisi Terkini Lokasi",
+        description: "Unggah laporan hidro-oseanografi sebagai lampiran.",
     },
     {
         id: "bab_iv",
-        title: "IV. Persyaratan Reklamasi (Jika Ada)",
-        description: "Isi bagian ini apabila kegiatan menggunakan reklamasi.",
+        title: "IV. Persyaratan Reklamasi",
+        description: "Isi bila kegiatan menggunakan reklamasi.",
     },
     {
         id: "analisis_ai",
-        title: "Analisis & Susun Narasi (AI)",
-        description: "AI membaca dokumen Bab III dan menyusun narasi teknis per bagian.",
+        title: "Analisis AI",
+        description: "AI menyusun narasi teknis per bagian.",
     },
     {
         id: "review",
@@ -61,133 +61,127 @@ type TabsVerticalProps = {
     completedIds?: string[];
 };
 
-/**
- * Stepper vertikal untuk wizard PKKPRL.
- *
- * - value / onValueChange: id step aktif, dikontrol dari luar
- * - completedIds: id step yang sudah lengkap terisi. Kalau tidak diberikan,
- *   step sebelum step aktif dianggap selesai (asumsi default untuk alur linear)
- */
 export default function TabsVertical({ value, onValueChange, completedIds }: TabsVerticalProps) {
     const [collapsed, setCollapsed] = useState(false);
-    const [internalValue, setInternalValue] = useState("identitas");
-    const activeId = value ?? internalValue;
+    const activeId = value;
     const activeIndex = TAB_MENU.findIndex((t) => t.id === activeId);
 
     const isCompleted = (id: string, idx: number) =>
         completedIds ? completedIds.includes(id) : idx < activeIndex;
 
     return (
-        <TooltipProvider>
-            <div
-                className={[
-                    "flex flex-col shrink-0 border me-3 transition-all duration-200",
-                    collapsed ? "w-14" : "w-72",
-                ].join(" ")}
+        <TooltipProvider delay={0}>
+            <aside
+                className={cn(
+                    "flex flex-col shrink-0 border-r border-slate-200 bg-white transition-all duration-300 ease-in-out rounded-l-2xl overflow-hidden",
+                    collapsed ? "w-16" : "w-72"
+                )}
             >
-                <div
-                    className={[
-                        "flex items-center h-11 px-2 border-b",
-                        collapsed ? "justify-center" : "justify-end",
-                    ].join(" ")}
-                >
+                {/* Header */}
+                <div className={cn(
+                    "flex items-center h-14 px-3 border-b border-slate-100 bg-slate-50/80",
+                    collapsed ? "justify-center" : "justify-between"
+                )}>
+                    {!collapsed && (
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">Langkah</p>
+                    )}
                     <Button
                         variant="ghost"
                         size="icon"
-                        className="h-7 w-7 text-muted-foreground"
-                        onClick={() => setCollapsed((v) => !v)}
+                        className="h-8 w-8 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg shrink-0"
+                        onClick={() => setCollapsed(v => !v)}
                     >
                         {collapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
                     </Button>
                 </div>
 
-                <Tabs
-                    value={activeId}
-                    onValueChange={onValueChange ?? setInternalValue}
-                    orientation="vertical"
-                >
-                    <TabsList className="flex flex-col w-full h-auto items-stretch bg-transparent pl-2">
-                        {TAB_MENU.map((tab, idx) => {
-                            const done = isCompleted(tab.id, idx);
-                            const active = tab.id === activeId;
-                            const isLast = idx === TAB_MENU.length - 1;
+                {/* Steps */}
+                <nav className="flex flex-col py-3 px-2 gap-0.5 flex-1 overflow-y-auto">
+                    {TAB_MENU.map((tab, idx) => {
+                        const done = isCompleted(tab.id, idx);
+                        const active = tab.id === activeId;
+                        const isLast = idx === TAB_MENU.length - 1;
 
-                            const marker = (
-                                <span
-                                    className={[
-                                        "flex items-center justify-center rounded-full shrink-0 transition-colors",
-                                        collapsed ? "h-8 w-8" : "h-6 w-6",
-                                        done
-                                            ? "bg-teal-600 text-white"
-                                            : active
-                                                ? "border-2 border-teal-600 text-teal-700 bg-white"
-                                                : "border border-border text-muted-foreground bg-background",
-                                    ].join(" ")}
-                                >
-                                    {done ? (
-                                        <Check size={13} strokeWidth={2.5} />
-                                    ) : (
-                                        <span className="text-[11px] font-medium leading-none">{idx + 1}</span>
-                                    )}
-                                </span>
-                            );
-
-                            const trigger = (
-                                <TabsTrigger
-                                    key={tab.id}
-                                    value={tab.id}
-                                    className={[
-                                        "flex w-full min-w-0 items-start text-start",
-                                        collapsed ? "justify-center px-2" : "gap-3 px-4",
-                                        "whitespace-normal h-auto rounded-none bg-transparent p-0 shadow-none",
-                                        "data-[state=active]:bg-transparent data-[state=active]:shadow-none",
-                                        "focus-visible:ring-0 focus-visible:outline-none",
-                                    ].join(" ")}
-                                >
-                                    <span className="flex flex-col items-center shrink-0">
-                                        {marker}
-                                        {!isLast && (
-                                            <span
-                                                className={[
-                                                    "w-px flex-1 my-1 min-h-2.5",
-                                                    done ? "bg-teal-600" : "bg-border",
-                                                ].join(" ")}
-                                            />
+                        const stepButton = (
+                            <button
+                                type="button"
+                                onClick={() => onValueChange(tab.id)}
+                                className={cn(
+                                    "w-full flex items-start gap-3 text-left rounded-xl px-2 py-2 transition-all duration-150 group focus:outline-none",
+                                    active
+                                        ? "bg-indigo-50"
+                                        : "hover:bg-slate-50",
+                                    collapsed && "justify-center px-0"
+                                )}
+                            >
+                                {/* Step indicator + connector */}
+                                <div className="flex flex-col items-center shrink-0 pt-0.5">
+                                    <div
+                                        className={cn(
+                                            "flex items-center justify-center rounded-full font-bold text-xs transition-all duration-200 shadow-sm",
+                                            collapsed ? "h-8 w-8" : "h-6 w-6",
+                                            done
+                                                ? "bg-emerald-500 text-white shadow-emerald-200"
+                                                : active
+                                                    ? "bg-indigo-600 text-white shadow-indigo-200 ring-4 ring-indigo-100"
+                                                    : "bg-white border-2 border-slate-200 text-slate-400 group-hover:border-indigo-300"
                                         )}
-                                    </span>
-
-                                    {!collapsed && (
-                                        <span className="min-w-0 flex-1 pb-5">
-                                            <span
-                                                className={[
-                                                    "block text-[13px] font-medium leading-snug",
-                                                    active ? "text-teal-700" : "text-foreground",
-                                                ].join(" ")}
-                                            >
-                                                {tab.title}
-                                            </span>
-                                            <span className="block text-xs text-muted-foreground leading-snug mt-0.5 line-clamp-2">
-                                                {tab.description}
-                                            </span>
-                                        </span>
+                                    >
+                                        {done ? <Check size={12} strokeWidth={3} /> : <span>{idx + 1}</span>}
+                                    </div>
+                                    {!isLast && (
+                                        <div className={cn(
+                                            "w-px mt-1 flex-1 min-h-[20px]",
+                                            done ? "bg-emerald-300" : "bg-slate-200"
+                                        )} />
                                     )}
-                                </TabsTrigger>
-                            );
+                                </div>
 
-                            return collapsed ? (
+                                {/* Label */}
+                                {!collapsed && (
+                                    <div className="flex-1 min-w-0 pb-4">
+                                        <p className={cn(
+                                            "text-[13px] font-semibold leading-snug truncate",
+                                            active ? "text-indigo-700" : done ? "text-slate-700" : "text-slate-500 group-hover:text-slate-700"
+                                        )}>
+                                            {tab.title}
+                                        </p>
+                                        <p className="text-[11px] text-slate-400 mt-0.5 line-clamp-2 leading-snug">
+                                            {tab.description}
+                                        </p>
+                                        {done && (
+                                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-600 bg-emerald-50 rounded-full px-2 py-0.5 mt-1">
+                                                <Check size={9} strokeWidth={3} /> Selesai
+                                            </span>
+                                        )}
+                                        {active && !done && (
+                                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-indigo-600 bg-indigo-50 rounded-full px-2 py-0.5 mt-1">
+                                                Sedang diisi
+                                            </span>
+                                        )}
+                                    </div>
+                                )}
+                            </button>
+                        );
+
+                        if (collapsed) {
+                            return (
                                 <Tooltip key={tab.id}>
-                                    <TooltipTrigger asChild>{trigger}</TooltipTrigger>
+                                    <TooltipTrigger render={<span className="block" />}>
+                                        {stepButton}
+                                    </TooltipTrigger>
                                     <TooltipContent side="right">
-                                        <p className="font-medium">{tab.title}</p>
+                                        <p className="font-semibold">{tab.title}</p>
+                                        <p className="text-xs text-slate-400">{tab.description}</p>
                                     </TooltipContent>
                                 </Tooltip>
-                            ) : (
-                                trigger
                             );
-                        })}
-                    </TabsList>
-                </Tabs>
-            </div>
+                        }
+
+                        return <div key={tab.id}>{stepButton}</div>;
+                    })}
+                </nav>
+            </aside>
         </TooltipProvider>
     );
 }
