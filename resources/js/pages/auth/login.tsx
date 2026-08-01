@@ -22,9 +22,12 @@ export default function LoginPage() {
             </div>
 
             <div className="max-w-md w-full relative">
-                
+
                 <div className="mb-6 flex justify-between items-center px-2">
-                    <Link href="/" className="inline-flex items-center text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors group">
+                    <Link
+                        href="/"
+                        className="inline-flex items-center text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors group px-4 py-2 rounded-md hover:bg-slate-100"
+                    >
                         <ArrowLeft className="w-4 h-4 mr-2 transition-transform group-hover:-translate-x-1" />
                         Kembali
                     </Link>
@@ -36,12 +39,12 @@ export default function LoginPage() {
                     </div>
                 </div>
 
-                <div className="absolute -inset-1 rounded-[24px] bg-linear-to-b from-blue-300 to-indigo-400 opacity-20 blur-xl"></div>
-                
+                <div className="absolute -inset-1 rounded-[24px] bg-linear-to-b from-blue-300 to-indigo-400 opacity-20 blur-xl pointer-events-none"></div>
+
                 <Card className="relative shadow-2xl border-white/40 ring-1 ring-slate-200/50 backdrop-blur-2xl bg-white/80 rounded-2xl overflow-hidden">
-                    
+
                     <div className="h-1.5 w-full bg-linear-to-r from-blue-500 to-indigo-600"></div>
-                    
+
                     <CardHeader className="space-y-2 pb-6 pt-10 px-8 text-center">
                         <CardTitle className="text-3xl font-extrabold text-slate-900 tracking-tight">
                             Selamat Datang
@@ -50,7 +53,7 @@ export default function LoginPage() {
                             Silakan masuk untuk mengakses panel administrasi.
                         </CardDescription>
                     </CardHeader>
-                    
+
                     <form
                         onSubmit={(e) => {
                             e.preventDefault();
@@ -110,9 +113,9 @@ export default function LoginPage() {
                             </div>
                         </CardContent>
                         <CardFooter className="px-8 pb-10 pt-0">
-                            <Button 
-                                type="submit" 
-                                disabled={processing} 
+                            <Button
+                                type="submit"
+                                disabled={processing}
                                 className="w-full h-12 bg-slate-900 hover:bg-slate-800 text-white rounded-xl shadow-lg transition-all group font-semibold text-md flex items-center justify-center gap-2"
                             >
                                 {processing ? (
