@@ -15,11 +15,26 @@ type Schedule = {
     kuota_konsultasi: number;
 };
 
+type ExistingChildSchedule = {
+    id: number;
+    schedule_id: number;
+    waktu: string;
+    kuota_konsultasi: number;
+};
+
 type Props = {
     schedule: Schedule;
+    childSchedules: ExistingChildSchedule[];
     locations: Location[];
 };
 
-export default function EditJadwalKonsultasi({ schedule, locations }: Props) {
-    return <JadwalKonsultasiForm mode="edit" schedule={schedule} locations={locations} />;
+export default function EditJadwalKonsultasi({ schedule, childSchedules, locations }: Props) {
+    return (
+        <JadwalKonsultasiForm
+            mode="edit"
+            schedule={schedule}
+            childSchedules={childSchedules}
+            locations={locations}
+        />
+    );
 }

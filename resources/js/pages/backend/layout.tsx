@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import {
     Settings,
     FileText,
+    Home,
     Menu,
     LogOut,
     User,
@@ -16,7 +17,7 @@ import {
 } from "lucide-react";
 import { ReactNode, useState, useEffect, useRef } from "react";
 import MENU from './menu.json';
-import { usePage, Link } from "@inertiajs/react";
+import { usePage, Link, router } from "@inertiajs/react";
 import {
     Tooltip,
     TooltipContent,
@@ -46,9 +47,22 @@ function Sidebar({ collapsed }: { collapsed: boolean }) {
             {/* Brand */}
             <div className="relative h-16 flex items-center border-b border-white/10 px-4 shrink-0">
                 <div className={cn("flex items-center gap-3 w-full", collapsed && "justify-center")}>
-                    <div className="w-8 h-8 shrink-0 rounded-lg bg-linear-to-br from-blue-500 to-cyan-400 flex items-center justify-center shadow-lg shadow-blue-500/30">
-                        <FileText className="w-4 h-4 text-white" />
-                    </div>
+                    <button
+                        onClick={() => router.visit('/')}
+                        aria-label="Kembali ke beranda"
+                        className="group/brand relative w-8 h-8 shrink-0 rounded-lg overflow-hidden cursor-pointer shadow-lg shadow-blue-500/30 hover:shadow-emerald-500/30 hover:scale-105 active:scale-95 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/50"
+                    >
+                        {/* Base gradient (blue) */}
+                        <span className="absolute inset-0 bg-linear-to-br from-blue-500 to-cyan-400 transition-opacity duration-300 group-hover/brand:opacity-0" />
+                        {/* Hover gradient (green) */}
+                        <span className="absolute inset-0 bg-linear-to-br from-emerald-500 to-green-400 opacity-0 transition-opacity duration-300 group-hover/brand:opacity-100" />
+
+                        {/* Icon crossfade */}
+                        <span className="relative w-full h-full flex items-center justify-center">
+                            <FileText className="absolute w-4 h-4 text-white transition-all duration-300 opacity-100 scale-100 rotate-0 group-hover/brand:opacity-0 group-hover/brand:scale-75 group-hover/brand:-rotate-45" />
+                            <Home className="absolute w-4 h-4 text-white transition-all duration-300 opacity-0 scale-75 rotate-45 group-hover/brand:opacity-100 group-hover/brand:scale-100 group-hover/brand:rotate-0" />
+                        </span>
+                    </button>
                     {!collapsed && (
                         <div className="flex flex-col leading-tight overflow-hidden">
                             <span className="font-bold text-white tracking-tight text-[15px] truncate">BPRL Panel</span>
@@ -259,7 +273,8 @@ function Navbar({
 
             {/* Right */}
             <div className="relative flex items-center gap-1 sm:gap-2">
-                {/* <div className="hidden lg:flex items-center gap-2 bg-white/50 border border-white/70 rounded-xl px-3 py-2 w-56 xl:w-72 focus-within:ring-2 focus-within:ring-blue-300/50 focus-within:border-blue-400/60 transition-all">
+                {/* Search */}
+                <div className="hidden lg:flex items-center gap-2 bg-white/50 border border-white/70 rounded-xl px-3 py-2 w-56 xl:w-72 focus-within:ring-2 focus-within:ring-blue-300/50 focus-within:border-blue-400/60 transition-all">
                     <Search className="w-4 h-4 text-slate-400 shrink-0" />
                     <input
                         type="text"
@@ -271,6 +286,7 @@ function Navbar({
                     </kbd>
                 </div>
 
+                {/* Quick actions */}
                 <div className="flex items-center gap-1 ml-1">
                     <Tooltip>
                         <TooltipTrigger
@@ -292,7 +308,7 @@ function Navbar({
                         </TooltipTrigger>
                         <TooltipContent side="bottom">Notifikasi</TooltipContent>
                     </Tooltip>
-                </div> */}
+                </div>
 
                 <div className="w-px h-6 bg-gradient-to-b from-transparent via-blue-300/50 to-transparent mx-1 shrink-0" />
 

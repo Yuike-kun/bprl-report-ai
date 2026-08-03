@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Http\Controllers\Master;
 
 use App\Http\Controllers\Controller;
@@ -17,7 +16,7 @@ class PermohonanKonsultasiController extends Controller
         $search = trim((string) $request->query('search', ''));
 
         $submissions = PermohonanKonsultasi::query()
-            ->with('lokasi:id,nama_lokasi')
+            ->with('jadwal')
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($inner) use ($search) {
                     $inner->where('nama_pemohon', 'like', '%' . $search . '%')
@@ -32,16 +31,16 @@ class PermohonanKonsultasiController extends Controller
 
         return Inertia::render('backend/master/permohonan-konsultasi/index', [
             'submissions' => $submissions,
-            'filters' => [
+            'filters'     => [
                 'search' => $search,
             ],
-            'success' => session('success'),
+            'success'     => session('success'),
         ]);
     }
 
     public function show(PermohonanKonsultasi $permohonanKonsultasi): Response
     {
-        $permohonanKonsultasi->load('lokasi:id,nama_lokasi');
+        $permohonanKonsultasi->load('jadwal.lokasi');
 
         return Inertia::render('backend/master/permohonan-konsultasi/show', [
             'submission' => $permohonanKonsultasi,
@@ -50,11 +49,11 @@ class PermohonanKonsultasiController extends Controller
 
     public function edit(PermohonanKonsultasi $permohonanKonsultasi): Response
     {
-        $permohonanKonsultasi->load('lokasi:id,nama_lokasi');
+        $permohonanKonsultasi->load('jadwal.lokasi');
 
         return Inertia::render('backend/master/permohonan-konsultasi/edit', [
             'submission' => $permohonanKonsultasi,
-            'locations' => LokasiKonsultasi::query()
+            'locations'  => LokasiKonsultasi::query()
                 ->orderBy('nama_lokasi')
                 ->get(['id', 'nama_lokasi']),
         ]);
@@ -63,21 +62,21 @@ class PermohonanKonsultasiController extends Controller
     public function update(Request $request, PermohonanKonsultasi $permohonanKonsultasi): RedirectResponse
     {
         $validated = $request->validate([
-            'nama_pemohon' => ['required', 'string', 'max:255'],
-            'jabatan_pemohon' => ['required', 'string', 'max:255'],
-            'instansi' => ['required', 'string', 'max:255'],
-            'tanggal_konsultasi' => ['required', 'date'],
-            'waktu_konsultasi' => ['required', 'date_format:H:i'],
-            'pelaksanaan' => ['required', 'in:Luring,Daring,Hybrid'],
-            'lokasi_konsultasi_id' => ['nullable', 'exists:lokasi_konsultasis,id'],
-            'rencana_kegiatan' => ['required', 'string'],
-            'kabupaten' => ['required', 'string', 'max:255'],
-            'provinsi' => ['required', 'string', 'max:255'],
-            'nomor_telepon' => ['required', 'string', 'max:30'],
-            'email' => ['required', 'email', 'max:255'],
-            'permintaan_khusus' => ['nullable', 'string'],
+            'nama_pemohon'            => ['required', 'string', 'max:255'],
+            'jabatan_pemohon'         => ['required', 'string', 'max:255'],
+            'instansi'                => ['required', 'string', 'max:255'],
+            'tanggal_konsultasi'      => ['required', 'date'],
+            'waktu_konsultasi'        => ['required', 'date_format:H:i'],
+            'pelaksanaan'             => ['required', 'in:Luring,Daring,Hybrid'],
+            'lokasi_konsultasi_id'    => ['nullable', 'exists:lokasi_konsultasis,id'],
+            'rencana_kegiatan'        => ['required', 'string'],
+            'kabupaten'               => ['required', 'string', 'max:255'],
+            'provinsi'                => ['required', 'string', 'max:255'],
+            'nomor_telepon'           => ['required', 'string', 'max:30'],
+            'email'                   => ['required', 'email', 'max:255'],
+            'permintaan_khusus'       => ['nullable', 'string'],
             'setuju_syarat_ketentuan' => ['required', 'boolean'],
-            'status' => ['required', 'in:draft,dikirim,selesai'],
+            'status'                  => ['required', 'in:draft,dikirim,selesai'],
         ]);
 
         if (in_array($validated['pelaksanaan'], ['Luring', 'Hybrid'], true) && empty($validated['lokasi_konsultasi_id'])) {

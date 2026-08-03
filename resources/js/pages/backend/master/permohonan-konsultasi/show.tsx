@@ -26,6 +26,7 @@ type Submission = {
         id: number;
         nama_lokasi: string;
     } | null;
+    jadwal?: any[]
 };
 
 type Props = {
@@ -91,10 +92,10 @@ export default function PermohonanKonsultasiShow({ submission }: Props) {
                     <div className="px-6 md:px-8 py-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
                         <DetailItem label="Email" value={submission.email} />
                         <DetailItem label="Nomor Telepon" value={submission.nomor_telepon} />
-                        <DetailItem label="Tanggal Konsultasi" value={new Date(submission.tanggal_konsultasi).toLocaleDateString("id-ID", { day: "2-digit", month: "long", year: "numeric" })} />
-                        <DetailItem label="Waktu Konsultasi" value={submission.waktu_konsultasi} />
-                        <DetailItem label="Pelaksanaan" value={submission.pelaksanaan} />
-                        <DetailItem label="Lokasi" value={submission.lokasi?.nama_lokasi ?? "-"} />
+                        <DetailItem label="Tanggal Konsultasi" value={new Date(submission.jadwal.tanggal).toLocaleDateString("id-ID", { day: "2-digit", month: "long", year: "numeric" })} />
+                        <DetailItem label="Waktu Konsultasi" value={`${submission.jadwal.waktu_awal} - ${submission.jadwal.waktu_akhir}`} />
+                        <DetailItem label="Pelaksanaan" value={submission.jadwal.pelaksanaan} />
+                        <DetailItem label="Lokasi" value={submission.jadwal?.lokasi?.nama_lokasi ?? "-"} />
                         <DetailItem label="Kabupaten/Kota" value={submission.kabupaten} />
                         <DetailItem label="Provinsi" value={submission.provinsi} />
                         <DetailItem label="Status" value={submission.status} />

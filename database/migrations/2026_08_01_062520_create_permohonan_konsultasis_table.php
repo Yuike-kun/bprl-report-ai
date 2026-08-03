@@ -15,13 +15,11 @@ return new class extends Migration
 
         Schema::create('permohonan_konsultasis', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('jadwal_konsultasi_id');
+            $table->time('waktu_konsultasi');
             $table->string('nama_pemohon');
             $table->string('jabatan_pemohon');
             $table->string('instansi');
-            $table->date('tanggal_konsultasi');
-            $table->string('waktu_konsultasi');
-            $table->enum('pelaksanaan', ['Luring', 'Daring', 'Hybrid']);
-            $table->foreignId('lokasi_konsultasi_id')->nullable()->constrained('lokasi_konsultasis');
             $table->text('rencana_kegiatan');
             $table->string('kabupaten');
             $table->string('provinsi');

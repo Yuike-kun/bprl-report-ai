@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
@@ -18,5 +17,10 @@ class JadwalKonsultasi extends Model
     public function lokasi()
     {
         return $this->belongsTo(LokasiKonsultasi::class, 'lokasi_konsultasi_id');
+    }
+
+    public function child_schedules()
+    {
+        return $this->hasMany(ChildSchedule::class, 'schedule_id');
     }
 }

@@ -1,9 +1,11 @@
 <?php
 namespace App\Http\Controllers;
 
+use App\Models\ChildSchedule;
 use App\Models\JadwalKonsultasi;
 use App\Models\LokasiKonsultasi;
 use App\Models\PermohonanKonsultasi;
+use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -13,22 +15,31 @@ class RequestFormController extends Controller
 {
     public function index(): Response
     {
-        $usageBySlot = PermohonanKonsultasi::query()
-            ->selectRaw('tanggal_konsultasi, waktu_konsultasi, pelaksanaan, lokasi_konsultasi_id, count(*) as total')
-            ->groupBy('tanggal_konsultasi', 'waktu_konsultasi', 'pelaksanaan', 'lokasi_konsultasi_id')
-            ->get()
-            ->keyBy(function ($item) {
-                return $item->tanggal_konsultasi . '|' . $item->waktu_konsultasi . '|' . $item->pelaksanaan . '|' . ($item->lokasi_konsultasi_id ?? 'null');
-            });
+        $usageByChildSchedule = PermohonanKonsultasi::query()
+            ->whereNotNull('child_schedule_id')
+            ->selectRaw('child_schedule_id, count(*) as total')
+            ->groupBy('child_schedule_id')
+            ->pluck('total', 'child_schedule_id');
 
         $schedules = JadwalKonsultasi::query()
-            ->with('lokasi:id,nama_lokasi')
+            ->with(['lokasi:id,nama_lokasi', 'child_schedules'])
+            ->where('tanggal', '>=', now()->format('Y-m-d'))
             ->orderBy('tanggal')
             ->orderBy('waktu_awal')
             ->get(['id', 'tanggal', 'waktu_awal', 'waktu_akhir', 'pelaksanaan', 'lokasi_konsultasi_id', 'kuota_konsultasi'])
-            ->map(function ($schedule) use ($usageBySlot) {
-                $slotKey   = $schedule->tanggal . '|' . $schedule->waktu_awal . '|' . $schedule->pelaksanaan . '|' . ($schedule->lokasi_konsultasi_id ?? 'null');
-                $usedCount = (int) optional($usageBySlot->get($slotKey))->total;
+            ->map(function ($schedule) use ($usageByChildSchedule) {
+                $childSchedules = $schedule->child_schedules
+                    ->map(function ($child) use ($usageByChildSchedule) {
+                        $used = (int) ($usageByChildSchedule[$child->id] ?? 0);
+
+                        return [
+                            'id'               => $child->id,
+                            'waktu'            => $child->waktu,
+                            'kuota_konsultasi' => $child->kuota_konsultasi,
+                            'sisa_kuota'       => max(0, $child->kuota_konsultasi - $used),
+                        ];
+                    })
+                    ->values();
 
                 return [
                     'id'                   => $schedule->id,
@@ -39,7 +50,7 @@ class RequestFormController extends Controller
                     'lokasi_konsultasi_id' => $schedule->lokasi_konsultasi_id,
                     'lokasi_nama'          => $schedule->lokasi?->nama_lokasi,
                     'kuota_konsultasi'     => $schedule->kuota_konsultasi,
-                    'sisa_kuota'           => max(0, $schedule->kuota_konsultasi - $usedCount),
+                    'child_schedules'      => $childSchedules,
                 ];
             })
             ->values();
@@ -59,7 +70,7 @@ class RequestFormController extends Controller
             'jabatan_pemohon'         => ['required', 'string', 'max:255'],
             'instansi'                => ['required', 'string', 'max:255'],
             'tanggal_konsultasi'      => ['required', 'date'],
-            'waktu_konsultasi'        => ['required', 'date_format:H:i'],
+            'child_schedule_id'       => ['required', 'integer', 'exists:child_schedules,id'],
             'pelaksanaan'             => ['required', 'in:Luring,Daring,Hybrid'],
             'lokasi_konsultasi_id'    => ['nullable', 'exists:lokasi_konsultasis,id'],
             'rencana_kegiatan'        => ['required', 'string'],
@@ -81,50 +92,46 @@ class RequestFormController extends Controller
             $validated['lokasi_konsultasi_id'] = null;
         }
 
-        $selectedSchedule = JadwalKonsultasi::query()
-            ->whereDate('tanggal', $validated['tanggal_konsultasi'])
-            ->where('waktu_awal', $validated['waktu_konsultasi'])
-            ->where('pelaksanaan', $validated['pelaksanaan'])
-            ->where(function ($query) use ($validated) {
-                if (empty($validated['lokasi_konsultasi_id'])) {
-                    $query->whereNull('lokasi_konsultasi_id');
-                    return;
-                }
+        $childSchedule  = ChildSchedule::with('schedule')->find($validated['child_schedule_id']);
+        $parentSchedule = $childSchedule?->schedule;
 
-                $query->where('lokasi_konsultasi_id', $validated['lokasi_konsultasi_id']);
-            })
-            ->first();
+        $isValidSlot = $parentSchedule
+        && Carbon::parse($parentSchedule->tanggal)->format('Y-m-d') === $validated['tanggal_konsultasi']
+        && $parentSchedule->pelaksanaan === $validated['pelaksanaan']
+        && (string) ($parentSchedule->lokasi_konsultasi_id ?? '') === (string) ($validated['lokasi_konsultasi_id'] ?? '');
 
-        if (! $selectedSchedule) {
+        if (! $isValidSlot) {
             return back()
-                ->withErrors(['waktu_konsultasi' => 'Jadwal konsultasi tidak valid. Pilih slot yang tersedia dari daftar jadwal.'])
+                ->withErrors(['child_schedule_id' => 'Jadwal konsultasi tidak valid. Pilih slot yang tersedia dari daftar jadwal.'])
                 ->withInput();
         }
 
         $usedQuota = PermohonanKonsultasi::query()
-            ->whereDate('tanggal_konsultasi', $validated['tanggal_konsultasi'])
-            ->where('waktu_konsultasi', $validated['waktu_konsultasi'])
-            ->where('pelaksanaan', $validated['pelaksanaan'])
-            ->where(function ($query) use ($validated) {
-                if (empty($validated['lokasi_konsultasi_id'])) {
-                    $query->whereNull('lokasi_konsultasi_id');
-                    return;
-                }
-
-                $query->where('lokasi_konsultasi_id', $validated['lokasi_konsultasi_id']);
-            })
+            ->where('child_schedule_id', $childSchedule->id)
             ->count();
 
-        if ($usedQuota >= $selectedSchedule->kuota_konsultasi) {
+        if ($usedQuota >= $childSchedule->kuota_konsultasi) {
             return back()
-                ->withErrors(['waktu_konsultasi' => 'Kuota jadwal yang dipilih sudah penuh. Silakan pilih jadwal lain.'])
+                ->withErrors(['child_schedule_id' => 'Kuota slot yang dipilih sudah penuh. Silakan pilih slot lain.'])
                 ->withInput();
         }
 
         PermohonanKonsultasi::create([
-             ...$validated,
-            'status'       => 'dikirim',
-            'tanda_tangan' => null,
+            'jadwal_konsultasi_id'    => $parentSchedule->id,
+            'child_schedule_id'       => $childSchedule->id,
+            'waktu_konsultasi'        => $childSchedule->waktu,
+            'nama_pemohon'            => $validated['nama_pemohon'],
+            'jabatan_pemohon'         => $validated['jabatan_pemohon'],
+            'instansi'                => $validated['instansi'],
+            'rencana_kegiatan'        => $validated['rencana_kegiatan'],
+            'kabupaten'               => $validated['kabupaten'],
+            'provinsi'                => $validated['provinsi'],
+            'nomor_telepon'           => $validated['nomor_telepon'],
+            'email'                   => $validated['email'],
+            'permintaan_khusus'       => $validated['permintaan_khusus'],
+            'setuju_syarat_ketentuan' => $validated['setuju_syarat_ketentuan'],
+            'status'                  => 'dikirim',
+            'tanda_tangan'            => null,
         ]);
 
         return redirect()

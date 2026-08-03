@@ -6,10 +6,25 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Send, CheckCircle2, CalendarDays, Clock3, Building2, UserRound, Mail, Phone, MessageSquareText, FileText, MapPin } from "lucide-react";
 import { Link, useForm, usePage } from "@inertiajs/react";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog"
 
 type Location = {
     id: number;
     nama_lokasi: string;
+};
+
+type ChildScheduleSlot = {
+    id: number;
+    waktu: string;
+    kuota_konsultasi: number;
+    sisa_kuota: number;
 };
 
 type Schedule = {
@@ -21,7 +36,7 @@ type Schedule = {
     lokasi_konsultasi_id: number | null;
     lokasi_nama?: string | null;
     kuota_konsultasi: number;
-    sisa_kuota: number;
+    child_schedules: ChildScheduleSlot[]; // was: any[]
 };
 
 type PageProps = {
@@ -32,6 +47,57 @@ type PageProps = {
     };
 };
 
+function CalendarModal({ schedules }: { schedules: Schedule[] }) {
+    return (
+        <Dialog>
+            <DialogTrigger render={(
+                <Button>
+                    <CalendarDays className="w-4 h-4 mr-2" />
+                    Jadwal Konsultasi
+                </Button>
+            )} />
+            <DialogContent className="sm:max-w-3xl h-full sm:h-auto">
+                <DialogHeader>
+                    <DialogTitle>Jadwal Konsultasi</DialogTitle>
+                    <DialogDescription>
+                        Berikut adalah jadwal konsultasi yang tersedia.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="w-full overflow-x-auto rounded-md border">
+                    <table className="w-full min-w-150 text-sm border-collapse">
+                        <thead>
+                            <tr className="border-b bg-slate-50">
+                                <th className="text-left py-2 px-3 font-medium whitespace-nowrap">Tanggal</th>
+                                <th className="text-left py-2 px-3 font-medium whitespace-nowrap">Waktu</th>
+                                <th className="text-left py-2 px-3 font-medium whitespace-nowrap">Pelaksanaan</th>
+                                <th className="text-left py-2 px-3 font-medium whitespace-nowrap">Lokasi</th>
+                                <th className="text-left py-2 px-3 font-medium whitespace-nowrap">Kuota</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {schedules.length > 0 ? schedules.map((schedule) => (
+                                <tr key={schedule.id} className="border-b last:border-0">
+                                    <td className="py-2 px-3 whitespace-nowrap">{schedule.tanggal}</td>
+                                    <td className="py-2 px-3 whitespace-nowrap">{schedule.waktu_awal} - {schedule.waktu_akhir}</td>
+                                    <td className="py-2 px-3 whitespace-nowrap">{schedule.pelaksanaan}</td>
+                                    <td className="py-2 px-3">{schedule.lokasi_nama}</td>
+                                    <td className="py-2 px-3 whitespace-nowrap">{schedule.kuota_konsultasi}</td>
+                                </tr>
+                            )) : (
+                                <tr>
+                                    <td colSpan={5} className="py-4 px-3 text-center text-slate-500">
+                                        Tidak ada jadwal konsultasi yang tersedia.
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
 export default function RequestForm() {
     const { locations, schedules, flash } = usePage<PageProps>().props;
 
@@ -40,7 +106,7 @@ export default function RequestForm() {
         jabatan_pemohon: "",
         instansi: "",
         tanggal_konsultasi: "",
-        waktu_konsultasi: "",
+        child_schedule_id: "", // was: waktu_konsultasi
         pelaksanaan: "Daring",
         lokasi_konsultasi_id: "",
         rencana_kegiatan: "",
@@ -61,34 +127,40 @@ export default function RequestForm() {
         });
     };
 
-    const activeSchedules = schedules.filter((item) => item.sisa_kuota > 0);
+    // sebelumnya pakai item.sisa_kuota di level parent — sekarang kuota ada di tiap child slot
+    const activeSchedules = schedules.filter((item) =>
+        item.child_schedules.some((slot) => slot.sisa_kuota > 0)
+    );
     const needsLocation = data.pelaksanaan === 'Luring' || data.pelaksanaan === 'Hybrid';
 
     const matchingSchedules = activeSchedules.filter((item) => {
         if (item.pelaksanaan !== data.pelaksanaan) {
             return false;
         }
-
         if (data.pelaksanaan === 'Daring') {
             return item.lokasi_konsultasi_id === null;
         }
-
         return String(item.lokasi_konsultasi_id ?? '') === data.lokasi_konsultasi_id;
     });
 
     const dateOptions = Array.from(new Set(matchingSchedules.map((item) => item.tanggal)));
 
-    const timeOptions = matchingSchedules.filter((item) => item.tanggal === data.tanggal_konsultasi);
+    const matchedSchedule = matchingSchedules.find(
+        (item) => item.tanggal.slice(0, 10) === data.tanggal_konsultasi
+    );
+
+    const timeOptions = (matchedSchedule?.child_schedules ?? []).filter((slot) => slot.sisa_kuota > 0);
 
     return (
         <HomeLayout>
             <div className="w-full max-w-5xl mx-auto py-12 px-4">
 
-                <div className="mb-6">
+                <div className="mb-6 flex justify-between">
                     <Link href="/" className="inline-flex items-center text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors">
                         <ArrowLeft className="w-4 h-4 mr-2" />
                         Kembali ke Beranda
                     </Link>
+                    <CalendarModal schedules={schedules} />
                 </div>
 
                 <div className="relative">
@@ -235,19 +307,19 @@ export default function RequestForm() {
                                         </Label>
                                         <select
                                             id="waktu_konsultasi"
-                                            value={data.waktu_konsultasi}
-                                            onChange={(e) => setData('waktu_konsultasi', e.target.value)}
+                                            value={data.child_schedule_id}
+                                            onChange={(e) => setData('child_schedule_id', e.target.value)}
                                             disabled={!data.tanggal_konsultasi}
                                             className="h-12 w-full rounded-xl border border-slate-200 bg-white/50 px-4 text-sm text-slate-700 outline-none transition-colors focus-visible:bg-white focus-visible:ring-2 focus-visible:ring-indigo-200 disabled:cursor-not-allowed disabled:bg-slate-100"
                                         >
                                             <option value="">{data.tanggal_konsultasi ? 'Pilih waktu jadwal' : 'Pilih tanggal terlebih dahulu'}</option>
                                             {timeOptions.map((slot) => (
-                                                <option key={slot.id} value={slot.waktu_awal}>
-                                                    {slot.waktu_awal.slice(0, 5)} - {slot.waktu_akhir.slice(0, 5)} · Sisa kuota {slot.sisa_kuota}
+                                                <option key={slot.id} value={String(slot.id)}>
+                                                    {slot.waktu} · Sisa kuota {slot.sisa_kuota}
                                                 </option>
                                             ))}
                                         </select>
-                                        {errors.waktu_konsultasi && <p className="text-sm text-red-500">{errors.waktu_konsultasi}</p>}
+                                        {errors.child_schedule_id && <p className="text-sm text-red-500">{errors.child_schedule_id}</p>}
                                     </div>
                                 </div>
 
