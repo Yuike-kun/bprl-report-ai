@@ -33,14 +33,20 @@ function Sidebar({ collapsed }: { collapsed: boolean }) {
     return (
         <aside
             className={cn(
-                "bg-slate-950 text-slate-300 flex flex-col transition-all duration-300 ease-in-out border-r border-slate-800/80 z-20 shrink-0 overflow-hidden",
+                "relative bg-slate-950/80 backdrop-blur-2xl text-slate-300 flex flex-col transition-all duration-300 ease-in-out border-r border-white/10 z-20 shrink-0 overflow-hidden",
                 collapsed ? "w-18" : "w-64"
             )}
         >
+            {/* Ambient blue glow */}
+            <div className="pointer-events-none absolute inset-0 overflow-hidden">
+                <div className="absolute -top-20 -left-10 h-52 w-52 rounded-full bg-blue-600/20 blur-3xl" />
+                <div className="absolute top-1/2 -right-16 h-52 w-52 rounded-full bg-cyan-500/10 blur-3xl" />
+            </div>
+
             {/* Brand */}
-            <div className="h-16 flex items-center border-b border-slate-800/80 bg-slate-950 px-4 shrink-0">
+            <div className="relative h-16 flex items-center border-b border-white/10 px-4 shrink-0">
                 <div className={cn("flex items-center gap-3 w-full", collapsed && "justify-center")}>
-                    <div className="w-8 h-8 shrink-0 rounded-lg bg-linear-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                    <div className="w-8 h-8 shrink-0 rounded-lg bg-linear-to-br from-blue-500 to-cyan-400 flex items-center justify-center shadow-lg shadow-blue-500/30">
                         <FileText className="w-4 h-4 text-white" />
                     </div>
                     {!collapsed && (
@@ -53,7 +59,7 @@ function Sidebar({ collapsed }: { collapsed: boolean }) {
             </div>
 
             {/* Navigation */}
-            <nav className="flex-1 py-3 flex flex-col gap-0.5 overflow-y-auto px-2">
+            <nav className="relative flex-1 py-3 flex flex-col gap-0.5 overflow-y-auto px-2">
                 {!collapsed && (
                     <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest px-3 py-2 mt-1">
                         Navigasi
@@ -69,26 +75,26 @@ function Sidebar({ collapsed }: { collapsed: boolean }) {
                             className={cn(
                                 "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 group relative",
                                 isActive
-                                    ? "bg-indigo-500/15 text-indigo-300"
-                                    : "text-slate-400 hover:bg-white/5 hover:text-slate-100",
+                                    ? "bg-blue-500/15 text-blue-300 border border-blue-400/20"
+                                    : "text-slate-400 hover:bg-white/5 hover:text-slate-100 border border-transparent",
                                 collapsed && "justify-center"
                             )}
                         >
                             <LayoutDashboard
                                 className={cn(
                                     "w-[18px] h-[18px] shrink-0",
-                                    isActive ? "text-indigo-400" : "text-slate-500 group-hover:text-slate-300"
+                                    isActive ? "text-blue-400" : "text-slate-500 group-hover:text-slate-300"
                                 )}
                             />
                             {!collapsed && (
                                 <>
                                     <span className="truncate flex-1">{menu.label}</span>
-                                    {isActive && <ChevronRight className="w-3 h-3 text-indigo-500 shrink-0" />}
+                                    {isActive && <ChevronRight className="w-3 h-3 text-blue-400 shrink-0" />}
                                 </>
                             )}
                             {/* Active bar */}
                             {isActive && (
-                                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-indigo-500 rounded-r-full" />
+                                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-gradient-to-b from-blue-400 to-cyan-400 rounded-r-full shadow-[0_0_8px_rgba(59,130,246,0.6)]" />
                             )}
                         </Link>
                     );
@@ -115,8 +121,8 @@ function Sidebar({ collapsed }: { collapsed: boolean }) {
 
             {/* Footer */}
             {!collapsed && (
-                <div className="p-3 border-t border-slate-800/80 shrink-0">
-                    <div className="bg-white/5 rounded-xl px-3 py-2.5 text-center">
+                <div className="relative p-3 border-t border-white/10 shrink-0">
+                    <div className="bg-white/5 border border-white/5 rounded-xl px-3 py-2.5 text-center">
                         <p className="text-[11px] font-semibold text-slate-400 truncate">Trika Media Solusindo © {new Date().getFullYear()}</p>
                     </div>
                 </div>
@@ -147,10 +153,10 @@ function ProfileDropdown({ user }: { user: any }) {
         <div className="relative" ref={ref}>
             <button
                 onClick={() => setOpen(v => !v)}
-                className="flex items-center gap-2 rounded-xl py-1.5 px-2 pr-3 hover:bg-slate-100 transition-colors focus:outline-none"
+                className="flex items-center gap-2 rounded-xl py-1.5 px-2 pr-3 hover:bg-blue-50/80 transition-colors focus:outline-none"
             >
-                <Avatar className="h-8 w-8 border-2 border-indigo-100 shadow-sm">
-                    <AvatarFallback className="bg-indigo-600 text-white font-bold text-xs">
+                <Avatar className="h-8 w-8 border-2 border-blue-200/70 shadow-sm">
+                    <AvatarFallback className="bg-gradient-to-br from-blue-600 to-cyan-500 text-white font-bold text-xs">
                         {initial}
                     </AvatarFallback>
                 </Avatar>
@@ -162,11 +168,11 @@ function ProfileDropdown({ user }: { user: any }) {
             </button>
 
             {open && (
-                <div className="absolute right-0 mt-2 w-60 bg-white rounded-2xl border border-slate-200 shadow-2xl shadow-slate-300/30 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                <div className="absolute right-0 mt-2 w-60 bg-white/80 backdrop-blur-xl backdrop-saturate-150 rounded-2xl border border-white/60 shadow-2xl shadow-blue-900/10 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-150">
                     {/* Header */}
-                    <div className="flex items-center gap-3 px-4 py-3.5 border-b border-slate-100 bg-slate-50">
-                        <Avatar className="h-10 w-10 border-2 border-indigo-100">
-                            <AvatarFallback className="bg-indigo-600 text-white font-bold text-sm">
+                    <div className="flex items-center gap-3 px-4 py-3.5 border-b border-white/60 bg-blue-50/50">
+                        <Avatar className="h-10 w-10 border-2 border-blue-200/70">
+                            <AvatarFallback className="bg-gradient-to-br from-blue-600 to-cyan-500 text-white font-bold text-sm">
                                 {initial}
                             </AvatarFallback>
                         </Avatar>
@@ -180,28 +186,28 @@ function ProfileDropdown({ user }: { user: any }) {
                     <div className="p-1.5">
                         <Link
                             href="/profile"
-                            className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-slate-700 hover:bg-slate-100 rounded-xl transition-colors w-full font-medium"
+                            className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-slate-700 hover:bg-blue-50/80 rounded-xl transition-colors w-full font-medium"
                             onClick={() => setOpen(false)}
                         >
-                            <User className="w-4 h-4 text-slate-400" />
+                            <User className="w-4 h-4 text-blue-400" />
                             Profil Saya
                         </Link>
                         <Link
                             href="/settings"
-                            className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-slate-700 hover:bg-slate-100 rounded-xl transition-colors w-full font-medium"
+                            className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-slate-700 hover:bg-blue-50/80 rounded-xl transition-colors w-full font-medium"
                             onClick={() => setOpen(false)}
                         >
-                            <Settings className="w-4 h-4 text-slate-400" />
+                            <Settings className="w-4 h-4 text-blue-400" />
                             Pengaturan Akun
                         </Link>
                     </div>
 
-                    <div className="p-1.5 border-t border-slate-100">
+                    <div className="p-1.5 border-t border-white/60">
                         <Link
                             href="/logout"
                             method="post"
                             as="button"
-                            className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 rounded-xl transition-colors"
+                            className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50/80 rounded-xl transition-colors"
                             onClick={() => setOpen(false)}
                         >
                             <LogOut className="w-4 h-4" />
@@ -227,14 +233,20 @@ function Navbar({
     user?: any;
 }) {
     return (
-        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 lg:px-6 sticky top-0 z-30 shrink-0">
+        <header className="relative h-16 bg-white/60 backdrop-blur-2xl backdrop-saturate-150 border-b border-white/60 shadow-[0_8px_32px_-8px_rgba(37,99,235,0.15)] flex items-center justify-between px-4 lg:px-6 sticky top-0 z-30 shrink-0">
+            {/* Ambient blue glow */}
+            <div className="pointer-events-none absolute inset-0 overflow-hidden">
+                <div className="absolute -top-16 left-1/3 h-32 w-32 rounded-full bg-blue-400/15 blur-3xl" />
+                <div className="absolute -top-16 right-1/4 h-32 w-32 rounded-full bg-cyan-300/15 blur-3xl" />
+            </div>
+
             {/* Left */}
-            <div className="flex items-center gap-3">
+            <div className="relative flex items-center gap-3">
                 <Button
                     variant="ghost"
                     size="icon"
                     onClick={onToggleSidebar}
-                    className="text-slate-500 hover:bg-slate-100 rounded-xl shrink-0"
+                    className="text-slate-500 hover:bg-blue-50/80 hover:text-blue-600 rounded-xl shrink-0"
                     aria-label="Toggle sidebar"
                 >
                     <Menu className="w-5 h-5" />
@@ -246,25 +258,23 @@ function Navbar({
             </div>
 
             {/* Right */}
-            <div className="flex items-center gap-1 sm:gap-2">
-                {/* Search */}
-                <div className="hidden lg:flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 w-56 xl:w-72 focus-within:ring-2 focus-within:ring-indigo-200 focus-within:border-indigo-400 transition-all">
+            <div className="relative flex items-center gap-1 sm:gap-2">
+                {/* <div className="hidden lg:flex items-center gap-2 bg-white/50 border border-white/70 rounded-xl px-3 py-2 w-56 xl:w-72 focus-within:ring-2 focus-within:ring-blue-300/50 focus-within:border-blue-400/60 transition-all">
                     <Search className="w-4 h-4 text-slate-400 shrink-0" />
                     <input
                         type="text"
                         placeholder="Cari laporan..."
                         className="bg-transparent text-sm text-slate-700 w-full outline-none placeholder:text-slate-400"
                     />
-                    <kbd className="hidden xl:inline-flex items-center gap-1 rounded-md bg-slate-100 border border-slate-200 px-1.5 py-0.5 text-[10px] text-slate-500 font-mono shrink-0">
+                    <kbd className="hidden xl:inline-flex items-center gap-1 rounded-md bg-white/70 border border-white/70 px-1.5 py-0.5 text-[10px] text-slate-500 font-mono shrink-0">
                         ⌘K
                     </kbd>
                 </div>
 
-                {/* Quick actions */}
                 <div className="flex items-center gap-1 ml-1">
                     <Tooltip>
                         <TooltipTrigger
-                            className="inline-flex items-center justify-center rounded-xl w-9 h-9 text-slate-500 hover:bg-slate-100 hover:text-indigo-600 transition-colors"
+                            className="inline-flex items-center justify-center rounded-xl w-9 h-9 text-slate-500 hover:bg-blue-50/80 hover:text-blue-600 transition-colors"
                             render={<button />}
                         >
                             <PlusCircle className="w-5 h-5" />
@@ -274,7 +284,7 @@ function Navbar({
 
                     <Tooltip>
                         <TooltipTrigger
-                            className="inline-flex items-center justify-center rounded-xl w-9 h-9 text-slate-500 hover:bg-slate-100 hover:text-indigo-600 transition-colors relative"
+                            className="inline-flex items-center justify-center rounded-xl w-9 h-9 text-slate-500 hover:bg-blue-50/80 hover:text-blue-600 transition-colors relative"
                             render={<button />}
                         >
                             <Bell className="w-5 h-5" />
@@ -282,9 +292,9 @@ function Navbar({
                         </TooltipTrigger>
                         <TooltipContent side="bottom">Notifikasi</TooltipContent>
                     </Tooltip>
-                </div>
+                </div> */}
 
-                <div className="w-px h-6 bg-slate-200 mx-1 shrink-0" />
+                <div className="w-px h-6 bg-gradient-to-b from-transparent via-blue-300/50 to-transparent mx-1 shrink-0" />
 
                 <ProfileDropdown user={user} />
             </div>
@@ -308,7 +318,7 @@ export default function MainLayout({
 
     return (
         <TooltipProvider delay={100}>
-            <div className="flex h-screen w-full bg-slate-50 overflow-hidden antialiased">
+            <div className="flex h-screen w-full bg-gradient-to-br from-slate-50 via-blue-50/40 to-slate-50 overflow-hidden antialiased">
                 <Sidebar collapsed={collapsed} />
 
                 <div className="flex-1 flex flex-col min-w-0 overflow-hidden">

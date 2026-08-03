@@ -244,3 +244,26 @@
     @apply font-sans;
     }
 }
+
+table {
+  @apply w-full text-sm text-left table-auto;
+}
+
+thead {
+  @apply text-xs uppercase bg-gray-100;
+}
+tr > th {
+  @apply p-4 border-b;
+}
+
+tr > td:not(:last-child) {
+  @apply border-r;
+}
+
+tr > td {
+  @apply px-4 py-3;
+}
+
+table tr:last-child {
+  @apply border-b;
+}
