@@ -27,19 +27,19 @@ class RequestFormController extends Controller
             ->orderBy('waktu_awal')
             ->get(['id', 'tanggal', 'waktu_awal', 'waktu_akhir', 'pelaksanaan', 'lokasi_konsultasi_id', 'kuota_konsultasi'])
             ->map(function ($schedule) use ($usageBySlot) {
-                $slotKey = $schedule->tanggal . '|' . $schedule->waktu_awal . '|' . $schedule->pelaksanaan . '|' . ($schedule->lokasi_konsultasi_id ?? 'null');
+                $slotKey   = $schedule->tanggal . '|' . $schedule->waktu_awal . '|' . $schedule->pelaksanaan . '|' . ($schedule->lokasi_konsultasi_id ?? 'null');
                 $usedCount = (int) optional($usageBySlot->get($slotKey))->total;
 
                 return [
-                    'id' => $schedule->id,
-                    'tanggal' => $schedule->tanggal,
-                    'waktu_awal' => $schedule->waktu_awal,
-                    'waktu_akhir' => $schedule->waktu_akhir,
-                    'pelaksanaan' => $schedule->pelaksanaan,
+                    'id'                   => $schedule->id,
+                    'tanggal'              => $schedule->tanggal,
+                    'waktu_awal'           => $schedule->waktu_awal,
+                    'waktu_akhir'          => $schedule->waktu_akhir,
+                    'pelaksanaan'          => $schedule->pelaksanaan,
                     'lokasi_konsultasi_id' => $schedule->lokasi_konsultasi_id,
-                    'lokasi_nama' => $schedule->lokasi?->nama_lokasi,
-                    'kuota_konsultasi' => $schedule->kuota_konsultasi,
-                    'sisa_kuota' => max(0, $schedule->kuota_konsultasi - $usedCount),
+                    'lokasi_nama'          => $schedule->lokasi?->nama_lokasi,
+                    'kuota_konsultasi'     => $schedule->kuota_konsultasi,
+                    'sisa_kuota'           => max(0, $schedule->kuota_konsultasi - $usedCount),
                 ];
             })
             ->values();
@@ -55,19 +55,19 @@ class RequestFormController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'nama_pemohon' => ['required', 'string', 'max:255'],
-            'jabatan_pemohon' => ['required', 'string', 'max:255'],
-            'instansi' => ['required', 'string', 'max:255'],
-            'tanggal_konsultasi' => ['required', 'date'],
-            'waktu_konsultasi' => ['required', 'date_format:H:i'],
-            'pelaksanaan' => ['required', 'in:Luring,Daring,Hybrid'],
-            'lokasi_konsultasi_id' => ['nullable', 'exists:lokasi_konsultasis,id'],
-            'rencana_kegiatan' => ['required', 'string'],
-            'kabupaten' => ['required', 'string', 'max:255'],
-            'provinsi' => ['required', 'string', 'max:255'],
-            'nomor_telepon' => ['required', 'string', 'max:30'],
-            'email' => ['required', 'email', 'max:255'],
-            'permintaan_khusus' => ['nullable', 'string'],
+            'nama_pemohon'            => ['required', 'string', 'max:255'],
+            'jabatan_pemohon'         => ['required', 'string', 'max:255'],
+            'instansi'                => ['required', 'string', 'max:255'],
+            'tanggal_konsultasi'      => ['required', 'date'],
+            'waktu_konsultasi'        => ['required', 'date_format:H:i'],
+            'pelaksanaan'             => ['required', 'in:Luring,Daring,Hybrid'],
+            'lokasi_konsultasi_id'    => ['nullable', 'exists:lokasi_konsultasis,id'],
+            'rencana_kegiatan'        => ['required', 'string'],
+            'kabupaten'               => ['required', 'string', 'max:255'],
+            'provinsi'                => ['required', 'string', 'max:255'],
+            'nomor_telepon'           => ['required', 'string', 'max:30'],
+            'email'                   => ['required', 'email', 'max:255'],
+            'permintaan_khusus'       => ['nullable', 'string'],
             'setuju_syarat_ketentuan' => ['accepted'],
         ]);
 
@@ -122,8 +122,8 @@ class RequestFormController extends Controller
         }
 
         PermohonanKonsultasi::create([
-            ...$validated,
-            'status' => 'dikirim',
+             ...$validated,
+            'status'       => 'dikirim',
             'tanda_tangan' => null,
         ]);
 

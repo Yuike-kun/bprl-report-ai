@@ -83,7 +83,7 @@ export default function RequestForm() {
     return (
         <HomeLayout>
             <div className="w-full max-w-5xl mx-auto py-12 px-4">
-                
+
                 <div className="mb-6">
                     <Link href="/" className="inline-flex items-center text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors">
                         <ArrowLeft className="w-4 h-4 mr-2" />
@@ -94,9 +94,9 @@ export default function RequestForm() {
                 <div className="relative">
                     {/* Glowing effect behind card */}
                     <div className="absolute -inset-1 rounded-2xl bg-linear-to-br from-blue-400 to-indigo-500 opacity-20 blur-xl"></div>
-                    
+
                     <Card className="relative shadow-2xl border-slate-200/60 backdrop-blur-xl bg-slate-100/80 overflow-hidden">
-                        
+
                         {/* Top Accent Line */}
                         <div className="h-2 w-full bg-linear-to-r from-blue-500 to-indigo-500"></div>
 
@@ -145,6 +145,59 @@ export default function RequestForm() {
                                     </Label>
                                     <Input id="instansi" value={data.instansi} onChange={(e) => setData('instansi', e.target.value)} placeholder="Nama instansi atau perusahaan" className="h-12 bg-white/50 focus-visible:bg-white text-md transition-colors" />
                                     {errors.instansi && <p className="text-sm text-red-500">{errors.instansi}</p>}
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 w-full">
+                                    <div className="space-y-3">
+                                        <Label htmlFor="pelaksanaan" className="text-slate-700 font-semibold text-sm inline-flex items-center gap-2">
+                                            <MapPin className="h-4 w-4 text-slate-400" />
+                                            Pelaksanaan
+                                        </Label>
+                                        <select
+                                            id="pelaksanaan"
+                                            value={data.pelaksanaan}
+                                            onChange={(e) => {
+                                                setData('pelaksanaan', e.target.value);
+                                                setData('tanggal_konsultasi', '');
+                                                setData('waktu_konsultasi', '');
+                                                if (e.target.value === 'Daring') {
+                                                    setData('lokasi_konsultasi_id', '');
+                                                }
+                                            }}
+                                            className="h-12 w-full rounded-xl border border-slate-200 bg-white/50 px-4 text-sm text-slate-700 outline-none transition-colors focus-visible:bg-white focus-visible:ring-2 focus-visible:ring-indigo-200"
+                                        >
+                                            <option value="Daring">Daring</option>
+                                            <option value="Luring">Luring</option>
+                                            <option value="Hybrid">Hybrid</option>
+                                        </select>
+                                        {errors.pelaksanaan && <p className="text-sm text-red-500">{errors.pelaksanaan}</p>}
+                                    </div>
+
+                                    <div className="space-y-3 sm:col-span-2">
+                                        <Label htmlFor="lokasi_konsultasi_id" className="text-slate-700 font-semibold text-sm inline-flex items-center gap-2">
+                                            <MapPin className="h-4 w-4 text-slate-400" />
+                                            Lokasi Konsultasi {needsLocation ? <span className="text-red-500">*</span> : null}
+                                        </Label>
+                                        <select
+                                            id="lokasi_konsultasi_id"
+                                            value={data.lokasi_konsultasi_id}
+                                            onChange={(e) => {
+                                                setData('lokasi_konsultasi_id', e.target.value);
+                                                setData('tanggal_konsultasi', '');
+                                                setData('waktu_konsultasi', '');
+                                            }}
+                                            disabled={!needsLocation}
+                                            className="h-12 w-full rounded-xl border border-slate-200 bg-white/50 px-4 text-sm text-slate-700 outline-none transition-colors focus-visible:bg-white focus-visible:ring-2 focus-visible:ring-indigo-200 disabled:cursor-not-allowed disabled:bg-slate-100"
+                                        >
+                                            <option value="">{needsLocation ? 'Pilih lokasi konsultasi' : 'Tidak diperlukan untuk pelaksanaan daring'}</option>
+                                            {locations.map((location) => (
+                                                <option key={location.id} value={location.id}>
+                                                    {location.nama_lokasi}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        {errors.lokasi_konsultasi_id && <p className="text-sm text-red-500">{errors.lokasi_konsultasi_id}</p>}
+                                    </div>
                                 </div>
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 w-full">
@@ -223,59 +276,6 @@ export default function RequestForm() {
                                         <Label htmlFor="provinsi" className="text-slate-700 font-semibold text-sm">Provinsi</Label>
                                         <Input id="provinsi" value={data.provinsi} onChange={(e) => setData('provinsi', e.target.value)} placeholder="Provinsi" className="h-12 bg-white/50 focus-visible:bg-white text-md transition-colors" />
                                         {errors.provinsi && <p className="text-sm text-red-500">{errors.provinsi}</p>}
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 w-full">
-                                    <div className="space-y-3">
-                                        <Label htmlFor="pelaksanaan" className="text-slate-700 font-semibold text-sm inline-flex items-center gap-2">
-                                            <MapPin className="h-4 w-4 text-slate-400" />
-                                            Pelaksanaan
-                                        </Label>
-                                        <select
-                                            id="pelaksanaan"
-                                            value={data.pelaksanaan}
-                                            onChange={(e) => {
-                                                setData('pelaksanaan', e.target.value);
-                                                setData('tanggal_konsultasi', '');
-                                                setData('waktu_konsultasi', '');
-                                                if (e.target.value === 'Daring') {
-                                                    setData('lokasi_konsultasi_id', '');
-                                                }
-                                            }}
-                                            className="h-12 w-full rounded-xl border border-slate-200 bg-white/50 px-4 text-sm text-slate-700 outline-none transition-colors focus-visible:bg-white focus-visible:ring-2 focus-visible:ring-indigo-200"
-                                        >
-                                            <option value="Daring">Daring</option>
-                                            <option value="Luring">Luring</option>
-                                            <option value="Hybrid">Hybrid</option>
-                                        </select>
-                                        {errors.pelaksanaan && <p className="text-sm text-red-500">{errors.pelaksanaan}</p>}
-                                    </div>
-
-                                    <div className="space-y-3 sm:col-span-2">
-                                        <Label htmlFor="lokasi_konsultasi_id" className="text-slate-700 font-semibold text-sm inline-flex items-center gap-2">
-                                            <MapPin className="h-4 w-4 text-slate-400" />
-                                            Lokasi Konsultasi {needsLocation ? <span className="text-red-500">*</span> : null}
-                                        </Label>
-                                        <select
-                                            id="lokasi_konsultasi_id"
-                                            value={data.lokasi_konsultasi_id}
-                                            onChange={(e) => {
-                                                setData('lokasi_konsultasi_id', e.target.value);
-                                                setData('tanggal_konsultasi', '');
-                                                setData('waktu_konsultasi', '');
-                                            }}
-                                            disabled={!needsLocation}
-                                            className="h-12 w-full rounded-xl border border-slate-200 bg-white/50 px-4 text-sm text-slate-700 outline-none transition-colors focus-visible:bg-white focus-visible:ring-2 focus-visible:ring-indigo-200 disabled:cursor-not-allowed disabled:bg-slate-100"
-                                        >
-                                            <option value="">{needsLocation ? 'Pilih lokasi konsultasi' : 'Tidak diperlukan untuk pelaksanaan daring'}</option>
-                                            {locations.map((location) => (
-                                                <option key={location.id} value={location.id}>
-                                                    {location.nama_lokasi}
-                                                </option>
-                                            ))}
-                                        </select>
-                                        {errors.lokasi_konsultasi_id && <p className="text-sm text-red-500">{errors.lokasi_konsultasi_id}</p>}
                                     </div>
                                 </div>
 
