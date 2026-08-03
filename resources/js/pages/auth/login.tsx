@@ -1,143 +1,223 @@
+import { useState } from 'react';
 import { useForm, Link } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Activity, ArrowLeft, LogIn } from 'lucide-react';
+import {
+    Activity,
+    ArrowLeft,
+    Mail,
+    LockKeyhole,
+    Eye,
+    EyeOff,
+    CircleAlert,
+    CircleCheck,
+    Keyboard,
+    Loader2,
+    LogIn,
+} from 'lucide-react';
 
-export default function LoginPage() {
+export default function LoginPage({ status }) {
     const { data, setData, post, processing, errors } = useForm({
         email: '',
         password: '',
-        remember: false as boolean,
+        remember: false,
     });
 
+    const [showPassword, setShowPassword] = useState(false);
+    const [capsLockOn, setCapsLockOn] = useState(false);
+
+    const trackCapsLock = (event) => {
+        if (event.getModifierState) {
+            setCapsLockOn(event.getModifierState('CapsLock'));
+        }
+    };
+
+    const submitForm = (event) => {
+        event.preventDefault();
+        post('/login');
+    };
+
     return (
-        <div className="min-h-screen w-full relative flex items-center justify-center p-4 selection:bg-blue-100 selection:text-blue-900 overflow-hidden bg-slate-50">
-            {/* Ambient Background Elements */}
-            <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-10 flex justify-center items-center">
-                <div className="absolute top-[-10%] sm:top-[-20%] right-[-10%] w-[50vw] sm:w-125 h-[50vw] sm:h-125 bg-blue-400/20 rounded-full blur-[80px] sm:blur-[120px]"></div>
-                <div className="absolute bottom-[-10%] sm:bottom-[-20%] left-[-10%] w-[60vw] sm:w-150 h-[60vw] sm:h-150 bg-indigo-500/10 rounded-full blur-[80px] sm:blur-[120px]"></div>
-            </div>
+        <div className="min-h-screen relative flex items-center justify-center p-4 bg-linear-to-br from-white via-blue-50/60 to-blue-100/70 text-slate-900 selection:bg-blue-100 selection:text-blue-900">
+            <Link
+                href="/"
+                className="absolute top-6 left-6 z-20 inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-900 px-3 py-2 rounded-lg hover:bg-white/60 transition-colors"
+            >
+                <ArrowLeft className="w-4 h-4" />
+                Kembali
+            </Link>
 
-            <div className="max-w-md w-full relative">
+            <div className="relative z-10 w-full max-w-[400px]">
+                <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                    <div className="h-1 w-full rounded-t-2xl bg-blue-700" />
 
-                <div className="mb-6 flex justify-between items-center px-2">
-                    <Link
-                        href="/"
-                        className="inline-flex items-center text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors group px-4 py-2 rounded-md hover:bg-slate-100"
-                    >
-                        <ArrowLeft className="w-4 h-4 mr-2 transition-transform group-hover:-translate-x-1" />
-                        Kembali
-                    </Link>
-                    <div className="flex items-center gap-2">
-                        <div className="bg-blue-600 text-white p-1 rounded-sm shadow-xs">
-                            <Activity className="w-4 h-4" />
+                    <div className="px-8 pt-9 pb-8">
+                        {/* Header */}
+                        <div className="flex items-center gap-3">
+                            <div className="rounded-lg bg-blue-700 p-2">
+                                <Activity className="w-4 h-4 text-white" />
+                            </div>
+                            <div className="leading-tight">
+                                <p className="font-bold text-sm text-slate-900">BPRL AI</p>
+                                <p className="text-[11px] text-slate-500">
+                                    Balai Penataan Ruang Laut Makassar
+                                </p>
+                            </div>
                         </div>
-                        <span className="font-bold text-slate-800 text-sm">BPRL AI</span>
-                    </div>
-                </div>
 
-                <div className="absolute -inset-1 rounded-[24px] bg-linear-to-b from-blue-300 to-indigo-400 opacity-20 blur-xl pointer-events-none"></div>
+                        <div className="mt-8">
+                            <h1 className="text-xl font-bold tracking-tight text-slate-900">
+                                Masuk ke akun Anda
+                            </h1>
+                            <p className="mt-1.5 text-sm text-slate-500">
+                                Silakan masuk untuk mengakses panel BPRL AI.
+                            </p>
+                        </div>
 
-                <Card className="relative shadow-2xl border-white/40 ring-1 ring-slate-200/50 backdrop-blur-2xl bg-white/80 rounded-2xl overflow-hidden">
+                        {status && (
+                            <div className="mt-5 flex items-center gap-2.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3.5 py-2.5 text-sm text-emerald-700">
+                                <CircleCheck className="w-4 h-4 shrink-0" />
+                                {status}
+                            </div>
+                        )}
 
-                    <div className="h-1.5 w-full bg-linear-to-r from-blue-500 to-indigo-600"></div>
-
-                    <CardHeader className="space-y-2 pb-6 pt-10 px-8 text-center">
-                        <CardTitle className="text-3xl font-extrabold text-slate-900 tracking-tight">
-                            Selamat Datang
-                        </CardTitle>
-                        <CardDescription className="text-slate-500 text-md">
-                            Silakan masuk untuk mengakses panel administrasi.
-                        </CardDescription>
-                    </CardHeader>
-
-                    <form
-                        onSubmit={(e) => {
-                            e.preventDefault();
-                            post('/login');
-                        }}
-                        noValidate
-                    >
-                        <CardContent className="space-y-6 px-8 pb-8">
-                            <div className="space-y-3">
-                                <Label htmlFor="email" className="font-semibold text-slate-700">Alamat Email</Label>
-                                <Input
-                                    id="email"
-                                    type="email"
-                                    autoComplete="email"
-                                    autoFocus
-                                    value={data.email}
-                                    onChange={(e) => setData('email', e.target.value)}
-                                    placeholder="admin@bprl.ac.id"
-                                    className={`h-12 bg-white/60 focus-visible:bg-white text-md transition-colors ${errors.email ? 'border-red-400 focus-visible:ring-red-400' : ''}`}
-                                />
+                        <form onSubmit={submitForm} noValidate className="mt-6 space-y-5">
+                            {/* Email */}
+                            <div className="space-y-2">
+                                <Label htmlFor="email" className="text-sm font-medium text-slate-700">
+                                    Email
+                                </Label>
+                                <div className="relative group">
+                                    <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-blue-600" />
+                                    <Input
+                                        id="email"
+                                        type="email"
+                                        autoComplete="email"
+                                        autoFocus
+                                        value={data.email}
+                                        onChange={(e) => setData('email', e.target.value)}
+                                        placeholder="nama@kkp.go.id"
+                                        aria-invalid={!!errors.email}
+                                        className={`h-11 rounded-lg border bg-white pl-10 placeholder:text-slate-400 transition-colors focus-visible:ring-blue-600/20 ${errors.email
+                                                ? 'border-red-400 focus-visible:border-red-400 focus-visible:ring-red-400/20'
+                                                : 'border-slate-300 hover:border-slate-400'
+                                            }`}
+                                    />
+                                </div>
                                 {errors.email && (
-                                    <p className="text-sm font-medium text-red-500 mt-1">{errors.email}</p>
+                                    <p className="flex items-center gap-1.5 text-sm text-red-600">
+                                        <CircleAlert className="h-3.5 w-3.5 shrink-0" />
+                                        {errors.email}
+                                    </p>
                                 )}
                             </div>
 
-                            <div className="space-y-3">
-                                <Label htmlFor="password" className="font-semibold text-slate-700">Kata Sandi</Label>
-                                <Input
-                                    id="password"
-                                    type="password"
-                                    autoComplete="current-password"
-                                    value={data.password}
-                                    onChange={(e) => setData('password', e.target.value)}
-                                    placeholder="••••••••"
-                                    className={`h-12 bg-white/60 focus-visible:bg-white transition-colors ${errors.password ? 'border-red-400 focus-visible:ring-red-400' : ''}`}
-                                />
+                            {/* Kata Sandi */}
+                            <div className="space-y-2">
+                                <Label htmlFor="password" className="text-sm font-medium text-slate-700">
+                                    Kata Sandi
+                                </Label>
+                                <div className="relative group">
+                                    <LockKeyhole className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-blue-600" />
+                                    <Input
+                                        id="password"
+                                        type={showPassword ? 'text' : 'password'}
+                                        autoComplete="current-password"
+                                        value={data.password}
+                                        onChange={(e) => setData('password', e.target.value)}
+                                        onKeyDown={trackCapsLock}
+                                        onKeyUp={trackCapsLock}
+                                        placeholder="••••••••"
+                                        aria-invalid={!!errors.password}
+                                        className={`h-11 rounded-lg border bg-white pl-10 pr-11 placeholder:text-slate-400 transition-colors focus-visible:ring-blue-600/20 ${errors.password
+                                                ? 'border-red-400 focus-visible:border-red-400 focus-visible:ring-red-400/20'
+                                                : 'border-slate-300 hover:border-slate-400'
+                                            }`}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword((prev) => !prev)}
+                                        aria-label={showPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                                    >
+                                        {showPassword ? (
+                                            <EyeOff className="h-4 w-4" />
+                                        ) : (
+                                            <Eye className="h-4 w-4" />
+                                        )}
+                                    </button>
+                                </div>
+                                {capsLockOn && (
+                                    <p className="flex items-center gap-1.5 text-xs font-medium text-amber-600">
+                                        <Keyboard className="h-3.5 w-3.5 shrink-0" />
+                                        Caps Lock aktif
+                                    </p>
+                                )}
                                 {errors.password && (
-                                    <p className="text-sm font-medium text-red-500 mt-1">{errors.password}</p>
+                                    <p className="flex items-center gap-1.5 text-sm text-red-600">
+                                        <CircleAlert className="h-3.5 w-3.5 shrink-0" />
+                                        {errors.password}
+                                    </p>
                                 )}
                             </div>
 
-                            <div className="flex items-center justify-between pt-2">
-                                <div className="flex items-center gap-2.5">
+                            {/* Ingat saya / Lupa sandi */}
+                            <div className="flex items-center justify-between pt-1">
+                                <div className="flex items-center gap-2">
                                     <Checkbox
                                         id="remember"
                                         checked={data.remember}
                                         onCheckedChange={(checked) => setData('remember', checked === true)}
-                                        className="rounded border-slate-300 text-blue-600 focus:ring-blue-600 h-5 w-5"
+                                        className="border-slate-300 data-[state=checked]:bg-blue-700 data-[state=checked]:border-blue-700"
                                     />
-                                    <Label htmlFor="remember" className="cursor-pointer font-medium text-slate-600 select-none text-sm leading-none">
+                                    <Label
+                                        htmlFor="remember"
+                                        className="cursor-pointer text-sm text-slate-600 leading-none select-none"
+                                    >
                                         Ingat saya
                                     </Label>
                                 </div>
-                                <span className="text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline cursor-pointer transition-all">
+                                <Link
+                                    href="/forgot-password"
+                                    className="text-sm font-medium text-blue-700 hover:text-blue-800 hover:underline underline-offset-4 transition-colors"
+                                >
                                     Lupa sandi?
-                                </span>
+                                </Link>
                             </div>
-                        </CardContent>
-                        <CardFooter className="px-8 pb-10 pt-0">
+
                             <Button
                                 type="submit"
                                 disabled={processing}
-                                className="w-full h-12 bg-slate-900 hover:bg-slate-800 text-white rounded-xl shadow-lg transition-all group font-semibold text-md flex items-center justify-center gap-2"
+                                className="h-11 w-full rounded-lg bg-blue-700 hover:bg-blue-800 active:bg-blue-900 text-white font-medium transition-colors"
                             >
                                 {processing ? (
                                     <span className="flex items-center gap-2">
-                                        <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                        </svg>
+                                        <Loader2 className="h-4 w-4 animate-spin" />
                                         Memproses...
                                     </span>
                                 ) : (
                                     <>
                                         Masuk
-                                        <LogIn className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                                        <LogIn className="w-4 h-4" />
                                     </>
                                 )}
                             </Button>
-                        </CardFooter>
-                    </form>
-                </Card>
-                <p className="text-center text-slate-500 text-sm mt-8">
-                    &copy; {new Date().getFullYear()} Balai Penerapan Mutu Produk Perikanan.
+                        </form>
+                    </div>
+                </div>
+
+                <p className="mt-6 text-center text-xs text-slate-500 leading-relaxed">
+                    &copy; {new Date().getFullYear()} BPRL Makassar &mdash; Kementerian Kelautan dan Perikanan RI
+                    <br />
+                    Butuh bantuan?{' '}
+                    <a
+                        href="mailto:bpsplmakassar@kkp.go.id"
+                        className="font-medium text-slate-700 hover:text-blue-700 hover:underline underline-offset-4"
+                    >
+                        bpsplmakassar@kkp.go.id
+                    </a>
                 </p>
             </div>
         </div>

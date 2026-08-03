@@ -1,110 +1,168 @@
 import HomeLayout from "./layout";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Bot, CheckCircle2, FileText, MousePointerClick, ShieldCheck, Zap } from "lucide-react";
+import { ArrowRight, CheckCircle2, TriangleAlert } from "lucide-react";
 import { Link } from "@inertiajs/react";
-import { Card, CardContent } from "@/components/ui/card";
+import { ReactNode } from "react";
+
+function Eyebrow({ children }: { children: ReactNode }) {
+    return (
+        <span className="inline-flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.2em] text-blue-600">
+            <span className="h-px w-8 bg-blue-600" aria-hidden />
+            {children}
+        </span>
+    );
+}
+
+const hasilUji = [
+    { parameter: "pH", nilai: "6,4", syarat: "≤ 7,0", status: "ok" },
+    { parameter: "TVB-N", nilai: "12,3 mg/100g", syarat: "≤ 30 mg/100g", status: "ok" },
+    { parameter: "TPC", nilai: "4,8 × 10⁵ koloni/g", syarat: "≤ 5 × 10⁵", status: "warn" },
+    { parameter: "Organoleptik", nilai: "8,2", syarat: "≥ 7,0", status: "ok" },
+];
+
+const fitur = [
+    {
+        judul: "Antrian terukur",
+        desc: "Setiap permohonan diberi nomor antrian dan estimasi pengerjaan sesuai jenis layanan. Tidak ada yang 'terlupakan'.",
+    },
+    {
+        judul: "Status bisa dipantau",
+        desc: "Dari verifikasi administrasi sampai penerbitan laporan, setiap tahap tercatat dan bisa dicek kapan saja.",
+    },
+    {
+        judul: "Berpijak pada standar",
+        desc: "Penilaian mengacu pada SNI, prinsip HACCP, dan regulasi terkait — bukan perkiraan.",
+    },
+];
+
+const langkah = [
+    {
+        nomor: "01",
+        kicker: "Pendaftaran",
+        judul: "Ajukan permohonan daring",
+        desc: "Isi form dan unggah dokumen pendukung. Permohonan masuk antrian dengan nomor tanda terima.",
+    },
+    {
+        nomor: "02",
+        kicker: "Verifikasi",
+        judul: "Dokumen & kelengkapan dicek",
+        desc: "Petugas memverifikasi administrasi dan hasil uji. Jika ada yang kurang, akan ada notifikasi revisi.",
+    },
+    {
+        nomor: "03",
+        kicker: "Penerbitan",
+        judul: "Laporan final diterbitkan",
+        desc: "Setelah disahkan, laporan bisa diunduh lengkap dengan nomor surat dan tanda tangan digital.",
+    },
+];
 
 export default function Welcome() {
     return (
         <HomeLayout>
-            <div className="flex flex-col items-center justify-center space-y-20 py-10 lg:py-20 w-full animate-in fade-in slide-in-from-bottom-4 duration-1000">
-                
-                {/* Hero Section */}
-                <div className="text-center space-y-8 max-w-4xl mx-auto px-4">
-                    <div className="inline-flex items-center rounded-full border border-blue-200 bg-white/50 backdrop-blur-md px-4 py-2 text-sm font-semibold text-blue-700 shadow-xs mb-4">
-                        <span className="relative flex h-2.5 w-2.5 mr-2">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-500"></span>
-                        </span>
-                        BPRL Report AI v2.0 is Live
-                    </div>
-                    
-                    <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight text-slate-900 leading-[1.15]">
-                        Otomatisasi Analisis <br className="hidden md:block" />
-                        <span className="text-transparent bg-clip-text bg-linear-to-r from-blue-600 to-indigo-500">
-                            Konsultasi BPRL
-                        </span>
-                    </h1>
-                    
-                    <p className="text-xl text-slate-600 max-w-2xl mx-auto leading-relaxed">
-                        Platform cerdas berbasis kecerdasan buatan untuk registrasi, analisis, dan penerbitan laporan konsultasi mutu produk perikanan secara real-time.
-                    </p>
+            <div className="w-full space-y-20 lg:space-y-28 animate-in fade-in duration-500">
 
-                    <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-                        <Link href="/request-form" className="w-full sm:w-auto">
-                            <Button className="w-full sm:w-auto h-14 px-8 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg shadow-blue-500/30 text-lg transition-transform hover:scale-105 active:scale-95 group">
-                                Mulai Registrasi
-                                <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
-                            </Button>
-                        </Link>
-                        <Button variant="outline" className="w-full sm:w-auto h-14 px-8 rounded-full text-lg border-slate-300 text-slate-700 hover:bg-slate-100 transition-transform hover:scale-105">
-                            Pelajari Lebih Lanjut
+                {/* ================= HERO ================= */}
+                <section className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
+                    <div className="space-y-6">
+                        <Eyebrow>Gerai Pelayanan BPRL Makassar</Eyebrow>
+
+                        <h1 className="text-4xl font-bold leading-[1.12] tracking-tight text-slate-900 md:text-5xl">
+                            Laporan konsultasi BPRL,{" "}
+                            <span className="text-blue-600">dengan antrian yang terukur.</span>
+                        </h1>
+
+                        <p className="max-w-lg text-lg leading-relaxed text-slate-600">
+                            Ajukan permohonan konsultasi mutu hasil perikanan secara daring.
+                            Setiap permohonan mendapat nomor antrian, estimasi pengerjaan,
+                            dan status yang bisa dipantau kapan saja.
+                        </p>
+
+                        <div className="flex flex-col gap-4 pt-2 sm:flex-row sm:items-center">
+                            <Link href="/request-form">
+                                <Button className="h-12 rounded-full bg-blue-600 px-8 text-white shadow-md shadow-blue-600/20 hover:bg-blue-700">
+                                    Ajukan Permohonan
+                                    <ArrowRight className="ml-2 h-4 w-4" />
+                                </Button>
+                            </Link>
+                            <a
+                                href="#alur"
+                                className="px-2 py-2 text-sm font-semibold text-slate-600 transition-colors hover:text-blue-600"
+                            >
+                                Lihat alur pelayanan ↓
+                            </a>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-slate-200 pt-5 text-xs text-slate-500">
+                            <span className="flex items-center gap-2">
+                                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                                Sesuai SNI & HACCP
+                            </span>
+                            <span className="flex items-center gap-2">
+                                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                                Nomor tanda terima resmi
+                            </span>
+                            <span className="flex items-center gap-2">
+                                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                                Status real-time
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* Contoh tanda terima / laporan */}
+                    {/* <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg shadow-slate-900/5">
+                    </div> */}
+                    <img src={'/hero.png'} />
+                </section>
+
+                {/* ================= FITUR ================= */}
+                <section className="space-y-8">
+                    <Eyebrow>Pelayanan</Eyebrow>
+                    <div className="grid gap-x-10 gap-y-8 border-t border-slate-200 pt-8 md:grid-cols-3">
+                        {fitur.map((f) => (
+                            <div key={f.judul}>
+                                <h3 className="text-lg font-bold text-slate-900">{f.judul}</h3>
+                                <p className="mt-2 text-sm leading-relaxed text-slate-600">{f.desc}</p>
+                            </div>
+                        ))}
+                    </div>
+                </section>
+
+                {/* ================= ALUR ================= */}
+                <section id="alur" className="scroll-mt-28 space-y-8">
+                    <Eyebrow>Alur pelayanan</Eyebrow>
+                    <div className="grid gap-10 border-t border-slate-200 pt-8 md:grid-cols-3">
+                        {langkah.map((s) => (
+                            <div key={s.nomor} className="md:pr-10">
+                                <div className="flex items-baseline gap-3">
+                                    <span className="font-mono text-sm font-bold text-blue-600">{s.nomor}</span>
+                                    <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+                                        {s.kicker}
+                                    </span>
+                                </div>
+                                <h3 className="mt-3 text-lg font-bold text-slate-900">{s.judul}</h3>
+                                <p className="mt-2 text-sm leading-relaxed text-slate-600">{s.desc}</p>
+                            </div>
+                        ))}
+                    </div>
+                </section>
+
+                {/* ================= CTA ================= */}
+                <section className="flex flex-col gap-6 rounded-2xl border border-slate-200 bg-white px-8 py-10 md:flex-row md:items-center md:justify-between lg:px-12">
+                    <div className="max-w-xl space-y-2">
+                        <h2 className="text-2xl font-bold text-slate-900 lg:text-3xl">
+                            Ajukan permohonan sekarang
+                        </h2>
+                        <p className="text-slate-600">
+                            Isi form daring, dapatkan nomor antrian, dan pantau status permohonan Anda kapan saja.
+                        </p>
+                    </div>
+                    <Link href="/request-form" className="shrink-0">
+                        <Button className="h-12 rounded-full bg-blue-600 px-8 text-white hover:bg-blue-700">
+                            Ajukan Permohonan
+                            <ArrowRight className="ml-2 h-4 w-4" />
                         </Button>
-                    </div>
-                </div>
-
-                {/* Features Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-5xl px-4 lg:px-0 pt-10">
-                    
-                    <Card className="bg-white/60 backdrop-blur-md border-slate-200/60 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-                        <CardContent className="p-8 space-y-4">
-                            <div className="bg-amber-100 w-14 h-14 rounded-2xl flex items-center justify-center mb-6">
-                                <Zap className="h-7 w-7 text-amber-600" />
-                            </div>
-                            <h3 className="text-2xl font-bold text-slate-800">Proses Cepat</h3>
-                            <p className="text-slate-600 leading-relaxed">
-                                Form registrasi yang intuitif dan sistem otomasi memangkas waktu tunggu dari berhari-hari menjadi beberapa menit saja.
-                            </p>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="bg-white/60 backdrop-blur-md border-slate-200/60 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-                        <CardContent className="p-8 space-y-4">
-                            <div className="bg-blue-100 w-14 h-14 rounded-2xl flex items-center justify-center mb-6">
-                                <Bot className="h-7 w-7 text-blue-600" />
-                            </div>
-                            <h3 className="text-2xl font-bold text-slate-800">Analisis AI</h3>
-                            <p className="text-slate-600 leading-relaxed">
-                                Laporan draf dan rekomendasi konsultasi dihasilkan secara cerdas oleh mesin AI berdasarkan riwayat data.
-                            </p>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="bg-white/60 backdrop-blur-md border-slate-200/60 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-                        <CardContent className="p-8 space-y-4">
-                            <div className="bg-emerald-100 w-14 h-14 rounded-2xl flex items-center justify-center mb-6">
-                                <ShieldCheck className="h-7 w-7 text-emerald-600" />
-                            </div>
-                            <h3 className="text-2xl font-bold text-slate-800">Aman & Terpercaya</h3>
-                            <p className="text-slate-600 leading-relaxed">
-                                Seluruh data instansi dan informasi konsultasi Anda dienkripsi serta disimpan dengan standar keamanan tinggi.
-                            </p>
-                        </CardContent>
-                    </Card>
-
-                </div>
-                
-                {/* Stats or Step Section */}
-                <div className="w-full max-w-5xl px-4 lg:px-0 py-10 mt-10 border-t border-slate-200/60">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center divide-y md:divide-y-0 md:divide-x divide-slate-200/80">
-                        <div className="p-6">
-                            <div className="flex justify-center mb-4"><MousePointerClick className="h-8 w-8 text-blue-500" /></div>
-                            <h4 className="text-xl font-bold text-slate-800 mb-2">1. Registrasi</h4>
-                            <p className="text-slate-500">Ajukan permohonan melalui form online dengan mudah.</p>
-                        </div>
-                        <div className="p-6 pt-10 md:pt-6">
-                            <div className="flex justify-center mb-4"><Bot className="h-8 w-8 text-indigo-500" /></div>
-                            <h4 className="text-xl font-bold text-slate-800 mb-2">2. Analisis AI</h4>
-                            <p className="text-slate-500">Sistem memproses dan memberikan draf laporan otomatis.</p>
-                        </div>
-                        <div className="p-6 pt-10 md:pt-6">
-                            <div className="flex justify-center mb-4"><FileText className="h-8 w-8 text-emerald-500" /></div>
-                            <h4 className="text-xl font-bold text-slate-800 mb-2">3. Unduh Laporan</h4>
-                            <p className="text-slate-500">Dapatkan hasil konsultasi Anda yang komprehensif.</p>
-                        </div>
-                    </div>
-                </div>
-
+                    </Link>
+                </section>
             </div>
         </HomeLayout>
     );

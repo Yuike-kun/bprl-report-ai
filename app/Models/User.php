@@ -39,4 +39,28 @@ class User extends Authenticatable
             'password'          => 'hashed',
         ];
     }
+
+    public function hasRole(string|array $roles): bool
+    {
+        if (is_array($roles)) {
+            return in_array($this->role, $roles, true);
+        }
+
+        return $this->role === $roles;
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
+    }
+
+    public function isPegawai(): bool
+    {
+        return $this->role === 'pegawai';
+    }
+
+    public function isPemohon(): bool
+    {
+        return $this->role === 'pemohon';
+    }
 }

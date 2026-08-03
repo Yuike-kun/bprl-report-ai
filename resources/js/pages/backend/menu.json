@@ -1,26 +1,56 @@
 [
     {
+        "type": "link",
         "label": "Dashboard",
-        "url": "/dashboard"
+        "url": "/dashboard",
+        "icon": "LayoutDashboard"
     },
     {
-        "label": "General Draft Proposal",
-        "url": "/general-draft"
+        "type": "dropdown",
+        "id": "proposal",
+        "label": "Proposal",
+        "icon": "FileText",
+        "items": [
+            {
+                "label": "Draft Proposal Umum",
+                "url": "/general-draft",
+                "icon": "FilePlus2"
+            },
+            {
+                "label": "Proposal KKPRL",
+                "url": "/master/kkprl-proposal",
+                "icon": "FileText"
+            }
+        ]
     },
     {
-        "label": "Master Lokasi Konsultasi",
-        "url": "/master/lokasi-konsultasi"
+        "type": "dropdown",
+        "id": "konsultasi",
+        "label": "Master Konsultasi",
+        "icon": "FolderCog",
+        "items": [
+            {
+                "label": "Lokasi Konsultasi",
+                "url": "/master/lokasi-konsultasi",
+                "icon": "MapPin"
+            },
+            {
+                "label": "Permohonan Konsultasi",
+                "url": "/master/permohonan-konsultasi",
+                "icon": "ClipboardList"
+            },
+            {
+                "label": "Jadwal Konsultasi",
+                "url": "/master/jadwal-konsultasi",
+                "icon": "CalendarDays"
+            }
+        ]
     },
     {
-        "label": "Master Permohonan Konsultasi",
-        "url": "/master/permohonan-konsultasi"
-    },
-    {
-        "label": "Master Jadwal Konsultasi",
-        "url": "/master/jadwal-konsultasi"
-    },
-    {
+        "type": "link",
         "label": "Users",
-        "url": "/users"
+        "url": "/users",
+        "icon": "Users",
+        "adminOnly": true
     }
 ]
