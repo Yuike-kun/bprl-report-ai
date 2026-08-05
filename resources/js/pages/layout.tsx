@@ -20,37 +20,7 @@ const services = [
         icon: BadgeCheck,
         title: "Proposal KKPRL",
         desc: "Isi Proposal KKPRL.",
-    },
-    {
-        href: "#pengujian",
-        icon: FlaskConical,
-        title: "Uji Laboratorium",
-        desc: "Pengujian mikrobiologi, kimia & organoleptik.",
-    },
-    {
-        href: "#inspeksi",
-        icon: ClipboardCheck,
-        title: "Inspeksi Penerapan Mutu",
-        desc: "Audit & inspeksi sistem manajemen mutu.",
-    },
-    {
-        href: "#pelatihan",
-        icon: GraduationCap,
-        title: "Pelatihan & Bimtek",
-        desc: "Bimbingan teknis penanganan mutu hasil perikanan.",
-    },
-    {
-        href: "#kalibrasi",
-        icon: Gauge,
-        title: "Kalibrasi Alat",
-        desc: "Layanan kalibrasi instrumen laboratorium.",
-    },
-    {
-        href: "#haccp",
-        icon: FileCheck2,
-        title: "Konsultasi HACCP",
-        desc: "Pendampingan penyusunan dokumen HACCP.",
-    },
+    }
 ];
 
 function Navbar({ scrolled }: { scrolled: boolean }) {
