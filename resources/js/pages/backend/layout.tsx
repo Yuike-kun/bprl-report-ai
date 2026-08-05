@@ -4,22 +4,21 @@ import { cn } from "@/lib/utils";
 import {
     Settings,
     FileText,
-    Home,
     Menu,
     LogOut,
     User,
     Bell,
     Search,
-    PlusCircle,
+    Plus,
     LayoutDashboard,
     ChevronDown,
-    ChevronRight,
     FilePlus2,
     FolderCog,
     MapPin,
     ClipboardList,
     CalendarDays,
     Users,
+    Home,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { ReactNode, useState, useEffect, useRef } from "react";
@@ -40,13 +39,13 @@ type MenuLinkItem = { label: string; url: string; icon: string };
 type MenuSection =
     | ({ type: "link"; label: string; url: string; icon: string; adminOnly?: boolean })
     | ({
-        type: "dropdown";
-        id: string;
-        label: string;
-        icon: string;
-        adminOnly?: boolean;
-        items: MenuLinkItem[];
-    });
+          type: "dropdown";
+          id: string;
+          label: string;
+          icon: string;
+          adminOnly?: boolean;
+          items: MenuLinkItem[];
+      });
 
 const NAV = MENU as unknown as MenuSection[];
 
@@ -64,7 +63,7 @@ const ICONS: Record<string, LucideIcon> = {
 const getIcon = (name?: string): LucideIcon => (name && ICONS[name]) || LayoutDashboard;
 
 /* ------------------------------------------------------------------ */
-/*  Sidebar                                                             */
+/*  Sidebar (floating / inset style)                                    */
 /* ------------------------------------------------------------------ */
 function Sidebar({
     collapsed,
@@ -110,28 +109,24 @@ function Sidebar({
             <Link
                 href={item.url}
                 className={cn(
-                    "flex items-center gap-3 rounded-xl text-sm font-medium transition-all duration-150 group relative border border-transparent",
-                    asChild ? "px-2.5 py-2 text-[13px]" : "px-3 py-2.5",
+                    "flex items-center gap-2.5 rounded-lg text-sm font-medium transition-all duration-150",
+                    asChild ? "px-2.5 py-1.5 text-[13px]" : "px-2.5 py-2",
                     isActive
-                        ? "bg-blue-500/15 text-blue-300 border-blue-400/20"
-                        : "text-slate-400 hover:bg-white/5 hover:text-slate-100",
-                    collapsed && "justify-center"
+                        ? "bg-linear-to-r from-blue-600 to-blue-500 text-white shadow-md shadow-blue-600/30"
+                        : "text-slate-600 hover:bg-blue-50/70 hover:text-blue-700",
+                    collapsed && !asChild && "justify-center px-0"
                 )}
             >
                 <Icon
                     className={cn(
                         "shrink-0",
-                        asChild ? "w-4 h-4" : "w-[18px] h-[18px]",
-                        isActive ? "text-blue-400" : "text-slate-500 group-hover:text-slate-300"
+                        asChild ? "w-3.5 h-3.5" : "w-[17px] h-[17px]",
+                        isActive
+                            ? "text-white"
+                            : "text-slate-400 transition-colors"
                     )}
                 />
-                {!collapsed && <span className="truncate flex-1">{item.label}</span>}
-                {!collapsed && !asChild && isActive && (
-                    <ChevronRight className="w-3 h-3 text-blue-400 shrink-0" />
-                )}
-                {isActive && (
-                    <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-gradient-to-b from-blue-400 to-cyan-400 rounded-r-full shadow-[0_0_8px_rgba(59,130,246,0.6)]" />
-                )}
+                {!collapsed && <span className="truncate">{item.label}</span>}
             </Link>
         );
     };
@@ -147,17 +142,17 @@ function Sidebar({
                 onClick={() => toggleGroup(section.id)}
                 aria-expanded={isOpen}
                 className={cn(
-                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 group relative border border-transparent cursor-pointer",
+                    "w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm font-medium transition-colors duration-150 cursor-pointer",
                     groupActive
-                        ? "text-blue-300"
-                        : "text-slate-400 hover:bg-white/5 hover:text-slate-100",
+                        ? "text-blue-700 bg-blue-50/80"
+                        : "text-slate-600 hover:bg-blue-50/70 hover:text-blue-700",
                     collapsed && "justify-center px-0"
                 )}
             >
                 <GroupIcon
                     className={cn(
-                        "w-[18px] h-[18px] shrink-0",
-                        groupActive ? "text-blue-400" : "text-slate-500 group-hover:text-slate-300"
+                        "w-[17px] h-[17px] shrink-0",
+                        groupActive ? "text-blue-600" : "text-slate-400"
                     )}
                 />
                 {!collapsed && (
@@ -165,18 +160,15 @@ function Sidebar({
                         <span className="truncate flex-1 text-left">{section.label}</span>
                         <ChevronDown
                             className={cn(
-                                "w-3.5 h-3.5 shrink-0 transition-transform duration-200",
-                                groupActive ? "text-blue-400" : "text-slate-500",
-                                isOpen && "rotate-180"
+                                "w-3.5 h-3.5 shrink-0 text-slate-400 transition-transform duration-200",
+                                isOpen && "rotate-180",
+                                groupActive && "text-blue-500"
                             )}
                         />
                     </>
                 )}
                 {collapsed && groupActive && (
-                    <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-blue-400 shadow-[0_0_6px_rgba(59,130,246,0.8)]" />
-                )}
-                {groupActive && (
-                    <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-gradient-to-b from-blue-400 to-cyan-400 rounded-r-full shadow-[0_0_8px_rgba(59,130,246,0.6)]" />
+                    <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_6px_rgba(59,130,246,0.7)]" />
                 )}
             </button>
         );
@@ -184,7 +176,7 @@ function Sidebar({
         if (collapsed) {
             return (
                 <Tooltip key={section.id}>
-                    <TooltipTrigger className="block rounded-xl" render={<span />}>
+                    <TooltipTrigger className="block rounded-lg relative" render={<span />}>
                         {groupButton}
                     </TooltipTrigger>
                     <TooltipContent side="right">{section.label}</TooltipContent>
@@ -197,12 +189,12 @@ function Sidebar({
                 {groupButton}
                 <div
                     className={cn(
-                        "grid transition-all duration-300 ease-in-out",
+                        "grid transition-all duration-200 ease-in-out",
                         isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
                     )}
                 >
                     <div className="overflow-hidden">
-                        <div className="ml-[23px] pl-2 py-1 flex flex-col gap-0.5 border-l border-white/10">
+                        <div className="ml-[19px] pl-3 py-1 flex flex-col gap-0.5 border-l border-blue-100">
                             {section.items.map((child) => (
                                 <div key={child.url}>{renderLink(child, true)}</div>
                             ))}
@@ -221,47 +213,34 @@ function Sidebar({
     return (
         <aside
             className={cn(
-                "relative bg-slate-950/80 backdrop-blur-2xl text-slate-300 flex flex-col transition-all duration-300 ease-in-out border-r border-white/10 z-20 shrink-0 overflow-hidden",
-                collapsed ? "w-18" : "w-64"
+                "relative rounded-2xl border border-slate-200/80 bg-linear-to-b from-white via-white to-blue-50/40 flex flex-col transition-all duration-300 ease-in-out shrink-0 overflow-hidden shadow-sm",
+                collapsed ? "w-[68px]" : "w-60"
             )}
         >
-            {/* Ambient blue glow */}
-            <div className="pointer-events-none absolute inset-0 overflow-hidden">
-                <div className="absolute -top-20 -left-10 h-52 w-52 rounded-full bg-blue-600/20 blur-3xl" />
-                <div className="absolute top-1/2 -right-16 h-52 w-52 rounded-full bg-cyan-500/10 blur-3xl" />
-            </div>
-
             {/* Brand */}
-            <div className="relative h-16 flex items-center border-b border-white/10 px-4 shrink-0">
-                <div className={cn("flex items-center gap-3 w-full", collapsed && "justify-center")}>
+            <div className={cn("h-16 flex items-center px-4 shrink-0", collapsed && "justify-center px-0")}>
+                <div className={cn("flex items-center gap-2.5", collapsed && "justify-center")}>
                     <button
                         onClick={() => router.visit("/")}
                         aria-label="Kembali ke beranda"
-                        className="group/brand relative w-8 h-8 shrink-0 rounded-lg overflow-hidden cursor-pointer shadow-lg shadow-blue-500/30 hover:shadow-emerald-500/30 hover:scale-105 active:scale-95 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/50"
+                        className="w-8 h-8 shrink-0 rounded-lg bg-linear-to-br from-blue-600 to-indigo-500 flex items-center justify-center shadow-md shadow-blue-500/30 hover:shadow-blue-500/50 hover:scale-105 active:scale-95 transition-all cursor-pointer"
                     >
-                        <span className="absolute inset-0 bg-linear-to-br from-blue-500 to-cyan-400 transition-opacity duration-300 group-hover/brand:opacity-0" />
-                        <span className="absolute inset-0 bg-linear-to-br from-emerald-500 to-green-400 opacity-0 transition-opacity duration-300 group-hover/brand:opacity-100" />
-                        <span className="relative w-full h-full flex items-center justify-center">
-                            <FileText className="absolute w-4 h-4 text-white transition-all duration-300 opacity-100 scale-100 rotate-0 group-hover/brand:opacity-0 group-hover/brand:scale-75 group-hover/brand:-rotate-45" />
-                            <Home className="absolute w-4 h-4 text-white transition-all duration-300 opacity-0 scale-75 rotate-45 group-hover/brand:opacity-100 group-hover/brand:scale-100 group-hover/brand:rotate-0" />
-                        </span>
+                        <FileText className="w-4 h-4 text-white" />
                     </button>
                     {!collapsed && (
-                        <div className="flex flex-col leading-tight overflow-hidden">
-                            <span className="font-bold text-white tracking-tight text-[15px] truncate">
-                                BPRL Panel
-                            </span>
-                            <span className="text-[10px] text-slate-500 font-medium">Admin v2.0</span>
+                        <div className="leading-tight">
+                            <p className="font-bold text-slate-900 text-sm tracking-tight">BPRL Panel</p>
+                            <p className="text-[10px] text-slate-400 font-medium">Admin v2.0</p>
                         </div>
                     )}
                 </div>
             </div>
 
             {/* Navigation */}
-            <nav className="relative flex-1 py-3 flex flex-col gap-0.5 overflow-y-auto px-2">
+            <nav className="flex-1 py-2 flex flex-col gap-1 overflow-y-auto px-3">
                 {!collapsed && (
-                    <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest px-3 py-2 mt-1">
-                        Navigasi
+                    <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest px-2.5 pb-1 pt-1">
+                        Menu
                     </p>
                 )}
 
@@ -278,7 +257,7 @@ function Sidebar({
                             if (collapsed) {
                                 return (
                                     <Tooltip key={section.url}>
-                                        <TooltipTrigger className="block rounded-xl" render={<span />}>
+                                        <TooltipTrigger className="block rounded-lg relative" render={<span />}>
                                             {link}
                                         </TooltipTrigger>
                                         <TooltipContent side="right">{section.label}</TooltipContent>
@@ -292,15 +271,16 @@ function Sidebar({
             </nav>
 
             {/* Footer */}
-            {!collapsed && (
-                <div className="relative p-3 border-t border-white/10 shrink-0">
-                    <div className="bg-white/5 border border-white/5 rounded-xl px-3 py-2.5 text-center">
-                        <p className="text-[11px] font-semibold text-slate-400 truncate">
-                            Trika Media Solusindo © {new Date().getFullYear()}
-                        </p>
-                    </div>
-                </div>
-            )}
+            <div className={cn("p-3 shrink-0", collapsed && "px-2")}>
+                {!collapsed ? (
+                    <p className="text-[10px] font-medium text-slate-400 text-center leading-relaxed">
+                        Trika Media Solusindo
+                        <br />© {new Date().getFullYear()}
+                    </p>
+                ) : (
+                    <div className="h-px bg-slate-100" />
+                )}
+            </div>
         </aside>
     );
 }
@@ -327,17 +307,14 @@ function ProfileDropdown({ user }: { user: any }) {
         <div className="relative" ref={ref}>
             <button
                 onClick={() => setOpen((v) => !v)}
-                className="flex items-center gap-2 rounded-xl py-1.5 px-2 pr-3 hover:bg-blue-50/80 transition-colors focus:outline-none"
+                className="flex items-center gap-2 rounded-lg py-1 pl-1 pr-1 sm:pr-2 hover:bg-blue-50/70 transition-colors cursor-pointer"
             >
-                <Avatar className="h-8 w-8 border-2 border-blue-200/70 shadow-sm">
-                    <AvatarFallback className="bg-gradient-to-br from-blue-600 to-cyan-500 text-white font-bold text-xs">
+                <Avatar className="h-8 w-8 ring-2 ring-blue-100">
+                    <AvatarFallback className="bg-linear-to-br from-blue-600 to-indigo-500 text-white font-semibold text-xs">
                         {initial}
                     </AvatarFallback>
                 </Avatar>
-                <div className="hidden sm:block text-left leading-tight">
-                    <p className="text-sm font-semibold text-slate-800 leading-none">{firstName}</p>
-                    <p className="text-[10px] text-slate-400 mt-0.5 capitalize">{user?.role || "User"}</p>
-                </div>
+                <span className="hidden sm:block text-sm font-medium text-slate-700">{firstName}</span>
                 <ChevronDown
                     className={cn(
                         "w-3.5 h-3.5 text-slate-400 hidden sm:block transition-transform duration-200",
@@ -347,15 +324,15 @@ function ProfileDropdown({ user }: { user: any }) {
             </button>
 
             {open && (
-                <div className="absolute right-0 mt-2 w-60 bg-white/80 backdrop-blur-xl backdrop-saturate-150 rounded-2xl border border-white/60 shadow-2xl shadow-blue-900/10 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-150">
-                    <div className="flex items-center gap-3 px-4 py-3.5 border-b border-white/60 bg-blue-50/50">
-                        <Avatar className="h-10 w-10 border-2 border-blue-200/70">
-                            <AvatarFallback className="bg-gradient-to-br from-blue-600 to-cyan-500 text-white font-bold text-sm">
+                <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl border border-slate-200 shadow-xl shadow-blue-900/10 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                    <div className="flex items-center gap-3 px-4 py-3.5 border-b border-slate-100 bg-linear-to-r from-blue-50/60 to-transparent">
+                        <Avatar className="h-9 w-9 ring-2 ring-blue-100">
+                            <AvatarFallback className="bg-linear-to-br from-blue-600 to-indigo-500 text-white font-semibold text-sm">
                                 {initial}
                             </AvatarFallback>
                         </Avatar>
                         <div className="min-w-0">
-                            <p className="text-sm font-bold text-slate-800 truncate">
+                            <p className="text-sm font-semibold text-slate-900 truncate">
                                 {user?.name || "Admin User"}
                             </p>
                             <p className="text-xs text-slate-500 truncate">
@@ -367,32 +344,32 @@ function ProfileDropdown({ user }: { user: any }) {
                     <div className="p-1.5">
                         <Link
                             href="/profile"
-                            className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-slate-700 hover:bg-blue-50/80 rounded-xl transition-colors w-full font-medium"
+                            className="flex items-center gap-2.5 px-3 py-2 text-sm text-slate-700 hover:bg-blue-50/70 rounded-lg transition-colors font-medium"
                             onClick={() => setOpen(false)}
                         >
-                            <User className="w-4 h-4 text-blue-400" />
+                            <User className="w-4 h-4 text-blue-500" />
                             Profil Saya
                         </Link>
                         <Link
                             href="/settings"
-                            className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-slate-700 hover:bg-blue-50/80 rounded-xl transition-colors w-full font-medium"
+                            className="flex items-center gap-2.5 px-3 py-2 text-sm text-slate-700 hover:bg-blue-50/70 rounded-lg transition-colors font-medium"
                             onClick={() => setOpen(false)}
                         >
-                            <Settings className="w-4 h-4 text-blue-400" />
+                            <Settings className="w-4 h-4 text-blue-500" />
                             Pengaturan Akun
                         </Link>
                     </div>
 
-                    <div className="p-1.5 border-t border-white/60">
+                    <div className="p-1.5 border-t border-slate-100">
                         <Link
                             href="/logout"
                             method="post"
                             as="button"
-                            className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50/80 rounded-xl transition-colors"
+                            className="w-full flex items-center gap-2.5 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                             onClick={() => setOpen(false)}
                         >
                             <LogOut className="w-4 h-4" />
-                            Keluar dari Akun
+                            Keluar
                         </Link>
                     </div>
                 </div>
@@ -414,67 +391,55 @@ function Navbar({
     user?: any;
 }) {
     return (
-        <header className="relative h-16 bg-white/60 backdrop-blur-2xl backdrop-saturate-150 border-b border-white/60 shadow-[0_8px_32px_-8px_rgba(37,99,235,0.15)] flex items-center justify-between px-4 lg:px-6 sticky top-0 z-30 shrink-0">
-            <div className="pointer-events-none absolute inset-0 overflow-hidden">
-                <div className="absolute -top-16 left-1/3 h-32 w-32 rounded-full bg-blue-400/15 blur-3xl" />
-                <div className="absolute -top-16 right-1/4 h-32 w-32 rounded-full bg-cyan-300/15 blur-3xl" />
-            </div>
-
-            <div className="relative flex items-center gap-3">
+        <header className="h-16 flex items-center justify-between px-4 lg:px-6 border-b border-slate-100 bg-linear-to-r from-white via-white to-blue-50/30 shrink-0">
+            <div className="flex items-center gap-2 min-w-0">
                 <Button
                     variant="ghost"
                     size="icon"
                     onClick={onToggleSidebar}
-                    className="text-slate-500 hover:bg-blue-50/80 hover:text-blue-600 rounded-xl shrink-0"
+                    className="text-slate-500 hover:bg-blue-50/70 hover:text-blue-700 rounded-lg shrink-0"
                     aria-label="Toggle sidebar"
                 >
-                    <Menu className="w-5 h-5" />
+                    <Menu className="w-[18px] h-[18px]" />
                 </Button>
-                <div className="hidden sm:block">
-                    <h1 className="text-base font-bold text-slate-800 leading-none truncate">
+
+                <div className="flex items-center gap-1.5 min-w-0">
+                    <Link
+                        href="/dashboard"
+                        className="hidden sm:flex items-center gap-1.5 text-sm text-slate-400 hover:text-blue-600 transition-colors shrink-0"
+                    >
+                        <Home className="w-3.5 h-3.5" />
+                    </Link>
+                    <span className="hidden sm:block text-slate-300">/</span>
+                    <h1 className="text-sm font-semibold text-slate-900 truncate">
                         {pageTitle || "Dashboard"}
                     </h1>
-                    <p className="text-[11px] text-slate-400 mt-0.5 font-medium">BPRL Report AI Admin</p>
                 </div>
             </div>
 
-            <div className="relative flex items-center gap-1 sm:gap-2">
-                <div className="hidden lg:flex items-center gap-2 bg-white/50 border border-white/70 rounded-xl px-3 py-2 w-56 xl:w-72 focus-within:ring-2 focus-within:ring-blue-300/50 focus-within:border-blue-400/60 transition-all">
-                    <Search className="w-4 h-4 text-slate-400 shrink-0" />
-                    <input
-                        type="text"
-                        placeholder="Cari laporan..."
-                        className="bg-transparent text-sm text-slate-700 w-full outline-none placeholder:text-slate-400"
-                    />
-                    <kbd className="hidden xl:inline-flex items-center gap-1 rounded-md bg-white/70 border border-white/70 px-1.5 py-0.5 text-[10px] text-slate-500 font-mono shrink-0">
+            <div className="flex items-center gap-2">
+                {/* Search trigger */}
+                <button className="hidden lg:flex items-center gap-2 text-sm text-slate-500 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 w-60 hover:border-blue-300 hover:bg-white focus-within:ring-2 focus-within:ring-blue-500/20 transition-all cursor-pointer">
+                    <Search className="w-3.5 h-3.5 shrink-0" />
+                    <span className="flex-1 text-left">Cari...</span>
+                    <kbd className="text-[10px] font-mono bg-white border border-slate-200 rounded px-1.5 py-0.5 text-slate-400">
                         ⌘K
                     </kbd>
-                </div>
+                </button>
 
-                <div className="flex items-center gap-1 ml-1">
-                    <Tooltip>
-                        <TooltipTrigger
-                            className="inline-flex items-center justify-center rounded-xl w-9 h-9 text-slate-500 hover:bg-blue-50/80 hover:text-blue-600 transition-colors"
-                            render={<button />}
-                        >
-                            <PlusCircle className="w-5 h-5" />
-                        </TooltipTrigger>
-                        <TooltipContent side="bottom">Buat Laporan Baru</TooltipContent>
-                    </Tooltip>
+                {/* Buat baru */}
+                <button className="flex items-center gap-1.5 bg-linear-to-r from-blue-600 to-indigo-600 text-white text-sm font-medium rounded-lg px-3 py-2 shadow-md shadow-blue-600/25 hover:shadow-lg hover:shadow-blue-600/35 hover:brightness-110 transition-all cursor-pointer">
+                    <Plus className="w-4 h-4" />
+                    <span className="hidden sm:inline">Buat</span>
+                </button>
 
-                    <Tooltip>
-                        <TooltipTrigger
-                            className="inline-flex items-center justify-center rounded-xl w-9 h-9 text-slate-500 hover:bg-blue-50/80 hover:text-blue-600 transition-colors relative"
-                            render={<button />}
-                        >
-                            <Bell className="w-5 h-5" />
-                            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white" />
-                        </TooltipTrigger>
-                        <TooltipContent side="bottom">Notifikasi</TooltipContent>
-                    </Tooltip>
-                </div>
+                {/* Notifikasi */}
+                <button className="relative inline-flex items-center justify-center rounded-lg w-9 h-9 text-slate-500 hover:bg-blue-50/70 hover:text-blue-700 transition-colors cursor-pointer">
+                    <Bell className="w-[18px] h-[18px]" />
+                    <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-red-500 rounded-full shadow-[0_0_6px_rgba(239,68,68,0.7)]" />
+                </button>
 
-                <div className="w-px h-6 bg-gradient-to-b from-transparent via-blue-300/50 to-transparent mx-1 shrink-0" />
+                <div className="w-px h-5 bg-slate-200 mx-0.5 hidden sm:block" />
 
                 <ProfileDropdown user={user} />
             </div>
@@ -498,20 +463,29 @@ export default function MainLayout({
 
     return (
         <TooltipProvider delay={100}>
-            <div className="flex h-screen w-full bg-gradient-to-br from-slate-50 via-blue-50/40 to-slate-50 overflow-hidden antialiased">
-                <Sidebar collapsed={collapsed} onExpand={() => setCollapsed(false)} />
+            <div className="relative flex h-screen w-full bg-slate-100 overflow-hidden p-3">
+                {/* Ambient glow — subtle */}
+                <div className="pointer-events-none absolute inset-0 overflow-hidden">
+                    <div className="absolute -top-32 left-1/4 w-[480px] h-[480px] rounded-full bg-blue-400/15 blur-[110px]" />
+                    <div className="absolute -bottom-40 right-1/4 w-[520px] h-[520px] rounded-full bg-indigo-400/10 blur-[110px]" />
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-sky-300/10 blur-[130px]" />
+                </div>
 
-                <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-                    <Navbar
-                        onToggleSidebar={() => setCollapsed((v) => !v)}
-                        pageTitle={pageTitle}
-                        user={user}
-                    />
-                    <main className="flex-1 overflow-y-auto">
-                        <div className="max-w-7xl mx-auto p-4 md:p-8 animate-in fade-in zoom-in-[0.98] duration-300">
-                            {children}
-                        </div>
-                    </main>
+                <div className="relative flex h-full w-full gap-3">
+                    <Sidebar collapsed={collapsed} onExpand={() => setCollapsed(false)} />
+
+                    <div className="flex-1 flex flex-col min-w-0 bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+                        <Navbar
+                            onToggleSidebar={() => setCollapsed((v) => !v)}
+                            pageTitle={pageTitle}
+                            user={user}
+                        />
+                        <main className="flex-1 overflow-y-auto">
+                            <div className="max-w-6xl mx-auto p-4 md:p-6 lg:p-8 animate-in fade-in duration-200">
+                                {children}
+                            </div>
+                        </main>
+                    </div>
                 </div>
             </div>
         </TooltipProvider>

@@ -10,55 +10,114 @@ class GeminiService
     protected string $apiKey;
     protected string $model;
 
-    /**
-     * Kunci narasi yang WAJIB ada.
-     * DISINKRONKAN dengan placeholder di Template DOCX dan ALL_FIELDS di Controller jika perlu,
-     * atau dipetakan khusus di Controller.
-     */
-    protected const REQUIRED_SECTIONS = [
+        protected const REQUIRED_SECTIONS = [
         'batimetri',
         'gelombang',
         'arus',
         'pasang_surut',
         'ekosistem_pesisir',
+        'uraian_kegiatan',
+        'kegiatan_eksisting',
+        'jadwal_pelaksanaan',
+        'reklamasi_status',
+        'kegiatan_berusaha',
+        'kegiatan_strategis',
+        'rencana_tapak',
+        'deskripsi_luas',
+        'profil_dasar_laut',
+        'sosial_ekonomi',
+        'aksesibilitas',
+        'sumber_material',
+        'data_geoteknik',
+        'pemanfaatan_lahan',
+        'metode_reklamasi',
+        'jadwal_reklamasi',
+    ];
+
+    protected const SECTION_PROMPTS = [
+        'arus'              => 'Disampaikan sumber data arus yang digunakan dalam permohonan apakah data sekunder atau primer, untuk data sekunder disampaikan sumber pengambilan dan rentang tahun pengambilan. Variabel arus yang disampaikan dapat berupa Kecepatan Arus maksimal dalam periode tertentu dan atau Kecepatan Arus rata-rata dalam periode tertentu serta arah kecepatan arus dominan dalam periode tertentu.',
+        'gelombang'         => 'Disampaikan sumber data gelombang yang digunakan dalam permohonan apakah data sekunder atau primer ataupun analisis gelombang dengan menggunakan data angin, untuk data sekunder disampaikan sumber pengambilan dan rentang tahun pengambilan. Variabel gelombang yang disampaikan dapat berupa Tinggi Gelombang Signifikan maksimal dalam periode tertentu dan atau Tinggi Gelombang Signifikan Rata-rata dalam periode tertentu, Pero gelombang signifikan serta arah Gelombang dominan dalam periode tertentu.',
+        'pasang_surut'      => 'Disampaikan data pasang surut yang digunakan dalam permohonan apakah data sekunder atau primer, untuk data sekunder disampaikan sumber pengambilan dan periode tinjauan pasang surut. Untuk data primer pengambilan data pasang surut merujuk kepada standar analisis pasang surut baik Least Square maupun Admiralty. Variabel Pasang Surut yang disampaikan dapat berupa Elevasi Pasang tertinggi : HWS/HHWL/HAT ; Elevasi Muka Air Rata-rata (MSL/MWL) ; Elevasi Surut terendah (LWS/LLWL/LAT); Tipe Pasang Surut ; Grafik Muka Air Pasang Surut dan Range Pasang Surut.',
+        'batimetri'         => 'Disampaikan peta batimetri/Kontur kedalaman dilengkapi dengan posisi permohonan ruang lautnya. Disampaikan sumber data batimetri apakah berasal dari data sekunder (BIG/BATNAS/GEBCO/DISHIDROS TNI-AL/ dll) atau berasal dari pengambilan data primer. Jika menggunakan data primer, disampaikan alat yang digunakan dalam pengambilan dan pemrosesan datanya menjadi kontur. Peta tersebut kemudian dibuat narasi/deskripsi yang menggambarkan kondisi batimetri di lokasi tersebut.',
+        'ekosistem_pesisir' => 'Sesuai Pasal 42 ayat (4) Permen KP Nomor 28 Tahun 2021, kajian ekosistem pesisir mencakup mangrove, terumbu karang, dan padang lamun di sekitar lokasi kegiatan. Jika pada lokasi tidak terdapat salah satu ekosistem, wajib dinyatakan tidak ada disertai dokumentasi dan narasi yang relevan.',
+        'uraian_kegiatan' => 'Jelaskan uraian jenis usaha, meliputi pembangunan bangunan dan instalasi di laut (dermaga/tambak/instalasi kabel/dll). Sebutkan tujuan kegiatan, manfaat kegiatan usaha, nilai investasi (estimasi jika perlu), dan keterlibatan masyarakat lokal dalam tenaga kerja.',
+        'kegiatan_eksisting' => 'Jelaskan apakah terdapat kegiatan pemanfaatan ruang laut menetap (eksisting) di lokasi ini, atau jelaskan rencana kegiatan yang akan dimohonkan.',
+        'jadwal_pelaksanaan' => 'Berikan narasi penjelasan mengenai jadwal pelaksanaan kegiatan utama dan pendukungnya (durasi konstruksi, fase mobilisasi, dll).',
+        'reklamasi_status' => 'Berikan penjelasan singkat dan tegas mengenai apakah kegiatan ini dilakukan dengan reklamasi atau non-reklamasi.',
+        'kegiatan_berusaha' => 'Nyatakan apakah kegiatan ini adalah berusaha atau non-berusaha. Jika berusaha, sebutkan izin berusaha yang relevan (NIB/KBLI). Jika non-berusaha, sampaikan data dukung yang relevan.',
+        'kegiatan_strategis' => 'Nyatakan apakah kegiatan ini merupakan Proyek Strategis Nasional (PSN) atau non-strategis nasional. Sampaikan dasar hukum atau data dukung jika merupakan PSN.',
+        'rencana_tapak' => 'Buatkan narasi terkait rencana tapak/site plan kegiatan, rencana bangunan yang akan dibuat, serta fasilitas penunjangnya yang relevan dengan permohonan ruang laut.',
+        'deskripsi_luas' => 'Sampaikan rincian kebutuhan ruang laut untuk kegiatan yang dimohonkan, baik kegiatan utama maupun penunjangnya, dilengkapi dengan deskripsi luas/panjang sesuai rencana.',
+        'profil_dasar_laut' => 'Narasikan gambaran profil dasar laut pada lokasi permohonan, acuan profil melintang pantai, dan deskripsi kondisi substrat dasar laut berdasarkan data batimetri/pemeruman.',
+        'sosial_ekonomi' => 'Uraikan kondisi sosial ekonomi masyarakat sekitar (mata pencaharian dominan, kelompok nelayan). Nyatakan bahwa kegiatan direncanakan tidak mengganggu akses melaut nelayan tradisional dan akan melibatkan konsultasi publik.',
+        'aksesibilitas' => 'Jelaskan mengenai akses menuju lokasi kegiatan (jalur darat dan/atau laut) disertai dengan penggambaran rute atau metode mobilisasi material dan personel.',
+        'sumber_material' => 'Jelaskan rencana sumber material reklamasi (misal: pasir laut), jarak lokasi pengambilan, volume material yang dibutuhkan (estimasi), dan metode pengendalian sedimentasi.',
+        'data_geoteknik' => 'Narasikan kondisi geoteknik dasar laut secara umum (jenis tanah dasar, daya dukung, potensi penurunan/settlement) dan rekomendasi perbaikan tanah (soil improvement) jika diperlukan.',
+        'pemanfaatan_lahan' => 'Jelaskan rencana pemanfaatan lahan hasil reklamasi (misal: area operasional, dermaga, gudang) dan jadwal pemanfaatan setelah masa konsolidasi tanah.',
+        'metode_reklamasi' => 'Jelaskan secara detail metode pelaksanaan reklamasi (teknis, pengambilan material, penimbunan). Sertakan mitigasi efek reklamasi (perubahan hidro-oseanografi, dampak penimbunan, teknologi ramah lingkungan, mitigasi ekosistem).',
+        'jadwal_reklamasi' => 'Berikan narasi mengenai jadwal rencana pelaksanaan pekerjaan reklamasi secara bertahap.',
     ];
 
     public function __construct()
     {
         $this->apiKey = config('services.gemini.key');
-        // Gunakan model yang mendukung structured output dengan baik
-        $this->model = config('services.gemini.model', 'gemini-1.5-pro');
+        $this->model  = config('services.gemini.model', 'gemini-1.5-pro');
     }
 
+    /* ────────────────────────────────────────────────────────────────
+     * PUBLIC — always returns ALL 5 sections filled
+     * ──────────────────────────────────────────────────────────────── */
     public function generateNarasi(string $documentText, array $profileContext = []): array
     {
         $prompt = $this->buildPrompt($documentText, $profileContext);
+        $narasi = [];
 
         for ($attempt = 1; $attempt <= 2; $attempt++) {
             try {
-                $narasi = $this->callGemini($prompt);
+                $narasi = $this->normalizeOutput($this->callGemini($prompt));
 
                 if ($this->isComplete($narasi)) {
                     return $narasi;
                 }
 
-                Log::warning('Gemini response tidak lengkap, mencoba ulang.', [
+                Log::warning('Narasi belum lengkap, mencoba ulang.', [
                     'attempt' => $attempt,
-                    'missing' => array_diff(self::REQUIRED_SECTIONS, array_keys($narasi)),
+                    'empty'   => $this->emptySections($narasi),
                 ]);
             } catch (Exception $e) {
-                if ($attempt === 2) {
+                Log::error('Error saat call Gemini.', ['error' => $e->getMessage()]);
+
+                // Only hard-fail if we have nothing at all
+                if ($attempt === 2 && empty(array_filter($narasi))) {
                     throw $e;
                 }
-
-                Log::error('Error saat call Gemini, retrying...', ['error' => $e->getMessage()]);
             }
         }
 
-        throw new Exception('Gagal mendapatkan narasi lengkap dari AI setelah beberapa percobaan.');
+        // ✅ FALLBACK: targeted second call for any section that is STILL empty
+        $missing = $this->emptySections($narasi);
+
+        if (! empty($missing)) {
+            try {
+                $fill = $this->fillMissingSections($missing, $documentText, $profileContext);
+
+                foreach ($missing as $key) {
+                    if (! empty($fill[$key])) {
+                        $narasi[$key] = $fill[$key];
+                    }
+                }
+            } catch (Exception $e) {
+                Log::error('Fallback pengisian section gagal.', ['error' => $e->getMessage()]);
+            }
+        }
+
+        return $this->normalizeOutput($narasi);
     }
 
-    protected function callGemini(string $prompt): array
+    /* ────────────────────────────────────────────────────────────────
+     * API CALL
+     * ──────────────────────────────────────────────────────────────── */
+    protected function callGemini(string $prompt, ?array $schema = null): array
     {
         $url = "https://generativelanguage.googleapis.com/v1beta/models/{$this->model}:generateContent?key={$this->apiKey}";
 
@@ -67,108 +126,180 @@ class GeminiService
                 ['parts' => [['text' => $prompt]]],
             ],
             'generationConfig' => [
-                'temperature'      => 0.2, // Rendah untuk konsistensi tinggi
+                'temperature'      => 0.3,
+                'maxOutputTokens'  => 8192, // ✅ prevents truncation → empty trailing fields
                 'responseMimeType' => 'application/json',
-                // INI KUNCINYA: Mengirim schema ke Gemini
-                'responseSchema'   => $this->responseSchema(),
+                'responseSchema'   => $schema ?? $this->responseSchema(),
             ],
         ];
 
-        $response = Http::timeout(120) // Timeout lebih lama karena generate teks panjang
-            ->post($url, $payload);
+        $response = Http::timeout(120)->post($url, $payload);
 
         if ($response->failed()) {
             Log::error('Gemini API error', ['status' => $response->status(), 'body' => $response->body()]);
             throw new Exception('Gagal menghubungi Gemini API: ' . $response->status());
         }
 
-        $json = $response->json();
-
-        // Ambil text dari response
-        $text = $json['candidates'][0]['content']['parts'][0]['text'] ?? null;
+        $text = $response->json('candidates.0.content.parts.0.text');
 
         if (! $text) {
             throw new Exception('Response Gemini kosong.');
         }
 
-        // Karena kita pakai responseMimeType json, Gemini seharusnya mengembalikan JSON valid
-        // Namun tetap kita decode untuk memastikan
         $decoded = json_decode($text, true);
 
-        if (json_last_error() !== JSON_ERROR_NONE || ! is_array($decoded)) {
-            // Fallback jika ternyata masih berupa string markdown ```json ... ```
-            $cleaned = preg_replace('/^```json\s*|\s*```$/', '', trim($text));
-            $decoded = json_decode($cleaned, true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            $decoded = json_decode(preg_replace('/^```(?:json)?\s*|\s*```$/', '', trim($text)), true);
 
             if (json_last_error() !== JSON_ERROR_NONE) {
-                throw new Exception('Gagal parse JSON dari response Gemini: ' . json_last_error_msg());
+                throw new Exception('Gagal parse JSON dari Gemini: ' . json_last_error_msg());
             }
         }
 
-        return $decoded;
+        return is_array($decoded) ? $decoded : [];
     }
 
-    protected function isComplete(array $narasi): bool
+    /* ────────────────────────────────────────────────────────────────
+     * FALLBACK: fill only the sections that came back empty
+     * ──────────────────────────────────────────────────────────────── */
+    protected function fillMissingSections(array $missing, string $documentText, array $profileContext): array
     {
-        foreach (self::REQUIRED_SECTIONS as $key) {
-            if (! isset($narasi[$key]) || empty(trim($narasi[$key]))) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    protected function buildPrompt(string $documentText, array $profileContext): string
-    {
-        $context = collect($profileContext)
-            ->filter(fn($value) => ! empty($value))
-            ->map(fn($value, $key) => "- {$key}: {$value}")
+        $list  = implode(', ', $missing);
+        $guide = collect(self::SECTION_PROMPTS)
+            ->only($missing)
+            ->map(fn($text, $key) => "- [{$key}] {$text}")
             ->implode("\n");
 
-        return <<<PROMPT
-Anda adalah Senior Analis Hidro-Oseanografi. Susun narasi proposal PKKPRL berdasarkan DOKUMEN SUMBER berikut.
+        $prompt = <<<PROMPT
+Anda adalah Senior Analis Hidro-Oseanografi menyusun proposal PKKPRL.
+Bagian berikut BELUM terisi dan WAJIB Anda isi sekarang: {$list}.
 
-INSTRUKSI PENTING:
-1. Output HARUS berupa objek JSON valid dengan key: batimetri, gelombang, arus, pasang_surut, ekosistem_pesisir.
-2. Setiap bagian WAJIB berisi minimal 3 paragraf mendalam.
-3. Gunakan DATA SPESIFIK dari dokumen sumber (contoh: kedalaman -19.07 m LWS, Hs maks 2.43m, Formzahl 1.84, dll). Jangan buat data fiktif.
-4. Jika data tidak ada, jelaskan pentingnya parameter tersebut dan rekomendasikan metode pengukurannya.
+ATURAN:
+1. Tulis narasi teknis 2-3 paragraf untuk setiap bagian tersebut.
+2. Penuhi PANDUAN RESMI TEMPLATE di bawah: sebutkan sumber data dan seluruh variabel yang diminta.
+3. Gunakan data spesifik dari DOKUMEN SUMBER bila tersedia; bila tidak, turunkan analisis yang masuk akal dari KONTEKS PROFIL dan oseanografi regional pesisir Indonesia.
+4. DILARANG mengirim string kosong atau menulis "data tidak tersedia".
+5. Output HANYA objek JSON valid tanpa markdown.
 
 KONTEKS PROFIL:
-{$context}
+{$this->formatContext($profileContext)}
+
+PANDUAN RESMI TEMPLATE UNTUK BAGIAN TERSEBUT:
+{$guide}
 
 DOKUMEN SUMBER:
 {$documentText}
+PROMPT;
 
-SUSUN NARASI KE DALAM FORMAT JSON BERIKUT:
-- batimetri: Analisis morfologi dasar laut, variasi kedalaman, dan implikasi pondasi.
-- gelombang: Karakteristik Hs rata-rata vs ekstrem, arah dominan, dan dampak desain struktur.
-- arus: Pola sirkulasi, kecepatan ekstrem, potensi gerusan (scouring), dan arah dominan.
-- pasang_surut: Tipe pasut (Mixed Diurnal), rentang vertikal, datum LAT/MSL/HAT, dan pengaruhnya terhadap elevasi struktur.
-- ekosistem_pesisir: Tutupan terumbu karang/lamun, jarak terdekat, persentase area, dan strategi mitigasi avoidance.
+        $properties = [];
+        foreach ($missing as $key) {
+            $properties[$key] = $this->sectionSchema();
+        }
 
-PASTIKAN OUTPUT HANYA BERUPA OBJEK JSON VALID TANPA MARKDOWN.
+        return $this->normalizeOutput(
+            $this->callGemini($prompt, [
+                'type'       => 'OBJECT',
+                'properties' => $properties,
+                'required'   => array_values($missing),
+            ]),
+            $missing
+        );
+    }
+
+    protected function sectionSchema(): array
+    {
+        return [
+            'type'        => 'STRING',
+            'description' => 'Narasi teknis formal 1-3 paragraf yang memenuhi panduan resmi template PKKPRL untuk bagian ini. Gunakan data spesifik dari dokumen sumber; jika tidak ada, gunakan pengetahuan teknis standar kelautan/rekayasa pantai yang masuk akal. Wajib diisi, tidak boleh kosong.',
+        ];
+    }
+
+    /* ────────────────────────────────────────────────────────────────
+     * PROMPT & SCHEMA
+     * ──────────────────────────────────────────────────────────────── */
+        protected function buildPrompt(string $documentText, array $profileContext): string
+    {
+        $guide = collect(self::SECTION_PROMPTS)
+            ->map(fn ($text, $key) => "- [{$key}] {$text}")
+            ->implode("\n");
+
+        return <<<PROMPT
+Anda adalah Senior Analis Hidro-Oseanografi dan Ahli Rekayasa Pantai yang menyusun narasi teknis proposal PKKPRL (Permen KP No. 28 Tahun 2021) berdasarkan DOKUMEN SUMBER.
+
+INSTRUKSI WAJIB:
+1. Output HANYA objek JSON valid dengan key sesuai daftar di bawah. Tanpa markdown, tanpa teks pembuka/penutup.
+2. SEMUA key WAJIB diisi narasi teknis formal (1-3 paragraf). STRING KOSONG DILARANG.
+3. Setiap narasi WAJIB memenuhi PANDUAN RESMI TEMPLATE bagiannya.
+4. Gunakan DATA SPESIFIK dari DOKUMEN SUMBER secara akurat. WAJIB menyalin angka persis (exact copy-paste) dari dokumen untuk parameter kritis: Tinggi Gelombang Maksimum (Hs), Kecepatan Arus Maksimum, dan Elevasi Pasut (HAT/MSL/LAT). JANGAN memodifikasi, membulatkan, atau mengarang angka yang berbeda dari yang tertulis di dokumen sumber.
+5. PENTING: Jika suatu variabel atau bagian (seperti sosial ekonomi, aksesibilitas, geoteknik, atau detail reklamasi) TIDAK tercantum secara eksplisit di DOKUMEN SUMBER, Anda WAJIB melengkapi narasi tersebut menggunakan pengetahuan teknis standar rekayasa pantai, oseanografi regional, dan praktik terbaik industri (best practices) yang masuk akal untuk lokasi tersebut. DILARANG menulis "data tidak tersedia" atau kalimat penolakan.
+6. Abaikan bagian dokumen yang tidak relevan (daftar isi, lampiran teks).
+
+KONTEKS PROFIL PEMOHON:
+{$this->formatContext($profileContext)}
+
+PANDUAN RESMI TEMPLATE PER BAGIAN:
+{$guide}
+
+DOKUMEN SUMBER:
+{$documentText}
 PROMPT;
     }
 
     protected function responseSchema(): array
     {
-        $sectionSchema = [
-            'type'        => 'STRING',
-            'description' => 'Narasi teknis formal minimal 3 paragraf berdasarkan data spesifik dari laporan.',
-        ];
+        $properties = [];
+        foreach (self::REQUIRED_SECTIONS as $key) {
+            $properties[$key] = $this->sectionSchema();
+        }
 
         return [
             'type'       => 'OBJECT',
-            'properties' => [
-                'batimetri'         => $sectionSchema,
-                'gelombang'         => $sectionSchema,
-                'arus'              => $sectionSchema,
-                'pasang_surut'      => $sectionSchema,
-                'ekosistem_pesisir' => $sectionSchema,
-            ],
+            'properties' => $properties,
             'required'   => self::REQUIRED_SECTIONS,
         ];
     }
 
+    /* ────────────────────────────────────────────────────────────────
+     * HELPERS
+     * ──────────────────────────────────────────────────────────────── */
+    protected function formatContext(array $profileContext): string
+    {
+        return collect($profileContext)
+            ->filter(fn($value) => ! empty($value))
+            ->map(fn($value, $key) => "- {$key}: {$value}")
+            ->implode("\n") ?: '- (tidak ada konteks tambahan)';
+    }
+
+    /** Strip markdown fences & normalize — does NOT blank out content anymore. */
+    protected function normalizeOutput(array $narasi, ?array $keys = null): array
+    {
+        $result = [];
+
+        foreach ($keys ?? self::REQUIRED_SECTIONS as $key) {
+            $value = $narasi[$key] ?? '';
+
+            if (! is_string($value)) {
+                $value = '';
+            }
+
+            $value = preg_replace('/^```(?:json)?\s*|\s*```$/m', '', $value);
+
+            $result[$key] = trim($value);
+        }
+
+        return $result;
+    }
+
+    protected function isComplete(array $narasi): bool
+    {
+        return empty($this->emptySections($narasi));
+    }
+
+    protected function emptySections(array $narasi): array
+    {
+        return array_values(array_filter(
+            self::REQUIRED_SECTIONS,
+            fn($key) => empty(trim((string) ($narasi[$key] ?? '')))
+        ));
+    }
 }

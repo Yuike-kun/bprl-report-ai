@@ -6,6 +6,7 @@ use App\Models\GeneralDraft;
 use App\Services\GeminiService;
 use App\Services\PdfImageExtractorService;
 use DOMDocument;
+use DOMXPath;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -33,6 +34,190 @@ class GenerateDocxController extends Controller
         'metode_reklamasi', 'jenis_tanah', 'daya_dukung',
         'pemanfaatan_lahan', 'jadwal_reklamasi',
     ];
+
+    // ──────────────────────────────────────────────────────────────
+    // Dummy / simulation content cleanup
+    // ──────────────────────────────────────────────────────────────
+
+    /** Entire <w:p> paragraph containing these markers will be deleted. */
+    protected const DUMMY_PARAGRAPH_MARKERS = [
+        'DRAF SIMULASI',                                      // banner atas
+        'CONTOH FORMAT / SIMULASI',                           // paragraf CATATAN
+        'WAJIB digantikan dengan data hasil survei',          // catatan penutup
+        'waktu tinjauan pengambilan data selama 14 hari',     // lead-in dummy B.3
+        'garispink',                                          // contoh dummy III.3
+        'Contoh : Penggunaan ruang sekitar',                  // contoh dummy II.1
+        'elaskan mengenai akses ke lokasi',                   // instruksi III.5
+        'Lokasi kegiatan dapat ditempuh melalui jalur darat', // contoh dummy III.5
+                                                              // Section I Instructions
+        'Kegiatan yang dimohonkan adalah [uraian jenis usaha]',
+        'Tujuan kegiatan: mendukung [aktivitas usaha',
+        'Manfaat kegiatan usaha adalah ...',
+        'Nilai investasi',
+        'Keterlibatan masyarakat lokal dalam tenaga kerja',
+        'Kegiatan eksisting:  berupa penjelasan jika',
+        'Kegiatan Rencana : berupa penjelasan jika',
+        'Berisi penjelasan mengenai jadwal kegiatan',
+        'Berisi penjelasan mengenai apakah kegiatan dilakukan',
+        'Sampaikan data-data atau bukti dukung penguat',
+        'Sampaikan apakah kegiatan ini adalah berusaaha',
+        'Sampaikan apakah kegiatan ini adalah strategis',
+        'Plotting  batas-batas area',
+        'Sampaikan rencana kegiatan yang menggunakan ruang laut',
+        'Sampaikan rincian kebutuhan ruang laut',
+
+        // Section III Instructions
+        'Disampaikan Informasi terkait gambaran profil dasar laut',
+        'Profil dasar laut itu kemudian dinarasikan',
+        'Kondisi sosial ekonomi dapat mengacu kepada data resmi',
+        'Jika dilakukan survey primer sosial ekonomi',
+        'Kegiatan direncanakan tidak mengganggu akses melaut', // Optional: remove if you want to keep this generic statement
+
+        // Section IV Instructions & Dummy Lines
+        'Sumber material: pasir laut dari lokasi pengambilan',
+        'Volume material dibutuhkan: ±125.000',
+        'Metode pelaksanaan: hydraulic filling',
+        'Lahan hasil reklamasi direncanakan dimanfaatkan untuk [fasilitas',
+        'Gambaran umum pelaksanaan reklamasi yang dijelaskan',
+        'Jadwal rencana pelaksanaan pekerjaan reklamasi',
+
+        // Data Dukung
+        'Silahkan ditambahkan jika telah memiliki data',
+
+        // Standalone "CONTOH" labels (be careful with this one, might match other things)
+        // 'CONTOH',
+    ];
+
+    /** Entire <w:tr> table row containing these markers will be deleted. */
+    protected const DUMMY_ROW_MARKERS = [
+        // Tabel ekosistem (dummy)
+        'Rhizophora', 'tutupan sedang', 'tutupan karang hidup ±38%',
+        // Tabel sosial ekonomi (dummy)
+        '3.200 jiwa', 'Nelayan (±62%)', '2 kelompok terdaftar', 'Jalur tangkap ikan harian',
+        // Tabel geoteknik (dummy)
+        'Lempung berpasir', 'N-SPT', 'soil improvement', 'monitoring pasca-reklamasi',
+        // Reklamasi (dummy)
+        'pasir laut dari lokasi pengambilan', 'Volume material dibutuhkan', 'hydraulic filling',
+        // Tabel koordinat contoh
+        '6°03',
+    ];
+
+    /**
+     * Remove dummy/simulation remnants from the saved DOCX:
+     *  1. delete whole dummy paragraphs,
+     *  2. delete whole dummy table rows,
+     *  3. strip inline fragments ("Sebagai contoh ilustrasi...", "(Data Simulasi)")
+     *     WITHOUT deleting the paragraph that contains them (e.g. AI narasi).
+     */
+    private function cleanDummyContent(string $docxPath): void
+    {
+        $zip = new ZipArchive();
+        if ($zip->open($docxPath) !== true) {
+            return;
+        }
+
+        $xml = $zip->getFromName('word/document.xml');
+        if ($xml === false) {
+            $zip->close();
+            return;
+        }
+
+        // 1. Delete dummy paragraphs
+        foreach (self::DUMMY_PARAGRAPH_MARKERS as $marker) {
+            $xml = preg_replace(
+                '/<w:p\b[^>]*>(?:(?!<\/w:p>).)*?' . preg_quote($marker, '/') . '(?:(?!<\/w:p>).)*?<\/w:p>/s',
+                '',
+                $xml
+            );
+        }
+
+        // 2. Delete dummy table rows
+        foreach (self::DUMMY_ROW_MARKERS as $marker) {
+            $xml = preg_replace(
+                '/<w:tr\b[^>]*>(?:(?!<\/w:tr>).)*?' . preg_quote($marker, '/') . '(?:(?!<\/w:tr>).)*?<\/w:tr>/s',
+                '',
+                $xml
+            );
+        }
+
+        // 3. Inline strips — keep the paragraph (AI text), remove only the fragment
+        $xml = preg_replace('/> *Sebagai contoh ilustrasi[^<]*</i', '><', $xml);
+        $xml = preg_replace('/\s*\(Data Simulasi\)/i', '', $xml);
+        $xml = preg_replace('/\s*\(Simulasi\)/', '', $xml);
+        $xml = preg_replace('/\s*\(estimasi\)/', '', $xml);
+
+        $zip->addFromString('word/document.xml', $xml);
+        $zip->close();
+    }
+
+    /**
+     * Hapus seluruh bagian IV. PERSYARATAN REKLAMASI (termasuk tabel & narasi)
+     * jika status reklamasi adalah Tidak / False.
+     */
+    private function removeReklamasiSection(string $docxPath, bool $hasReklamasi): void
+    {
+        if ($hasReklamasi) {
+            return; // Jika true, biarkan section tetap ada
+        }
+
+        $zip = new ZipArchive();
+        if ($zip->open($docxPath) !== true) {
+            return;
+        }
+
+        $xml = $zip->getFromName('word/document.xml');
+        if ($xml === false) {$zip->close();return;}
+
+        libxml_use_internal_errors(true);
+        if (strpos($xml, '<?xml') === false) {
+            $xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' . "\n" . $xml;
+        }
+
+        $dom = new DOMDocument();
+        if (! $dom->loadXML($xml)) {$zip->close();return;}
+
+        $xpath = new DOMXPath($dom);
+        $xpath->registerNamespace('w', 'http://schemas.openxmlformats.org/wordprocessingml/2006/main');
+
+        $body = $xpath->query('//w:body')->item(0);
+        if (! $body) {$zip->close();return;}
+
+        $isInsideReklamasi = false;
+        $nodesToRemove     = [];
+
+        // Iterasi semua node anak di dalam <w:body> (paragraf, tabel, dll) secara berurutan
+        foreach ($body->childNodes as $node) {
+            $text = trim($node->textContent);
+
+            // 1. Mulai hapus saat menemukan judul Reklamasi
+            if (stripos($text, 'PERSYARATAN REKLAMASI') !== false) {
+                $isInsideReklamasi = true;
+            }
+
+            // 2. Berhenti hapus saat menemukan bab selanjutnya (Data Dukung / Penutup)
+            if ($isInsideReklamasi && (stripos($text, 'DATA DUKUNG LAINNYA') !== false || stripos($text, 'PENUTUP') !== false)) {
+                $isInsideReklamasi = false;
+                continue; // Node ini jangan dihapus
+            }
+
+            // 3. Kumpulkan node yang berada di dalam zona Reklamasi
+            if ($isInsideReklamasi) {
+                $nodesToRemove[] = $node;
+            }
+        }
+
+        // Eksekusi penghapusan node secara aman
+        foreach ($nodesToRemove as $node) {
+            $body->removeChild($node);
+        }
+
+        $cleanedXml = $dom->saveXML();
+        // Hapus deklarasi XML ganda jika ada
+        $cleanedXml = preg_replace('/<\?xml.*?\?>\s*/', '', $cleanedXml);
+
+        $zip->addFromString('word/document.xml', $cleanedXml);
+        $zip->close();
+    }
 
     public function __construct(
         protected GeminiService $gemini,
@@ -92,6 +277,11 @@ class GenerateDocxController extends Controller
             'jadwal_reklamasi'   => $rec?->jadwal_reklamasi ?? '',
         ];
 
+        $adaReklamasi = $rec?->ada_reklamasi ?? 'Tidak';
+        $isReklamasi  = in_array(
+            strtolower(trim((string) $adaReklamasi)),
+            ['ya', 'ada', 'true', '1', 'reklamasi', 'yes']
+        );
         $narasi       = $ai?->analysis_result ?? [];
         $tempImages   = [];
         $templatePath = public_path('template-docx.docx');
@@ -122,7 +312,11 @@ class GenerateDocxController extends Controller
                 $this->buildDocxFromScratch($data, $narasi, $outputPath);
             }
 
-            return response()->download($outputPath, 'Proposal_PKKPRL.docx')
+            $this->removeReklamasiSection($outputPath, $isReklamasi);
+
+            $timestamp_name = now()->format("HisYmd");
+
+            return response()->download($outputPath, 'Proposal_PKKPRL_'.$timestamp_name.'.docx')
                 ->deleteFileAfterSend(true);
         } catch (Exception $e) {
             Log::error('Gagal generate docx from draft', ['message' => $e->getMessage()]);
@@ -194,11 +388,16 @@ class GenerateDocxController extends Controller
                 }
             }
 
+            $inserted = $this->insertSectionImages($templateProcessor, $tempImages);
+            $this->purgeRemainingPlaceholders($templateProcessor);
+
             $outputPath = storage_path('app/tmp/Proposal_Terisi_' . uniqid() . '.docx');
             if (! is_dir(dirname($outputPath))) {
                 mkdir(dirname($outputPath), 0755, true);
             }
             $templateProcessor->saveAs($outputPath);
+
+            $this->removeOrphanCaptions($outputPath, $inserted);
 
             return response()->download($outputPath, 'Proposal_Terisi.docx')
                 ->deleteFileAfterSend(true);
@@ -234,8 +433,11 @@ class GenerateDocxController extends Controller
 
             $documentText = $this->extractTextFromFile($filePath, basename($filePath));
 
+            // ✅ STEP 1: Clean the raw PDF text
+            $documentText = $this->cleanDocumentText($documentText);
+
             if (empty(trim($documentText))) {
-                return response()->json(['message' => 'Dokumen tidak mengandung teks yang dapat dibaca.'], 422);
+                return response()->json(['message' => 'Dokumen tidak mengandung teks yang relevan.'], 422);
             }
 
             $profileContext = array_filter(
@@ -245,15 +447,13 @@ class GenerateDocxController extends Controller
 
             $rawResponse = $this->gemini->generateNarasi($documentText, $profileContext);
 
+            // ✅ STEP 2: Clean the AI output
+            $cleanedNarasi = $this->cleanAiOutput($rawResponse);
+
+            // ✅ FIX: Return ALL sections dynamically, not just the hardcoded 5
             return response()->json([
                 'success' => true,
-                'narasi'  => [
-                    'batimetri'         => $rawResponse['batimetri'] ?? '',
-                    'gelombang'         => $rawResponse['gelombang'] ?? '',
-                    'arus'              => $rawResponse['arus'] ?? '',
-                    'pasang_surut'      => $rawResponse['pasang_surut'] ?? '',
-                    'ekosistem_pesisir' => $rawResponse['ekosistem_pesisir'] ?? '',
-                ],
+                'narasi'  => $cleanedNarasi,
             ]);
         } catch (Exception $e) {
             Log::error('AI Analysis Failed', ['error' => $e->getMessage()]);
@@ -278,35 +478,28 @@ class GenerateDocxController extends Controller
     ): void {
         $tp = new TemplateProcessor($templatePath);
 
+        // 1. Fill simple identity fields
         foreach ($data as $key => $value) {
             try {
                 $tp->setValue($key, htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8'));
-            } catch (\Exception) {
-                // Placeholder missing in template — skip silently
-            }
+            } catch (\Exception) {}
         }
 
-        foreach (['batimetri', 'gelombang', 'arus', 'pasang_surut', 'ekosistem_pesisir'] as $key) {
+        // 2. Fill ALL AI narrative sections dynamically
+        foreach ($narasi as $key => $value) {
             try {
-                $tp->setValue($key, htmlspecialchars((string) ($narasi[$key] ?? ''), ENT_QUOTES, 'UTF-8'));
-            } catch (\Exception) {
-            }
+                $tp->setValue($key, htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8'));
+            } catch (\Exception) {}
         }
 
-        foreach ($sectionImages as $section => $imagePath) {
-            try {
-                $tp->setImageValue("gambar_{$section}", [
-                    'path'   => $imagePath,
-                    'width'  => 400,
-                    'height' => 300,
-                    'ratio'  => true,
-                ]);
-            } catch (\Exception) {
-                Log::warning("Image placeholder gambar_{$section} missing in template.");
-            }
-        }
+        // 3. Images & Cleanup
+        $inserted = $this->insertSectionImages($tp, $sectionImages);
+        $this->purgeRemainingPlaceholders($tp);
 
         $tp->saveAs($outputPath);
+
+        $this->removeOrphanCaptions($outputPath, $inserted);
+        $this->cleanDummyContent($outputPath); // The safe DOM version
     }
 
     private function buildDocxFromScratch(array $data, array $narasi, string $outputPath): void
@@ -343,7 +536,14 @@ class GenerateDocxController extends Controller
         ]);
 
         $section->addTitle('III. DATA KONDISI TERKINI LOKASI & ANALISIS TEKNIS (AI)', 2);
-        foreach (['Batimetri' => 'batimetri', 'Gelombang' => 'gelombang', 'Arus' => 'arus', 'Pasang Surut' => 'pasang_surut', 'Ekosistem Pesisir' => 'ekosistem_pesisir'] as $label => $key) {
+        $sectionsToCheck = [
+            'Batimetri'         => 'batimetri',
+            'Gelombang'         => 'gelombang',
+            'Arus'              => 'arus',
+            'Pasang Surut'      => 'pasang_surut',
+            'Ekosistem Pesisir' => 'ekosistem_pesisir',
+        ];
+        foreach ($sectionsToCheck as $label => $key) {
             $section->addTitle($label, 3);
             $content = $narasi[$key] ?? null;
             if ($content) {
@@ -443,5 +643,179 @@ class GenerateDocxController extends Controller
         }
 
         return '';
+    }
+
+    private function cleanAiOutput(array $narasi): array
+    {
+        $cleaned       = [];
+        $fillerPhrases = [
+            'berdasarkan dokumen', 'berdasarkan teks', 'berikut adalah',
+            'secara keseluruhan', 'tidak ada informasi', 'data tidak tersedia',
+            'data tidak ditemukan', 'maaf',
+        ];
+
+        foreach ($narasi as $key => $value) {
+            if (! is_string($value)) {
+                $cleaned[$key] = '';
+                continue;
+            }
+
+            // Remove markdown code blocks if the AI accidentally wraps text in ```
+            $value = preg_replace('/^```(?:json)?\s*|\s*```$/m', '', $value);
+
+            // Remove introductory filler phrases
+            foreach ($fillerPhrases as $phrase) {
+                $value = preg_replace('/^' . preg_quote($phrase, '/') . '.*?[.:]\s*/i', '', $value);
+            }
+
+            // Discard if it's essentially empty or a refusal to answer
+            if (strlen(trim($value)) < 15 || stripos($value, 'tidak disebutkan') !== false) {
+                $value = '';
+            }
+
+            $cleaned[$key] = trim($value);
+        }
+        return $cleaned;
+    }
+
+    private function cleanDocumentText(string $text): string
+    {
+        // 1. Cut off irrelevant sections at the end of the document
+        $stopWords = ['DAFTAR PUSTAKA', 'LAMPIRAN', 'REFERENSI', 'DAFTAR ISI', 'KATA PENGANTAR'];
+        foreach ($stopWords as $word) {
+            $pos = stripos($text, $word);
+            if ($pos !== false) {
+                $text = substr($text, 0, $pos); // Delete everything from this word onwards
+            }
+        }
+
+        // 2. Remove common PDF artifacts, page numbers, and repetitive headers
+        $text = preg_replace('/\n\s*(Halaman|Page)\s*\d+.*?\n/i', ' ', $text);
+        $text = preg_replace('/\n\s*\d+\s*\n/', ' ', $text); // Removes standalone page numbers
+
+        // 3. Normalize whitespace
+        $text = preg_replace('/[ \t]+/', ' ', $text);
+        $text = preg_replace('/\n{3,}/', "\n\n", $text);
+
+        return trim($text);
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    // Dynamic figure insertion & placeholder cleanup
+    // ──────────────────────────────────────────────────────────────
+
+    /**
+     * key   = section key returned by PdfImageExtractorService::extractSectionImages()
+     * value = caption keyword ("Gambar N. ...") used to locate orphan captions.
+     */
+    protected const FIGURE_SECTIONS = [
+        'peta_lokasi'       => 'Peta Lokasi',
+        'batimetri'         => 'Peta Batimetri',
+        'arus'              => 'Mawar Arus',
+        'gelombang'         => 'Mawar Gelombang',
+        'pasang_surut'      => 'Grafik Pasang Surut',
+        'ekosistem'         => 'Peta Sebaran Ekosistem',
+        'pemanfaatan_ruang' => 'Pemanfaatan Ruang Laut',
+        'profil_dasar_laut' => 'Profil Dasar Laut',
+    ];
+
+    /**
+     * Insert extracted images ONLY where the template has a ${gambar_<section>}
+     * placeholder. Returns the list of sections that were actually inserted.
+     */
+    private function insertSectionImages(TemplateProcessor $tp, array $sectionImages): array
+    {
+        $inserted  = [];
+        $variables = $tp->getVariables();
+
+        foreach ($sectionImages as $section => $imagePath) {
+            $placeholder = "gambar_{$section}";
+
+            if (! is_string($imagePath) || ! file_exists($imagePath)) {
+                continue;
+            }
+
+            // Template doesn't ask for this figure → skip silently
+            if (! in_array($placeholder, $variables, true)) {
+                continue;
+            }
+
+            try {
+                [$w, $h] = $this->fitImageDimensions($imagePath, 450, 300);
+
+                $tp->setImageValue($placeholder, [
+                    'path'   => $imagePath,
+                    'width'  => $w,
+                    'height' => $h,
+                    'ratio'  => true,
+                ]);
+
+                $inserted[] = $section;
+            } catch (\Exception $e) {
+                Log::warning("Gagal menyisipkan gambar {$section}: " . $e->getMessage());
+            }
+        }
+
+        return $inserted;
+    }
+
+    /** Fit image inside max bounds while keeping aspect ratio. */
+    private function fitImageDimensions(string $path, int $maxW, int $maxH): array
+    {
+        $size = @getimagesize($path);
+
+        if (! $size || $size[0] === 0 || $size[1] === 0) {
+            return [$maxW, $maxH];
+        }
+
+        $scale = min($maxW / $size[0], $maxH / $size[1], 1);
+
+        return [(int) round($size[0] * $scale), (int) round($size[1] * $scale)];
+    }
+
+    /** Blank-out every ${...} token that was never filled. */
+    private function purgeRemainingPlaceholders(TemplateProcessor $tp): void
+    {
+        foreach ($tp->getVariables() as $variable) {
+            $tp->setValue($variable, '');
+        }
+    }
+
+    /**
+     * Post-save cleanup on the DOCX XML:
+     *  1. Delete "Gambar N. ..." caption paragraphs whose image was NOT inserted.
+     *  2. Strip any leftover ${...} macros (tolerant of macros split across XML runs).
+     */
+    private function removeOrphanCaptions(string $docxPath, array $insertedSections): void
+    {
+        $zip = new ZipArchive();
+        if ($zip->open($docxPath) !== true) {
+            return;
+        }
+
+        $xml = $zip->getFromName('word/document.xml');
+        if ($xml === false) {
+            $zip->close();
+            return;
+        }
+
+        // 1. Orphan captions (image missing → remove its caption line)
+        foreach (self::FIGURE_SECTIONS as $section => $keyword) {
+            if (in_array($section, $insertedSections, true)) {
+                continue; // image present → keep caption
+            }
+
+            $pattern = '/<w:p\b[^>]*>(?:(?!<\/w:p>).)*?Gambar\s*\d+\.(?:(?!<\/w:p>).)*?'
+            . preg_quote($keyword, '/')
+                . '(?:(?!<\/w:p>).)*?<\/w:p>/s';
+
+            $xml = preg_replace($pattern, '', $xml);
+        }
+
+        // 2. Leftover macros, tolerant of run-splitting like <w:t>${</w:t><w:t>gambar_x}</w:t>
+        $xml = preg_replace('/\$(?:<[^>]+>)*\{(?:(?:<[^>]+>)|[^{}<])*\}/s', '', $xml);
+
+        $zip->addFromString('word/document.xml', $xml);
+        $zip->close();
     }
 }

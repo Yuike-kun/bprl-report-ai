@@ -9,7 +9,7 @@ import SpaceUtilizationInfo from "./forms/space_utilization_info";
 import AiAnalysisForm, { AiNarasi } from "./forms/ai_form";
 import Review from "./forms/review";
 import TabsVertical, { TAB_MENU } from "./tabs-vertical";
-import { FileText, ChevronRight, ArrowLeft } from "lucide-react";
+import { FileText, ChevronRight, ArrowLeft, AlertCircle, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
@@ -169,6 +169,28 @@ export default function GeneralDraftCreate({ draft, draftId, draft_id }: Props) 
                     className="h-full bg-linear-to-r from-indigo-500 to-violet-500 rounded-full transition-all duration-500"
                     style={{ width: `${((activeIndex + 1) / TAB_MENU.length) * 100}%` }}
                 />
+            </div>
+
+            {/* Beta Notice Banner */}
+            <div className="relative overflow-hidden mb-5 rounded-2xl border border-indigo-100/80 bg-linear-to-r from-indigo-50/90 via-violet-50/50 to-blue-50/80 p-4 shadow-xs">
+                <div className="flex items-start sm:items-center gap-3.5">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-md shadow-indigo-500/20 mt-0.5 sm:mt-0">
+                        <Sparkles className="h-4.5 w-4.5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                            <span className="inline-flex items-center rounded-full bg-indigo-600/10 px-2.5 py-0.5 text-[11px] font-bold text-indigo-700 tracking-wide ring-1 ring-indigo-600/20 ring-inset">
+                                BETA FEATURE
+                            </span>
+                            <span className="font-semibold text-slate-800 text-sm">
+                                Modul Penulisan & Analisis Otomatis
+                            </span>
+                        </div>
+                        <p className="text-xs text-slate-600 leading-relaxed">
+                            Fitur ini masih dalam tahap pengembangan. Apabila terdapat ketidaksesuaian data atau kesalahan hasil generate kalimat, mohon laporkan bug/kendala ke Admin.
+                        </p>
+                    </div>
+                </div>
             </div>
 
             {/* Wizard container */}
