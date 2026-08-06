@@ -26,10 +26,10 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [AuthController::class, 'login'])->name('login.post');
 });
 
+use App\Http\Controllers\DashboardController;
+
 Route::middleware('auth')->group(function () {
-    Route::get('/dashboard', function () {
-        return inertia('backend/dashboard');
-    })->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::prefix('general-draft')->as('general-draft.')->middleware('role:admin,pegawai')->group(function () {
         Route::get('/', [GeneralDraftController::class, 'index'])->name('index');

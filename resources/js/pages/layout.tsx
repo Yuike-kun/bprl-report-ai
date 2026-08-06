@@ -1,6 +1,9 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "@inertiajs/react";
 import { ReactNode, useEffect, useRef, useState } from "react";
+import logo from "/public/egerai-logo.png";
+import logo_djprl from "/public/logo-djprl.png";
+import logo_kkp from "/public/logo-kkp.png";
 import {
     Activity,
     ArrowRight,
@@ -13,6 +16,7 @@ import {
     GraduationCap,
     Sparkles,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const services = [
     {
@@ -68,19 +72,16 @@ function Navbar({ scrolled }: { scrolled: boolean }) {
 
             {/* ===== Bar utama ===== */}
             <div className="relative max-w-7xl mx-auto px-6 lg:px-8 flex justify-between items-center">
-                <Link href="/" onClick={close} className="flex items-center gap-2 group">
-                    <div
-                        className={`bg-gradient-to-br from-blue-600 to-cyan-500 text-white rounded-lg group-hover:scale-105 transition-all duration-300 shadow-lg shadow-blue-600/25 ${scrolled ? "p-1.5" : "p-2"
-                            }`}
-                    >
-                        <Activity className={`transition-all duration-300 ${scrolled ? "w-4 h-4" : "w-5 h-5"}`} />
+                <Link href="/" onClick={close} className={cn("flex items-center gap-3 group", scrolled ? "h-10" : "h-14")}>
+                    <img src={logo_djprl} alt="Logo DJPRL" className="h-full object-contain" />
+                    <div className="flex flex-col justify-center border-l border-slate-300 pl-3">
+                        <span className="text-xs md:text-sm font-bold text-slate-800 leading-tight tracking-tight">
+                            Balai Penataan Ruang Laut
+                        </span>
+                        <span className="text-[10px] md:text-xs font-semibold text-blue-600 tracking-wide uppercase">
+                            (BPRL) Makassar
+                        </span>
                     </div>
-                    <span
-                        className={`font-bold bg-clip-text text-transparent bg-linear-to-r from-slate-900 to-blue-800 transition-all duration-300 ${scrolled ? "text-lg" : "text-xl"
-                            }`}
-                    >
-                        BPRL AI
-                    </span>
                 </Link>
 
                 {/* Menu tengah (desktop) */}
@@ -125,6 +126,15 @@ function Navbar({ scrolled }: { scrolled: boolean }) {
                             <span className="relative">Ajukan Permohonan</span>
                         </Button>
                     </Link>
+
+                    {/* Logo KKP paling kanan */}
+                    <div className={cn("flex items-center shrink-0 border-l border-slate-200 pl-3 ml-1", scrolled ? "h-9" : "h-12")}>
+                        <img
+                            src={logo_kkp}
+                            alt="Logo Kementerian Kelautan dan Perikanan"
+                            className="h-full object-contain"
+                        />
+                    </div>
                 </div>
             </div>
 

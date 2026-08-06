@@ -72,8 +72,6 @@ export default function PermohonanKonsultasiIndex({ submissions, filters, succes
 
     return (
         <MainLayout pageTitle="Master Permohonan Konsultasi">
-            <Head title="Master Permohonan Konsultasi" />
-
             <div className="mb-6 flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-linear-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-md shadow-cyan-500/20 shrink-0">
                     <UserRound className="w-5 h-5 text-white" />
@@ -106,6 +104,7 @@ export default function PermohonanKonsultasiIndex({ submissions, filters, succes
                         <th className="text-left px-5 py-3 font-semibold text-slate-500 text-xs uppercase tracking-wider whitespace-nowrap">Pemohon</th>
                         <th className="text-left px-5 py-3 font-semibold text-slate-500 text-xs uppercase tracking-wider whitespace-nowrap">Instansi</th>
                         <th className="text-left px-5 py-3 font-semibold text-slate-500 text-xs uppercase tracking-wider whitespace-nowrap">Pelaksanaan</th>
+                        <th className="text-left px-5 py-3 font-semibold text-slate-500 text-xs uppercase tracking-wider whitespace-nowrap">Tanggal Permohonan</th>
                         <th className="text-left px-5 py-3 font-semibold text-slate-500 text-xs uppercase tracking-wider whitespace-nowrap">Status</th>
                         <th className="text-center px-5 py-3 font-semibold text-slate-500 text-xs uppercase tracking-wider whitespace-nowrap">Aksi</th>
                     </tr>
@@ -142,6 +141,7 @@ export default function PermohonanKonsultasiIndex({ submissions, filters, succes
                         </td>
                         <td className="px-5 py-4 text-sm text-slate-600">{item.instansi}</td>
                         <td className="px-5 py-4 text-sm text-slate-600">{item.pelaksanaan}</td>
+                        <td className="px-5 py-4 text-sm text-slate-600">{new Date(item.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}</td>
                         <td className="px-5 py-4">
                             <span className={`inline-flex items-center rounded-lg px-2.5 py-1 text-xs font-semibold ${statusClass[item.status]}`}>
                                 {item.status}
