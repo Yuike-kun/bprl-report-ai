@@ -5,6 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
+    Combobox,
+    ComboboxContent,
+    ComboboxEmpty,
+    ComboboxInput,
+    ComboboxItem,
+    ComboboxList,
+} from "@/components/ui/combobox"
+import {
     ArrowLeft,
     BookOpen,
     Check,
@@ -23,7 +31,7 @@ import {
     CheckCircle2,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useForm, usePage } from "@inertiajs/react";
 import {
     Dialog,
@@ -33,6 +41,9 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog";
+
+import SignaturePad from "@/components/signature-pad";
+import { ComboboxSearch } from "@/components/backend/combobox-searchable";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                               */
@@ -61,6 +72,7 @@ type Schedule = {
 type PageProps = {
     locations: Location[];
     schedules: Schedule[];
+    provinsi: any[];
     flash?: { success?: string };
 };
 
@@ -70,13 +82,13 @@ const METODE_OPTIONS: Array<{
     desc: string;
     icon: LucideIcon;
 }> = [
-    { value: "Daring", title: "Konsultasi Daring", desc: "Melalui video conference (Zoom / Google Meet)", icon: Video },
-    { value: "Luring", title: "Konsultasi Tatap Muka", desc: "Datang langsung ke kantor BPRL Makassar", icon: Users },
-    { value: "Hybrid", title: "Hybrid", desc: "Kombinasi daring dan tatap muka", icon: Layers },
-];
+        { value: "Daring", title: "Konsultasi Daring", desc: "Melalui video conference (Zoom / Google Meet)", icon: Video },
+        { value: "Luring", title: "Konsultasi Tatap Muka", desc: "Datang langsung ke kantor BPRL Makassar", icon: Users },
+        { value: "Hybrid", title: "Hybrid", desc: "Kombinasi daring dan tatap muka", icon: Layers },
+    ];
 
 const GUIDE_ITEMS = [
-    { title: "Data Pemohon", desc: "Lengkapi identitas dan kontak yang dapat dihubungi." },
+    { title: "Data Pemohon", desc: "Lengkapi identitas, kontak, dan tanda tangan digital pemohon." },
     { title: "Detail Kegiatan", desc: "Jelaskan rencana kegiatan yang akan dikonsultasikan." },
     { title: "Jadwal Konsultasi", desc: "Pilih metode, tanggal, dan waktu sesuai ketersediaan kuota." },
 ];
@@ -125,7 +137,8 @@ function SectionHeader({
 /*  Halaman                                                             */
 /* ------------------------------------------------------------------ */
 export default function RequestForm() {
-    const { locations, schedules, flash } = usePage<PageProps>().props;
+    const [kabupaten, setKabupaten] = useState<any[]>([]);
+    const { locations, schedules, provinsi, flash } = usePage<PageProps>().props;
 
     const { data, setData, post, processing, errors, reset } = useForm({
         nama_pemohon: "",
@@ -141,6 +154,7 @@ export default function RequestForm() {
         nomor_telepon: "",
         email: "",
         permintaan_khusus: "",
+        tanda_tangan: "",
         setuju_syarat_ketentuan: false,
     });
 
@@ -190,6 +204,7 @@ export default function RequestForm() {
         "provinsi",
         "nomor_telepon",
         "email",
+        "tanda_tangan",
         "rencana_kegiatan",
         ...(needsLocation ? (["lokasi_konsultasi_id"] as Array<keyof typeof data>) : []),
         "tanggal_konsultasi",
@@ -237,7 +252,14 @@ export default function RequestForm() {
     const selectClass =
         "h-11 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-700 outline-none transition-all focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400";
 
-    /* ------------------------------------------------------------------ */
+    useEffect(() => {
+        fetch('api/geolocation/districts')
+            .then((res) => res.json())
+            .then((data) => {
+                setKabupaten(data);
+            });
+    }, []);
+
     return (
         <HomeLayout>
             <div className="w-full mx-auto py-8 px-4">
@@ -330,14 +352,28 @@ export default function RequestForm() {
                                     <FieldError message={fieldError("instansi")} />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label className="text-sm font-medium text-slate-700">Kabupaten / Kota <span className="text-red-500">*</span></Label>
-                                    <Input id="kabupaten" value={data.kabupaten} onChange={(e) => setData("kabupaten", e.target.value)} placeholder="Kabupaten atau kota" className={inputClass} />
-                                    <FieldError message={fieldError("kabupaten")} />
+                                    <Label className="text-sm font-medium text-slate-700">Provinsi <span className="text-red-500">*</span></Label>
+                                    <ComboboxSearch
+                                        value={data.provinsi}
+                                        onChange={(val) => setData('provinsi', val)}
+                                        fetchUrl="/api/geolocation/provinces"
+                                        labelKey="name"
+                                        valueKey="id"
+                                        placeholder="Pilih provinsi"
+                                    />
+                                    <FieldError message={fieldError("provinsi")} />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label className="text-sm font-medium text-slate-700">Provinsi <span className="text-red-500">*</span></Label>
-                                    <Input id="provinsi" value={data.provinsi} onChange={(e) => setData("provinsi", e.target.value)} placeholder="Provinsi" className={inputClass} />
-                                    <FieldError message={fieldError("provinsi")} />
+                                    <Label className="text-sm font-medium text-slate-700">Kabupaten / Kota <span className="text-red-500">*</span></Label>
+                                    <ComboboxSearch
+                                        value={data.kabupaten}
+                                        onChange={(val) => setData('kabupaten', val)}
+                                        fetchUrl={`/api/geolocation/regencies?province_id=${data.provinsi}`}
+                                        labelKey="name"
+                                        valueKey="id"
+                                        placeholder="Pilih kabupaten/kota"
+                                    />
+                                    <FieldError message={fieldError("kabupaten")} />
                                 </div>
                                 <div className="space-y-2">
                                     <Label className="text-sm font-medium text-slate-700">No. WhatsApp <span className="text-red-500">*</span></Label>
@@ -348,6 +384,13 @@ export default function RequestForm() {
                                     <Label className="text-sm font-medium text-slate-700">Alamat Email <span className="text-red-500">*</span></Label>
                                     <Input id="email" type="email" value={data.email} onChange={(e) => setData("email", e.target.value)} placeholder="email@perusahaan.com" className={inputClass} />
                                     <FieldError message={fieldError("email")} />
+                                </div>
+                                <div className="sm:col-span-2 pt-2">
+                                    <SignaturePad
+                                        value={data.tanda_tangan}
+                                        onChange={(val) => setData("tanda_tangan", val)}
+                                        error={fieldError("tanda_tangan")}
+                                    />
                                 </div>
                             </div>
                         </section>
@@ -402,11 +445,10 @@ export default function RequestForm() {
                                                 key={mode.value}
                                                 type="button"
                                                 onClick={() => selectPelaksanaan(mode.value)}
-                                                className={`relative text-left rounded-xl border p-4 transition-all cursor-pointer ${
-                                                    active
-                                                        ? "border-blue-600 bg-blue-50/50 ring-1 ring-blue-600/30"
-                                                        : "border-slate-200 bg-white hover:border-blue-300 hover:bg-blue-50/30"
-                                                }`}
+                                                className={`relative text-left rounded-xl border p-4 transition-all cursor-pointer ${active
+                                                    ? "border-blue-600 bg-blue-50/50 ring-1 ring-blue-600/30"
+                                                    : "border-slate-200 bg-white hover:border-blue-300 hover:bg-blue-50/30"
+                                                    }`}
                                             >
                                                 {active && (
                                                     <span className="absolute top-3 right-3 w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center">
@@ -471,11 +513,10 @@ export default function RequestForm() {
                                                             setData("tanggal_konsultasi", card.tanggal);
                                                             setData("child_schedule_id", "");
                                                         }}
-                                                        className={`min-w-28 rounded-xl border px-3 py-3 text-center transition-all cursor-pointer ${
-                                                            active
-                                                                ? "border-blue-600 bg-blue-50/50 ring-1 ring-blue-600/30"
-                                                                : "border-slate-200 bg-white hover:border-blue-300"
-                                                        }`}
+                                                        className={`min-w-28 rounded-xl border px-3 py-3 text-center transition-all cursor-pointer ${active
+                                                            ? "border-blue-600 bg-blue-50/50 ring-1 ring-blue-600/30"
+                                                            : "border-slate-200 bg-white hover:border-blue-300"
+                                                            }`}
                                                     >
                                                         <p className="text-[11px] text-slate-400 capitalize">
                                                             {dateObj.toLocaleDateString("id-ID", { weekday: "long" })}
@@ -530,13 +571,12 @@ export default function RequestForm() {
                                                         type="button"
                                                         disabled={full}
                                                         onClick={() => setData("child_schedule_id", String(slot.id))}
-                                                        className={`relative rounded-xl border px-3 py-3 text-center transition-all ${
-                                                            full
-                                                                ? "border-slate-100 bg-slate-50 cursor-not-allowed opacity-70"
-                                                                : active
+                                                        className={`relative rounded-xl border px-3 py-3 text-center transition-all ${full
+                                                            ? "border-slate-100 bg-slate-50 cursor-not-allowed opacity-70"
+                                                            : active
                                                                 ? "border-blue-600 bg-blue-50/50 ring-1 ring-blue-600/30 cursor-pointer"
                                                                 : "border-slate-200 bg-white hover:border-blue-300 cursor-pointer"
-                                                        }`}
+                                                            }`}
                                                     >
                                                         {active && (
                                                             <span className="absolute top-2 right-2 w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center">

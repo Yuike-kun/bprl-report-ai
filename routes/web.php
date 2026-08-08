@@ -1,17 +1,29 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\BeritaAcaraController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GeneralDraftController;
 use App\Http\Controllers\GenerateDocxController;
+use App\Http\Controllers\GeolocationController;
 use App\Http\Controllers\KkprlProposalController;
 use App\Http\Controllers\Master\JadwalKonsultasiController;
 use App\Http\Controllers\Master\KkprlProposalMasterController;
 use App\Http\Controllers\Master\LokasiKonsultasiController;
 use App\Http\Controllers\Master\PermohonanKonsultasiController;
+use App\Http\Controllers\Pegawai\DashboardController as PegawaiDashboardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RequestFormController;
+use App\Http\Controllers\StaffController;
 use App\Http\Controllers\UsersController;
 use Illuminate\Support\Facades\Route;
+
+Route::middleware('api')->prefix('api/geolocation')->group(function () {
+    Route::get("/provinces", [GeolocationController::class, "provinces"])->name("geolocation.provinces");
+    Route::get("/regencies", [GeolocationController::class, "regencies"])->name("geolocation.regencies");
+    Route::get("/districts", [GeolocationController::class, "districts"])->name("geolocation.districts");
+    Route::get("/villages", [GeolocationController::class, "villages"])->name("geolocation.villages");
+});
 
 Route::inertia('/', 'welcome')->name('home');
 
@@ -26,55 +38,84 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [AuthController::class, 'login'])->name('login.post');
 });
 
-use App\Http\Controllers\DashboardController;
-
 Route::middleware('auth')->group(function () {
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-
-    Route::prefix('general-draft')->as('general-draft.')->middleware('role:admin,pegawai')->group(function () {
-        Route::get('/', [GeneralDraftController::class, 'index'])->name('index');
-        Route::get('/create', [GeneralDraftController::class, 'create'])->name('create');
-        Route::post('/store', [GeneralDraftController::class, 'store'])->name('store');
-        Route::get('/{generalDraft}/edit', [GeneralDraftController::class, 'edit'])->name('edit');
-        Route::delete('/{generalDraft}', [GeneralDraftController::class, 'destroy'])->name('destroy');
+    Route::prefix('/pegawai')->as('pegawai.')->middleware('role:pegawai')->group(function () {
+        Route::get('/dashboard', [PegawaiDashboardController::class, 'index'])->name('dashboard');
     });
 
-    Route::prefix('master/lokasi-konsultasi')->as('master.lokasi-konsultasi.')->middleware('role:admin,pegawai')->group(function () {
-        Route::get('/', [LokasiKonsultasiController::class, 'index'])->name('index');
-        Route::get('/create', [LokasiKonsultasiController::class, 'create'])->name('create');
-        Route::post('/', [LokasiKonsultasiController::class, 'store'])->name('store');
-        Route::get('/{lokasiKonsultasi}/edit', [LokasiKonsultasiController::class, 'edit'])->name('edit');
-        Route::put('/{lokasiKonsultasi}', [LokasiKonsultasiController::class, 'update'])->name('update');
-        Route::delete('/{lokasiKonsultasi}', [LokasiKonsultasiController::class, 'destroy'])->name('destroy');
+    Route::middleware('role:admin,pemohon')->group(function () {
+        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+        Route::prefix('general-draft')->as('general-draft.')->middleware('role:admin,pegawai')->group(function () {
+            Route::get('/', [GeneralDraftController::class, 'index'])->name('index');
+            Route::get('/create', [GeneralDraftController::class, 'create'])->name('create');
+            Route::post('/store', [GeneralDraftController::class, 'store'])->name('store');
+            Route::get('/{generalDraft}/edit', [GeneralDraftController::class, 'edit'])->name('edit');
+            Route::delete('/{generalDraft}', [GeneralDraftController::class, 'destroy'])->name('destroy');
+        });
+
+        Route::prefix('master/lokasi-konsultasi')->as('master.lokasi-konsultasi.')->middleware('role:admin,pegawai')->group(function () {
+            Route::get('/', [LokasiKonsultasiController::class, 'index'])->name('index');
+            Route::get('/create', [LokasiKonsultasiController::class, 'create'])->name('create');
+            Route::post('/', [LokasiKonsultasiController::class, 'store'])->name('store');
+            Route::get('/{lokasiKonsultasi}/edit', [LokasiKonsultasiController::class, 'edit'])->name('edit');
+            Route::put('/{lokasiKonsultasi}', [LokasiKonsultasiController::class, 'update'])->name('update');
+            Route::delete('/{lokasiKonsultasi}', [LokasiKonsultasiController::class, 'destroy'])->name('destroy');
+        });
+
+        Route::prefix('master/jadwal-konsultasi')->as('master.jadwal-konsultasi.')->middleware('role:admin,pegawai')->group(function () {
+            Route::get('/', [JadwalKonsultasiController::class, 'index'])->name('index');
+            Route::get('/create', [JadwalKonsultasiController::class, 'create'])->name('create');
+            Route::post('/', [JadwalKonsultasiController::class, 'store'])->name('store');
+            Route::get('/{jadwalKonsultasi}/edit', [JadwalKonsultasiController::class, 'edit'])->name('edit');
+            Route::put('/{jadwalKonsultasi}', [JadwalKonsultasiController::class, 'update'])->name('update');
+            Route::delete('/{jadwalKonsultasi}', [JadwalKonsultasiController::class, 'destroy'])->name('destroy');
+        });
+
+        Route::prefix('master/permohonan-konsultasi')->as('master.permohonan-konsultasi.')->middleware('role:admin,pegawai')->group(function () {
+            Route::get('/', [PermohonanKonsultasiController::class, 'index'])->name('index');
+            Route::get('/{permohonanKonsultasi}', [PermohonanKonsultasiController::class, 'show'])->name('show');
+            Route::get('/{permohonanKonsultasi}/edit', [PermohonanKonsultasiController::class, 'edit'])->name('edit');
+            Route::put('/{permohonanKonsultasi}', [PermohonanKonsultasiController::class, 'update'])->name('update');
+            Route::delete('/{permohonanKonsultasi}', [PermohonanKonsultasiController::class, 'destroy'])->name('destroy');
+            Route::post('/{permohonanKonsultasi}/kirim', [PermohonanKonsultasiController::class, 'assign_request'])->name('assign_request');
+        });
+
+        Route::prefix('master/kkprl-proposal')->as('master.kkprl-proposal.')->middleware('role:admin,pegawai')->group(function () {
+            Route::get('/', [KkprlProposalMasterController::class, 'index'])->name('index');
+            Route::get('/{kkprlProposal}', [KkprlProposalMasterController::class, 'show'])->name('show');
+            Route::put('/{kkprlProposal}', [KkprlProposalMasterController::class, 'update'])->name('update');
+            Route::delete('/{kkprlProposal}', [KkprlProposalMasterController::class, 'destroy'])->name('destroy');
+        });
+
     });
 
-    Route::prefix('master/jadwal-konsultasi')->as('master.jadwal-konsultasi.')->middleware('role:admin,pegawai')->group(function () {
-        Route::get('/', [JadwalKonsultasiController::class, 'index'])->name('index');
-        Route::get('/create', [JadwalKonsultasiController::class, 'create'])->name('create');
-        Route::post('/', [JadwalKonsultasiController::class, 'store'])->name('store');
-        Route::get('/{jadwalKonsultasi}/edit', [JadwalKonsultasiController::class, 'edit'])->name('edit');
-        Route::put('/{jadwalKonsultasi}', [JadwalKonsultasiController::class, 'update'])->name('update');
-        Route::delete('/{jadwalKonsultasi}', [JadwalKonsultasiController::class, 'destroy'])->name('destroy');
-    });
-
-    Route::prefix('master/permohonan-konsultasi')->as('master.permohonan-konsultasi.')->middleware('role:admin,pegawai')->group(function () {
-        Route::get('/', [PermohonanKonsultasiController::class, 'index'])->name('index');
-        Route::get('/{permohonanKonsultasi}', [PermohonanKonsultasiController::class, 'show'])->name('show');
-        Route::get('/{permohonanKonsultasi}/edit', [PermohonanKonsultasiController::class, 'edit'])->name('edit');
-        Route::put('/{permohonanKonsultasi}', [PermohonanKonsultasiController::class, 'update'])->name('update');
-        Route::delete('/{permohonanKonsultasi}', [PermohonanKonsultasiController::class, 'destroy'])->name('destroy');
-    });
-
-    Route::prefix('master/kkprl-proposal')->as('master.kkprl-proposal.')->middleware('role:admin,pegawai')->group(function () {
-        Route::get('/', [KkprlProposalMasterController::class, 'index'])->name('index');
-        Route::get('/{kkprlProposal}', [KkprlProposalMasterController::class, 'show'])->name('show');
-        Route::put('/{kkprlProposal}', [KkprlProposalMasterController::class, 'update'])->name('update');
-        Route::delete('/{kkprlProposal}', [KkprlProposalMasterController::class, 'destroy'])->name('destroy');
+    Route::prefix('berita-acara')->as('berita-acara.')->group(function () {
+        Route::middleware(['auth', 'role:pegawai'])->group(function () {
+            Route::get('/pegawai', [BeritaAcaraController::class, 'index_pegawai'])->name('index.pegawai');
+            Route::put('/{beritaAcara}/pegawai', [BeritaAcaraController::class, 'updatePegawai'])->name('update.pegawai');
+            Route::delete('/documents/{document}/pegawai', [BeritaAcaraController::class, 'destroyDocument'])->name('documents.destroy.pegawai');
+        });
+        Route::middleware(['auth', 'role:admin'])->group(function () {
+            Route::get('/', [BeritaAcaraController::class, 'index'])->name('index');
+            Route::get('/create', [BeritaAcaraController::class, 'create'])->name('create');
+            Route::post('/', [BeritaAcaraController::class, 'store'])->name('store');
+            Route::get('/{beritaAcara}', [BeritaAcaraController::class, 'show'])->name('show');
+            Route::get('/{beritaAcara}/edit', [BeritaAcaraController::class, 'edit'])->name('edit');
+            Route::put('/{beritaAcara}', [BeritaAcaraController::class, 'update'])->name('update');
+            Route::patch('/{beritaAcara}/status', [BeritaAcaraController::class, 'updateStatus'])->name('update-status');
+            Route::delete('/{beritaAcara}', [BeritaAcaraController::class, 'destroy'])->name('destroy');
+            Route::delete('/documents/{document}', [BeritaAcaraController::class, 'destroyDocument'])->name('document.destroy');
+        });
     });
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('password.update');
+    Route::post('/profile/avatar', [ProfileController::class, 'updateAvatar'])->name('profile.avatar');
+
+    Route::resource('staff', StaffController::class)->except(['show']);
+    Route::get('staff/json', [StaffController::class, 'staff_json'])->name('staff.json');
 
     Route::resource('users', UsersController::class)->middleware('role:admin');
 

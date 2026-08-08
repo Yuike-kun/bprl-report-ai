@@ -6,6 +6,25 @@
         "icon": "LayoutDashboard"
     },
     {
+        "type": "link",
+        "label": "Berita Acara Konsultasi",
+        "url": "/berita-acara",
+        "icon": "FileCheck"
+    },
+    {
+        "type": "dropdown",
+        "id": "master",
+        "label": "Master",
+        "icon": "FolderCog",
+        "items": [
+            {
+                "label": "Staff",
+                "url": "/staff",
+                "icon": "CalendarDays"
+            }
+        ]
+    },
+    {
         "type": "dropdown",
         "id": "proposal",
         "label": "Proposal",
@@ -26,21 +45,21 @@
     {
         "type": "dropdown",
         "id": "konsultasi",
-        "label": "Master Konsultasi",
+        "label": "Konsultasi",
         "icon": "FolderCog",
         "items": [
             {
-                "label": "Lokasi Konsultasi",
-                "url": "/master/lokasi-konsultasi",
-                "icon": "MapPin"
-            },
-            {
-                "label": "Permohonan Konsultasi",
+                "label": "Permohonan",
                 "url": "/master/permohonan-konsultasi",
                 "icon": "ClipboardList"
             },
             {
-                "label": "Jadwal Konsultasi",
+                "label": "Lokasi",
+                "url": "/master/lokasi-konsultasi",
+                "icon": "MapPin"
+            },
+            {
+                "label": "Jadwal",
                 "url": "/master/jadwal-konsultasi",
                 "icon": "CalendarDays"
             }

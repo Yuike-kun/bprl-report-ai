@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class ProfileController extends Controller
 {
@@ -31,6 +32,27 @@ class ProfileController extends Controller
         $user->save();
 
         return redirect()->route('profile.edit')->with('status', 'profile-updated');
+    }
+
+    public function updateAvatar(Request $request)
+    {
+        $request->validate([
+            'avatar' => ['required', 'image', 'mimes:jpeg,jpg,png,gif,webp', 'max:2048'],
+        ]);
+
+        $user = $request->user();
+
+        // Delete old avatar from storage
+        if ($user->avatar && Storage::disk('public')->exists($user->avatar)) {
+            Storage::disk('public')->delete($user->avatar);
+        }
+
+        // Store the new file and save the relative path
+        $path = $request->file('avatar')->store('avatars', 'public');
+        $user->avatar = $path;
+        $user->save();
+
+        return redirect()->route('profile.edit')->with('status', 'avatar-updated');
     }
 
     public function updatePassword(Request $request)

@@ -15,8 +15,13 @@ class Staff extends Model
         'is_active'
     ];
 
+    protected $casts = [
+        'joined_at' => 'date',
+        'is_active' => 'boolean',
+    ];
+
     public function user()
     {
-        $this->belongsTo(User::class, 'user_id', 'id');
+        return $this->belongsTo(User::class, 'user_id', 'id');
     }
 }

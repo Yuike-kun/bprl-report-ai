@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Master;
 use App\Http\Controllers\Controller;
 use App\Models\JadwalKonsultasi;
 use App\Models\LokasiKonsultasi;
+use Carbon\CarbonPeriod;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -75,7 +76,19 @@ class JadwalKonsultasiController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $validated = $this->validateSchedule($request);
+        $validated = $request->validate([
+            'tanggal_mulai'             => ['required_without:tanggal', 'nullable', 'date'],
+            'tanggal_akhir'             => ['required_without:tanggal', 'nullable', 'date', 'after_or_equal:tanggal_mulai'],
+            'tanggal'                   => ['required_without:tanggal_mulai', 'nullable', 'date'],
+            'waktu_awal'                => ['required', 'date_format:H:i'],
+            'waktu_akhir'               => ['required', 'date_format:H:i', 'after:waktu_awal'],
+            'pelaksanaan'               => ['required', 'in:Luring,Daring,Hybrid'],
+            'lokasi_konsultasi_id'      => ['nullable', 'exists:lokasi_konsultasis,id'],
+            'kuota_konsultasi'          => ['required', 'integer', 'min:1'],
+            'jadwal'                    => ['nullable', 'array'],
+            'jadwal.*.waktu'            => ['required_with:jadwal', 'string'],
+            'jadwal.*.kuota_konsultasi' => ['required_with:jadwal', 'integer', 'min:1'],
+        ]);
 
         if ($error = $this->validateLokasi($validated)) {
             return $error;
@@ -88,29 +101,39 @@ class JadwalKonsultasiController extends Controller
             $validated['lokasi_konsultasi_id'] = null;
         }
 
+        $startDate = $validated['tanggal_mulai'] ?? $validated['tanggal'];
+        $endDate   = $validated['tanggal_akhir'] ?? $startDate;
+
+        $period = CarbonPeriod::create($startDate, $endDate);
+
         try {
-            if (JadwalKonsultasi::query()
-                ->whereDate('tanggal', $validated['tanggal'])
-                ->where('waktu_awal', $validated['waktu_awal'])
-                ->where('pelaksanaan', $validated['pelaksanaan'])
-                ->where(function ($query) use ($validated) {
-                    if (empty($validated['lokasi_konsultasi_id'])) {
-                        $query->whereNull('lokasi_konsultasi_id');
-                        return;
+            DB::transaction(function () use ($period, $validated, $childSchedules) {
+                foreach ($period as $date) {
+                    $formattedDate = $date->format('Y-m-d');
+
+                    $exists = JadwalKonsultasi::query()
+                        ->whereDate('tanggal', $formattedDate)
+                        ->where('waktu_awal', $validated['waktu_awal'])
+                        ->where('pelaksanaan', $validated['pelaksanaan'])
+                        ->where(function ($query) use ($validated) {
+                            if (empty($validated['lokasi_konsultasi_id'])) {
+                                $query->whereNull('lokasi_konsultasi_id');
+                                return;
+                            }
+                            $query->where('lokasi_konsultasi_id', $validated['lokasi_konsultasi_id']);
+                        })
+                        ->exists();
+
+                    if ($exists) {
+                        continue;
                     }
-                    $query->where('lokasi_konsultasi_id', $validated['lokasi_konsultasi_id']);
-                })
-                ->exists()
-            ) {
-                return back()
-                    ->withErrors(['waktu_awal' => 'Jadwal konsultasi dengan waktu dan lokasi yang sama sudah ada.'])
-                    ->withInput();
-            }
 
-            DB::transaction(function () use ($validated, $childSchedules) {
-                $jadwalKonsultasi = JadwalKonsultasi::create($validated);
+                    $dataToCreate = array_merge($validated, ['tanggal' => $formattedDate]);
+                    unset($dataToCreate['tanggal_mulai'], $dataToCreate['tanggal_akhir']);
 
-                $this->syncChildSchedules($jadwalKonsultasi, $childSchedules);
+                    $jadwalKonsultasi = JadwalKonsultasi::create($dataToCreate);
+                    $this->syncChildSchedules($jadwalKonsultasi, $childSchedules);
+                }
             });
         } catch (Throwable $e) {
             Log::error('Gagal menambahkan jadwal konsultasi.', [
@@ -119,7 +142,7 @@ class JadwalKonsultasiController extends Controller
             ]);
 
             return back()
-                ->withErrors(['tanggal' => 'Gagal menyimpan jadwal konsultasi. Silakan coba lagi.'])
+                ->withErrors(['tanggal_mulai' => 'Gagal menyimpan jadwal konsultasi. Silakan coba lagi.'])
                 ->withInput();
         }
 

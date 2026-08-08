@@ -5,9 +5,12 @@ use App\Models\ChildSchedule;
 use App\Models\JadwalKonsultasi;
 use App\Models\LokasiKonsultasi;
 use App\Models\PermohonanKonsultasi;
+use App\Models\Province;
+use App\Models\Regency;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -59,7 +62,7 @@ class RequestFormController extends Controller
             'locations' => LokasiKonsultasi::query()
                 ->orderBy('nama_lokasi')
                 ->get(['id', 'nama_lokasi']),
-            'schedules' => $schedules,
+            'schedules' => $schedules
         ]);
     }
 
@@ -79,6 +82,7 @@ class RequestFormController extends Controller
             'nomor_telepon'           => ['required', 'string', 'max:30'],
             'email'                   => ['required', 'email', 'max:255'],
             'permintaan_khusus'       => ['nullable', 'string'],
+            'tanda_tangan'            => ['required', 'string'],
             'setuju_syarat_ketentuan' => ['accepted'],
         ]);
 
@@ -130,8 +134,8 @@ class RequestFormController extends Controller
             'email'                   => $validated['email'],
             'permintaan_khusus'       => $validated['permintaan_khusus'],
             'setuju_syarat_ketentuan' => $validated['setuju_syarat_ketentuan'],
-            'status'                  => 'dikirim',
-            'tanda_tangan'            => null,
+            'tanda_tangan'            => $validated['tanda_tangan'],
+            'status'                  => 'draft',
         ]);
 
         return redirect()

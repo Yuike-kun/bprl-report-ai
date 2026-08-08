@@ -28,7 +28,7 @@ return new class extends Migration
             $table->text('permintaan_khusus')->nullable();
             $table->boolean('setuju_syarat_ketentuan')->default(false);
             $table->longText('tanda_tangan')->nullable(); // base64 atau path file
-            $table->enum('status', ['draft', 'dikirim', 'selesai'])->default('dikirim');
+            $table->string('status');
             $table->timestamps();
         });
     }

@@ -2,6 +2,7 @@
 namespace App\Http\Controllers\Master;
 
 use App\Http\Controllers\Controller;
+use App\Models\AssignRequestToStaff;
 use App\Models\LokasiKonsultasi;
 use App\Models\PermohonanKonsultasi;
 use Illuminate\Http\RedirectResponse;
@@ -16,7 +17,7 @@ class PermohonanKonsultasiController extends Controller
         $search = trim((string) $request->query('search', ''));
 
         $submissions = PermohonanKonsultasi::query()
-            ->with('jadwal')
+            ->with(['jadwal.lokasi', 'kabupaten', 'provinsi'])
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($inner) use ($search) {
                     $inner->where('nama_pemohon', 'like', '%' . $search . '%')
@@ -40,7 +41,7 @@ class PermohonanKonsultasiController extends Controller
 
     public function show(PermohonanKonsultasi $permohonanKonsultasi): Response
     {
-        $permohonanKonsultasi->load('jadwal.lokasi');
+        $permohonanKonsultasi->load(['jadwal.lokasi', 'kabupaten', 'provinsi']);
 
         return Inertia::render('backend/master/permohonan-konsultasi/show', [
             'submission' => $permohonanKonsultasi,
@@ -49,7 +50,7 @@ class PermohonanKonsultasiController extends Controller
 
     public function edit(PermohonanKonsultasi $permohonanKonsultasi): Response
     {
-        $permohonanKonsultasi->load('jadwal.lokasi');
+        $permohonanKonsultasi->load(['jadwal.lokasi', 'kabupaten', 'provinsi']);
 
         return Inertia::render('backend/master/permohonan-konsultasi/edit', [
             'submission' => $permohonanKonsultasi,
@@ -76,7 +77,7 @@ class PermohonanKonsultasiController extends Controller
             'email'                   => ['required', 'email', 'max:255'],
             'permintaan_khusus'       => ['nullable', 'string'],
             'setuju_syarat_ketentuan' => ['required', 'boolean'],
-            'status'                  => ['required', 'in:draft,dikirim,selesai'],
+            'status'                  => ['required'],
         ]);
 
         if (in_array($validated['pelaksanaan'], ['Luring', 'Hybrid'], true) && empty($validated['lokasi_konsultasi_id'])) {
@@ -103,5 +104,31 @@ class PermohonanKonsultasiController extends Controller
         return redirect()
             ->route('master.permohonan-konsultasi.index')
             ->with('success', 'Permohonan konsultasi berhasil dihapus.');
+    }
+
+    public function assign_request(Request $request, PermohonanKonsultasi $permohonanKonsultasi): RedirectResponse
+    {
+        $validated = $request->validate([
+            'staff'     => ['required', 'array', 'min:1', 'max:3'],
+            'staff.*'   => ['integer', 'exists:staff,id'],
+            'requester' => ['nullable'],
+        ]);
+
+        foreach ($validated['staff'] as $staff) {
+            AssignRequestToStaff::updateOrCreate([
+                'request_form_id' => $permohonanKonsultasi->id,
+                'staff'           => $staff,
+            ], [
+                'requester'       => $validated['requester'] ?? null,
+            ]);
+        }
+
+        $permohonanKonsultasi->update([
+            'status' => 'konsultasi',
+        ]);
+
+        return redirect()
+            ->route('master.permohonan-konsultasi.index')
+            ->with('success', 'Permohonan konsultasi berhasil ditugaskan.');
     }
 }

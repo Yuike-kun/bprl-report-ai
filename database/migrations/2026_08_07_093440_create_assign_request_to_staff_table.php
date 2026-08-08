@@ -11,10 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('layanan_konsultasis', function (Blueprint $table) {
+        Schema::create('assign_request_to_staff', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('permohonan_id')->constrained('permohonan_konsultasis')->cascadeOnDelete();
-            $table->string('jenis_layanan');
+            $table->foreignId('request_form_id');
+            $table->foreignId('staff');
+            $table->foreignId('requester')->nullable();
             $table->timestamps();
         });
     }
@@ -24,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('layanan_konsultasis');
+        Schema::dropIfExists('assign_request_to_staff');
     }
 };

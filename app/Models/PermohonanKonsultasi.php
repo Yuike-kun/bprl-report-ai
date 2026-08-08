@@ -32,4 +32,19 @@ class PermohonanKonsultasi extends Model
     {
         return $this->belongsTo(ChildSchedule::class, 'child_schedule_id');
     }
+
+    public function kabupaten()
+    {
+        return $this->belongsTo(District::class, 'kabupaten_id');
+    }
+
+    public function provinsi()
+    {
+        return $this->belongsTo(Province::class, 'provinsi_id');
+    }
+
+    public function assign_to_staff()
+    {
+        return $this->hasMany(AssignRequestToStaff::class, 'request_form_id');
+    }
 }
