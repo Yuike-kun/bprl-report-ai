@@ -6,6 +6,7 @@ use App\Models\BeritaAcaraDocument;
 use App\Models\BeritaAcaraKonsultasi;
 use App\Models\PermohonanKonsultasi;
 use App\Models\Staff;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -281,5 +282,33 @@ class BeritaAcaraController extends Controller
                 ]);
             }
         }
+    }
+
+    public function pdf(BeritaAcaraKonsultasi $beritaAcara)
+    {
+        if (! auth()->user()->hasRole('admin')) {
+            $staffId = auth()->user()->staff->id ?? null;
+
+            abort_unless(
+                $staffId && in_array($staffId, [
+                    $beritaAcara->staff_1_id, $beritaAcara->staff_2_id,
+                    $beritaAcara->staff_3_id, $beritaAcara->staff_4_id,
+                ]),
+                403
+            );
+        }
+
+        $beritaAcara->load([
+            'staff1.user', 'staff2.user', 'staff3.user', 'staff4.user',
+            'province', 'regency', 'district', // drop these three if not local relations
+            'documents',
+        ]);
+
+        $pdf = Pdf::loadView('pdf.berita-acara', [
+            'beritaAcara' => $beritaAcara,
+            'logoPath'    => public_path('logo_klp.png'),
+        ])->setPaper('a4', 'portrait');
+
+        return $pdf->download("berita-acara-{$beritaAcara->id}.pdf");
     }
 }

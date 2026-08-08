@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
@@ -100,5 +99,20 @@ class BeritaAcaraKonsultasi extends Model
     public function documentsByType(string $type): HasMany
     {
         return $this->documents()->where('document_type', $type);
+    }
+
+    public function province(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Province::class, 'province');
+    }
+
+    public function regency(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Regency::class, 'regency');
+    }
+
+    public function district(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\District::class, 'district');
     }
 }

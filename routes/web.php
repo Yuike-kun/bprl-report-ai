@@ -108,6 +108,8 @@ Route::middleware('auth')->group(function () {
             Route::delete('/{beritaAcara}', [BeritaAcaraController::class, 'destroy'])->name('destroy');
             Route::delete('/documents/{document}', [BeritaAcaraController::class, 'destroyDocument'])->name('document.destroy');
         });
+        Route::get('/{beritaAcara}/pdf', [BeritaAcaraController::class, 'pdf'])
+            ->name('pdf');
     });
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

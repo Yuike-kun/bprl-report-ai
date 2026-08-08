@@ -1,20 +1,20 @@
 import { Link } from "@inertiajs/react";
 import MainLayout from "@/pages/backend/layout";
-import { Plus, Search, Eye, Pencil, Trash2, FileCheck2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, Search, Eye, Pencil, Trash2, FileCheck2, ChevronLeft, ChevronRight, FileText } from "lucide-react";
 import { useState } from "react";
 import { router } from "@inertiajs/react";
 
 const STATUS_BADGE: Record<string, { label: string; color: string }> = {
-    draft:        { label: "Draft",         color: "bg-slate-100 text-slate-600" },
-    submitted:    { label: "Dikirim",       color: "bg-blue-100 text-blue-700" },
-    under_review: { label: "Ditinjau",      color: "bg-amber-100 text-amber-700" },
-    approved:     { label: "Disetujui",     color: "bg-emerald-100 text-emerald-700" },
-    rejected:     { label: "Ditolak",       color: "bg-red-100 text-red-700" },
+    draft: { label: "Draft", color: "bg-slate-100 text-slate-600" },
+    submitted: { label: "Dikirim", color: "bg-blue-100 text-blue-700" },
+    under_review: { label: "Ditinjau", color: "bg-amber-100 text-amber-700" },
+    approved: { label: "Disetujui", color: "bg-emerald-100 text-emerald-700" },
+    rejected: { label: "Ditolak", color: "bg-red-100 text-red-700" },
 };
 
 const STAGE_BADGE: Record<string, { label: string; color: string }> = {
-    konsultasi: { label: "Konsultasi",  color: "bg-sky-100 text-sky-700" },
-    asistensi:  { label: "Asistensi",   color: "bg-indigo-100 text-indigo-700" },
+    konsultasi: { label: "Konsultasi", color: "bg-sky-100 text-sky-700" },
+    asistensi: { label: "Asistensi", color: "bg-indigo-100 text-indigo-700" },
 };
 
 interface Row {
@@ -105,7 +105,7 @@ export default function BeritaAcaraIndex({ rows, filters }: Props) {
                                     </tr>
                                 ) : rows.data.map((row, idx) => {
                                     const status_b = STATUS_BADGE[row.status] ?? { label: row.status, color: "bg-slate-100 text-slate-600" };
-                                    const stage_b  = STAGE_BADGE[row.consultation_stage] ?? { label: row.consultation_stage, color: "bg-slate-100 text-slate-600" };
+                                    const stage_b = STAGE_BADGE[row.consultation_stage] ?? { label: row.consultation_stage, color: "bg-slate-100 text-slate-600" };
                                     return (
                                         <tr key={row.id} className="hover:bg-blue-50/30 transition-colors">
                                             <td className="px-5 py-3 text-xs text-slate-400 font-mono">
@@ -131,6 +131,10 @@ export default function BeritaAcaraIndex({ rows, filters }: Props) {
                                             <td className="px-5 py-3 text-xs text-slate-600">{row.staff_1_name ?? "—"}</td>
                                             <td className="px-5 py-3">
                                                 <div className="flex items-center justify-end gap-1">
+                                                    <a href={`/berita-acara/${row.id}/pdf`} target="_blank" rel="noreferrer"
+                                                        className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 transition-all">
+                                                        <FileText className="w-4 h-4" /> Unduh PDF
+                                                    </a>
                                                     <Link href={`/berita-acara/${row.id}`}
                                                         className="p-1.5 rounded-lg hover:bg-blue-50 text-slate-400 hover:text-blue-600 transition-colors">
                                                         <Eye className="w-3.5 h-3.5" />
