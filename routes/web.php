@@ -79,6 +79,7 @@ Route::middleware('auth')->group(function () {
             Route::put('/{permohonanKonsultasi}', [PermohonanKonsultasiController::class, 'update'])->name('update');
             Route::delete('/{permohonanKonsultasi}', [PermohonanKonsultasiController::class, 'destroy'])->name('destroy');
             Route::post('/{permohonanKonsultasi}/kirim', [PermohonanKonsultasiController::class, 'assign_request'])->name('assign_request');
+            Route::patch('/{permohonanKonsultasi}/confirm', [PermohonanKonsultasiController::class, 'confirm'])->name('confirm');
         });
 
         Route::prefix('master/kkprl-proposal')->as('master.kkprl-proposal.')->middleware('role:admin,pegawai')->group(function () {

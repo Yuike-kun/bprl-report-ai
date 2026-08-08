@@ -2,11 +2,13 @@
 namespace App\Http\Controllers\Master;
 
 use App\Http\Controllers\Controller;
+use App\Mail\KonsultasiDikonfirmasiMail;
 use App\Models\AssignRequestToStaff;
 use App\Models\LokasiKonsultasi;
 use App\Models\PermohonanKonsultasi;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -45,6 +47,10 @@ class PermohonanKonsultasiController extends Controller
 
         return Inertia::render('backend/master/permohonan-konsultasi/show', [
             'submission' => $permohonanKonsultasi,
+            'flash'      => [
+                'success' => session('success'),
+                'error'   => session('error'),
+            ],
         ]);
     }
 
@@ -130,5 +136,31 @@ class PermohonanKonsultasiController extends Controller
         return redirect()
             ->route('master.permohonan-konsultasi.index')
             ->with('success', 'Permohonan konsultasi berhasil ditugaskan.');
+    }
+
+    public function confirm(Request $request, PermohonanKonsultasi $permohonanKonsultasi): RedirectResponse
+    {
+        $request->validate([
+            'confirmed' => ['required', 'boolean'],
+        ]);
+
+        $confirmed = (bool) $request->confirmed;
+
+        $permohonanKonsultasi->update([
+            'status' => $confirmed ? 'confirmed' : 'not_confirmed',
+        ]);
+
+        $permohonanKonsultasi->load(['jadwal.lokasi']);
+
+        Mail::to($permohonanKonsultasi->email)
+            ->send(new KonsultasiDikonfirmasiMail($permohonanKonsultasi, $confirmed));
+
+        $message = $confirmed
+            ? 'Permohonan dikonfirmasi dan email telah dikirim ke pemohon.'
+            : 'Permohonan ditolak dan email telah dikirim ke pemohon.';
+
+        return redirect()
+            ->route('master.permohonan-konsultasi.show', $permohonanKonsultasi)
+            ->with('success', $message);
     }
 }
