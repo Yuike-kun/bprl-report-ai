@@ -47,4 +47,14 @@ class PermohonanKonsultasi extends Model
     {
         return $this->hasMany(AssignRequestToStaff::class, 'request_form_id');
     }
+
+    public function kkprlProposals()
+    {
+        return $this->hasMany(KkprlProposal::class, 'permohonan_konsultasi_id');
+    }
+
+    public function beritaAcara()
+    {
+        return $this->hasOne(BeritaAcaraKonsultasi::class, 'request_form_id');
+    }
 }

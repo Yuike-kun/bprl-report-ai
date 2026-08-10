@@ -1,9 +1,9 @@
 <?php
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class BeritaAcaraKonsultasi extends Model
@@ -15,9 +15,11 @@ class BeritaAcaraKonsultasi extends Model
     protected $fillable = [
         'request_form_id',
         'requester_id',
-        'staff_1_id', 'staff_2_id', 'staff_3_id', 'staff_4_id',
+        'staff_1_id',
+        'staff_2_id',
+        'staff_3_id',
+        'staff_4_id',
         'status',
-
         // Step 1 – Session
         'consultation_stage',
         'consultation_date',
@@ -25,7 +27,6 @@ class BeritaAcaraKonsultasi extends Model
         'implementation_mode',
         'location',
         'location_other',
-
         // Step 1 – Requester & Site
         'requester_name',
         'requester_position',
@@ -42,7 +43,6 @@ class BeritaAcaraKonsultasi extends Model
         'water_name',
         'water_name_other',
         'consultation_instruments',
-
         // Step 2 – Asistensi
         'activity_category',
         'planned_area',
@@ -60,11 +60,21 @@ class BeritaAcaraKonsultasi extends Model
 
     protected $casts = [
         'consultation_date' => 'date',
-        'owned_documents'   => 'array',
-        'planned_area'      => 'decimal:4',
+        'owned_documents' => 'array',
+        'planned_area' => 'decimal:4',
     ];
 
     // ── Relations ─────────────────────────────────────────────────────
+
+    public function request_form(): BelongsTo
+    {
+        return $this->belongsTo(PermohonanKonsultasi::class);
+    }
+
+    public function permohonanKonsultasi()
+    {
+        return $this->belongsTo(PermohonanKonsultasi::class, 'request_form_id');
+    }
 
     public function requester(): BelongsTo
     {
@@ -94,6 +104,11 @@ class BeritaAcaraKonsultasi extends Model
     public function documents(): HasMany
     {
         return $this->hasMany(BeritaAcaraDocument::class);
+    }
+
+    public function kkprlProposals(): HasMany
+    {
+        return $this->hasMany(KkprlProposal::class, 'berita_acara_id');
     }
 
     public function documentsByType(string $type): HasMany

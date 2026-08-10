@@ -1,5 +1,10 @@
 <?php
 
+use App\Http\Controllers\Master\JadwalKonsultasiController;
+use App\Http\Controllers\Master\KkprlProposalMasterController;
+use App\Http\Controllers\Master\LokasiKonsultasiController;
+use App\Http\Controllers\Master\PermohonanKonsultasiController;
+use App\Http\Controllers\Pegawai\DashboardController as PegawaiDashboardController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BeritaAcaraController;
 use App\Http\Controllers\DashboardController;
@@ -7,11 +12,6 @@ use App\Http\Controllers\GeneralDraftController;
 use App\Http\Controllers\GenerateDocxController;
 use App\Http\Controllers\GeolocationController;
 use App\Http\Controllers\KkprlProposalController;
-use App\Http\Controllers\Master\JadwalKonsultasiController;
-use App\Http\Controllers\Master\KkprlProposalMasterController;
-use App\Http\Controllers\Master\LokasiKonsultasiController;
-use App\Http\Controllers\Master\PermohonanKonsultasiController;
-use App\Http\Controllers\Pegawai\DashboardController as PegawaiDashboardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RequestFormController;
 use App\Http\Controllers\StaffController;
@@ -19,10 +19,10 @@ use App\Http\Controllers\UsersController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('api')->prefix('api/geolocation')->group(function () {
-    Route::get("/provinces", [GeolocationController::class, "provinces"])->name("geolocation.provinces");
-    Route::get("/regencies", [GeolocationController::class, "regencies"])->name("geolocation.regencies");
-    Route::get("/districts", [GeolocationController::class, "districts"])->name("geolocation.districts");
-    Route::get("/villages", [GeolocationController::class, "villages"])->name("geolocation.villages");
+    Route::get('/provinces', [GeolocationController::class, 'provinces'])->name('geolocation.provinces');
+    Route::get('/regencies', [GeolocationController::class, 'regencies'])->name('geolocation.regencies');
+    Route::get('/districts', [GeolocationController::class, 'districts'])->name('geolocation.districts');
+    Route::get('/villages', [GeolocationController::class, 'villages'])->name('geolocation.villages');
 });
 
 Route::inertia('/', 'welcome')->name('home');
@@ -74,6 +74,7 @@ Route::middleware('auth')->group(function () {
 
         Route::prefix('master/permohonan-konsultasi')->as('master.permohonan-konsultasi.')->middleware('role:admin,pegawai')->group(function () {
             Route::get('/', [PermohonanKonsultasiController::class, 'index'])->name('index');
+            Route::get('/search', [KkprlProposalMasterController::class, 'searchPermohonanKonsultasi'])->name('search');
             Route::get('/{permohonanKonsultasi}', [PermohonanKonsultasiController::class, 'show'])->name('show');
             Route::get('/{permohonanKonsultasi}/edit', [PermohonanKonsultasiController::class, 'edit'])->name('edit');
             Route::put('/{permohonanKonsultasi}', [PermohonanKonsultasiController::class, 'update'])->name('update');
@@ -84,23 +85,24 @@ Route::middleware('auth')->group(function () {
 
         Route::prefix('master/kkprl-proposal')->as('master.kkprl-proposal.')->middleware('role:admin,pegawai')->group(function () {
             Route::get('/', [KkprlProposalMasterController::class, 'index'])->name('index');
+            Route::get('/create', [KkprlProposalMasterController::class, 'create'])->name('create');
+            Route::get('/search-berita-acara', [KkprlProposalMasterController::class, 'searchBeritaAcara'])->name('search-berita-acara');
+            Route::post('/', [KkprlProposalMasterController::class, 'store'])->name('store');
             Route::get('/{kkprlProposal}', [KkprlProposalMasterController::class, 'show'])->name('show');
             Route::put('/{kkprlProposal}', [KkprlProposalMasterController::class, 'update'])->name('update');
             Route::delete('/{kkprlProposal}', [KkprlProposalMasterController::class, 'destroy'])->name('destroy');
         });
-
     });
 
     Route::prefix('berita-acara')->as('berita-acara.')->group(function () {
         Route::middleware(['auth', 'role:pegawai'])->group(function () {
             Route::get('/pegawai', [BeritaAcaraController::class, 'index_pegawai'])->name('index.pegawai');
-            Route::put('/{beritaAcara}/pegawai', [BeritaAcaraController::class, 'updatePegawai'])->name('update.pegawai');
+            Route::post('/{beritaAcara}/pegawai', [BeritaAcaraController::class, 'updatePegawai'])->name('update.pegawai');
             Route::delete('/documents/{document}/pegawai', [BeritaAcaraController::class, 'destroyDocument'])->name('documents.destroy.pegawai');
         });
         Route::middleware(['auth', 'role:admin'])->group(function () {
             Route::get('/', [BeritaAcaraController::class, 'index'])->name('index');
             Route::get('/create', [BeritaAcaraController::class, 'create'])->name('create');
-            Route::post('/', [BeritaAcaraController::class, 'store'])->name('store');
             Route::get('/{beritaAcara}', [BeritaAcaraController::class, 'show'])->name('show');
             Route::get('/{beritaAcara}/edit', [BeritaAcaraController::class, 'edit'])->name('edit');
             Route::put('/{beritaAcara}', [BeritaAcaraController::class, 'update'])->name('update');
@@ -108,6 +110,7 @@ Route::middleware('auth')->group(function () {
             Route::delete('/{beritaAcara}', [BeritaAcaraController::class, 'destroy'])->name('destroy');
             Route::delete('/documents/{document}', [BeritaAcaraController::class, 'destroyDocument'])->name('document.destroy');
         });
+        Route::post('/', [BeritaAcaraController::class, 'store'])->name('store');
         Route::get('/{beritaAcara}/pdf', [BeritaAcaraController::class, 'pdf'])
             ->name('pdf');
     });

@@ -181,6 +181,8 @@ export function ComboboxSearch({
     <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger
         disabled={disabled}
+        // Must be "button" to avoid acting as a submit button inside a <form>
+        render={<button type="button" />}
         className={cn(
           'inline-flex w-full items-center justify-between rounded-lg border bg-background px-3 py-2 text-sm font-normal shadow-xs hover:bg-accent',
           !selected && 'text-muted-foreground',

@@ -11,6 +11,8 @@ class KkprlProposal extends Model
     protected $table = 'kkprl_proposals';
 
     protected $fillable = [
+        'permohonan_konsultasi_id',
+        'berita_acara_id',
         // Reklamasi & Pemohon
         'is_reclamation', 'applicant_name', 'applicant_position', 'company_name',
         'nib', 'npwp', 'phone_number', 'email', 'status',
@@ -72,5 +74,15 @@ class KkprlProposal extends Model
             'seagrass_cover_percentage'   => 'decimal:2',
             'coral_reef_cover_percentage' => 'decimal:2',
         ];
+    }
+
+    public function permohonanKonsultasi()
+    {
+        return $this->belongsTo(PermohonanKonsultasi::class, 'permohonan_konsultasi_id');
+    }
+
+    public function beritaAcara()
+    {
+        return $this->belongsTo(BeritaAcaraKonsultasi::class, 'berita_acara_id');
     }
 }

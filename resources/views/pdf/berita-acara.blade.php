@@ -3,16 +3,20 @@
 
 <head>
     <meta charset="utf-8">
+    <title>Berita Acara {{ $beritaAcara->berita_acara_number }}</title>
     <style>
+        /* ── Base & Typography ─────────────────────────── */
         body {
             font-family: "DejaVu Sans", sans-serif;
             font-size: 11px;
-            color: #111;
+            color: #222;
             line-height: 1.5;
+            margin: 0;
+            padding: 0;
         }
 
         @page {
-            margin: 145px 60px 65px 60px;
+            margin: 140px 50px 60px 50px;
 
             @top-center {
                 content: element(pageHeader);
@@ -23,11 +27,12 @@
             }
         }
 
+        /* ── Header & Footer ───────────────────────────── */
         .header {
             position: running(pageHeader);
             width: 100%;
             padding-bottom: 6px;
-            border-bottom: 2px solid #000;
+            border-bottom: 3px double #333;
         }
 
         .header table {
@@ -40,50 +45,66 @@
         }
 
         .header .logo-cell {
-            width: 60px;
+            width: 65px;
         }
 
         .header .logo-cell img {
-            width: 55px;
+            width: 60px;
             height: auto;
         }
 
         .header .text-cell {
             text-align: center;
+            padding: 0 10px;
         }
 
         .header .text-cell .line1 {
             font-size: 12px;
             font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 2px;
         }
 
         .header .text-cell .line2 {
             font-size: 13px;
             font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            line-height: 1.3;
         }
 
         .header .text-cell .line3 {
             font-size: 9px;
+            line-height: 1.4;
+            margin-top: 4px;
+            color: #555;
         }
 
         .footer {
             position: running(pageFooter);
             width: 100%;
             text-align: center;
-            font-size: 8px;
-            color: #555;
+            font-size: 9px;
+            color: #666;
+            border-top: 1px solid #ccc;
+            padding-top: 5px;
         }
 
         .footer .pageno::after {
             content: counter(page) " / " counter(pages);
+            font-weight: bold;
+            color: #333;
         }
 
+        /* ── Document Titles ───────────────────────────── */
         h1.doc-title {
             text-align: center;
-            font-size: 13px;
+            font-size: 14px;
             font-weight: bold;
             text-transform: uppercase;
-            margin: 0 0 4px 0;
+            margin: 15px 0 4px 0;
+            text-decoration: underline;
         }
 
         .doc-number,
@@ -93,34 +114,44 @@
             margin: 0 0 2px 0;
         }
 
+        .doc-subject {
+            margin-bottom: 18px;
+        }
+
+        /* ── Content Sections ──────────────────────────── */
         .intro {
             text-align: justify;
             margin: 14px 0;
         }
 
         ol.attendees {
-            margin: 0 0 14px 22px;
+            margin: 0 0 14px 24px;
             padding: 0;
         }
 
         ol.attendees li {
-            margin-bottom: 2px;
+            margin-bottom: 4px;
         }
 
         .section-title {
             font-weight: bold;
-            margin: 10px 0 4px 0;
+            font-size: 11.5px;
+            margin: 16px 0 6px 0;
+            color: #111;
+            border-left: 3px solid #0056b3;
+            padding-left: 8px;
         }
 
         .box {
-            border: 1px solid #000;
-            padding: 8px 10px;
-            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            padding: 10px 12px;
+            margin-bottom: 12px;
             text-align: justify;
+            background-color: #fcfcfc;
         }
 
         .box p {
-            margin: 0 0 4px 0;
+            margin: 0 0 5px 0;
         }
 
         .box p:last-child {
@@ -130,103 +161,129 @@
         table.result-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
         }
 
         table.result-table td {
-            border: 1px solid #000;
-            padding: 8px 10px;
+            border: 1px solid #ccc;
+            padding: 10px 12px;
             vertical-align: top;
             text-align: justify;
+            background-color: #fff;
+        }
+
+        table.result-table td p {
+            margin: 0 0 4px 0;
+        }
+
+        table.result-table td p:last-child {
+            margin-bottom: 0;
         }
 
         table.hasil-table {
             width: 100%;
             border-collapse: collapse;
-            margin: 10px 0 16px 0;
+            margin: 12px 0 20px 0;
         }
 
         table.hasil-table td {
-            border: 1px solid #000;
-            padding: 10px;
+            border: 1px solid #ccc;
+            padding: 12px;
             width: 50%;
             text-align: center;
             font-weight: bold;
+            font-size: 11px;
+            background-color: #fff;
         }
 
         table.hasil-table td.active {
-            background-color: #eaf3ff;
+            background-color: #e3f2fd;
+            border-color: #90caf9;
+            color: #0d47a1;
         }
 
         .chk {
             display: inline-block;
-            width: 12px;
+            width: 14px;
+            font-size: 14px;
+            vertical-align: middle;
+            margin-right: 4px;
         }
 
         .closing {
             text-align: justify;
-            margin: 14px 0;
+            margin: 20px 0;
         }
 
+        /* ── Signatures ────────────────────────────────── */
         table.sign-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 10px;
+            margin-top: 15px;
         }
 
         table.sign-table th,
         table.sign-table td {
-            border: 1px solid #000;
-            padding: 6px 8px;
+            border: 1px solid #999;
+            padding: 8px;
             font-size: 10px;
         }
 
         table.sign-table th {
-            background-color: #f2f2f2;
+            background-color: #f4f4f4;
             text-align: center;
+            font-weight: bold;
+            color: #333;
         }
 
         table.sign-table td.no {
             text-align: center;
-            width: 24px;
+            width: 30px;
         }
 
         table.sign-table td.ttd {
             text-align: center;
-            height: 55px;
+            height: 60px;
+            vertical-align: middle;
         }
 
         table.sign-table td.ttd img {
-            max-height: 50px;
+            max-height: 55px;
             max-width: 130px;
         }
 
+        /* ── Page Breaks & Attachments ─────────────────── */
         .page-break {
             page-break-before: always;
         }
 
         .lampiran-header p {
-            margin: 0 0 2px 0;
+            margin: 0 0 3px 0;
             font-size: 11px;
         }
 
         .lampiran-title {
             font-weight: bold;
             font-size: 12px;
-            margin: 14px 0 8px 0;
+            margin: 20px 0 8px 0;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 4px;
+            color: #333;
         }
 
         table.doc-grid {
             width: 100%;
             border-collapse: collapse;
+            margin-bottom: 15px;
         }
 
         table.doc-grid td {
             width: 50%;
-            border: 1px solid #ccc;
-            padding: 6px;
+            border: 1px solid #ddd;
+            padding: 8px;
             text-align: center;
             vertical-align: middle;
+            background: #fafafa;
         }
 
         table.doc-grid img {
@@ -235,8 +292,13 @@
         }
 
         .file-line {
-            padding: 4px 0;
+            padding: 6px 0;
             font-size: 10.5px;
+            border-bottom: 1px dotted #eee;
+        }
+
+        .file-line:last-child {
+            border-bottom: none;
         }
     </style>
 </head>
@@ -253,11 +315,9 @@
                 </td>
                 <td class="text-cell">
                     <div class="line1">KEMENTERIAN KELAUTAN DAN PERIKANAN</div>
-                    <div class="line2">DIREKTORAT JENDERAL PENATAAN RUANG LAUT<br>BALAI PENATAAN RUANG LAUT MAKASSAR
-                    </div>
+                    <div class="line2">DIREKTORAT JENDERAL PENATAAN RUANG LAUT<br>BALAI PENATAAN RUANG LAUT MAKASSAR</div>
                     <div class="line3">
-                        Jalan Makmur Daeng Sitakka Nomor 129 Maros 90511, Telepon (0411) 371337 Faksimili (0411)
-                        371337<br>
+                        Jalan Makmur Daeng Sitakka Nomor 129 Maros 90511, Telepon (0411) 371337 Faksimili (0411) 371337<br>
                         Laman www.kkp.go.id &nbsp;|&nbsp; Surel bprlmakassar@kkp.go.id
                     </div>
                 </td>
@@ -277,27 +337,28 @@
         $bulanKata = $tanggal->translatedFormat('F');
         $tahun = $tanggal->format('Y');
 
-        $permitTypeLabel =
-            [
-                'persetujuan' => 'Persetujuan KKPRL',
-                'konfirmasi' => 'Konfirmasi KKPRL',
-            ][$beritaAcara->permit_type] ?? $beritaAcara->permit_type;
+        $permitTypeLabel = [
+            'persetujuan' => 'Persetujuan KKPRL',
+            'konfirmasi' => 'Konfirmasi KKPRL',
+        ][$beritaAcara->permit_type] ?? $beritaAcara->permit_type;
 
-        $modeLabel =
-            [
-                'daring' => 'Daring (Online)',
-                'luring' => 'Luring (Tatap Muka)',
-                'hybrid' => 'Hybrid',
-            ][$beritaAcara->implementation_mode] ?? $beritaAcara->implementation_mode;
+        $modeLabel = [
+            'daring' => 'Daring (Online)',
+            'luring' => 'Luring (Tatap Muka)',
+            'hybrid' => 'Hybrid',
+        ][$beritaAcara->implementation_mode] ?? $beritaAcara->implementation_mode;
 
-        $activityDetail =
-            $beritaAcara->activity_detail === 'Yang lain'
-                ? $beritaAcara->activity_detail_other
-                : $beritaAcara->activity_detail;
+        $activityDetail = $beritaAcara->activity_detail === 'Yang lain'
+            ? $beritaAcara->activity_detail_other
+            : $beritaAcara->activity_detail;
 
-        $waterName = $beritaAcara->water_name === 'Lainnya' ? $beritaAcara->water_name_other : $beritaAcara->water_name;
+        $waterName = $beritaAcara->water_name === 'Lainnya' 
+            ? $beritaAcara->water_name_other 
+            : $beritaAcara->water_name;
 
-        $location = $beritaAcara->location === 'Lainnya' ? $beritaAcara->location_other : $beritaAcara->location;
+        $location = $beritaAcara->location === 'Lainnya' 
+            ? $beritaAcara->location_other 
+            : $beritaAcara->location;
 
         $ownedDocs = collect($beritaAcara->owned_documents ?? [])
             ->map(fn($d) => $d === 'Yang lain' ? $beritaAcara->owned_documents_other : $d)
@@ -344,8 +405,7 @@
             <td>
                 <p><strong>Subjek Hukum</strong> : {{ $beritaAcara->legal_entity_name }}</p>
                 <p><strong>Rencana Kegiatan</strong> : {{ $activityDetail }}</p>
-                <p><strong>Luas/Panjang</strong> : {{ $beritaAcara->planned_area }}
-                    {{ $beritaAcara->planned_area_unit }}</p>
+                <p><strong>Luas/Panjang</strong> : {{ $beritaAcara->planned_area }} {{ $beritaAcara->planned_area_unit }}</p>
                 <p>{{ $beritaAcara->activity_description }}</p>
             </td>
         </tr>
@@ -413,7 +473,7 @@
     <table class="sign-table">
         <thead>
             <tr>
-                <th style="width: 24px;">No</th>
+                <th style="width: 30px;">No</th>
                 <th>Nama</th>
                 <th>Jabatan/Instansi</th>
                 <th style="width: 140px;">Tanda Tangan</th>
