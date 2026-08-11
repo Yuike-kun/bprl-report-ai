@@ -7,9 +7,11 @@ type Props = {
     value?: string;
     onChange: (value: string) => void;
     error?: string;
+    label?: string;
+    required?: boolean;
 };
 
-export default function SignaturePad({ value, onChange, error }: Props) {
+export default function SignaturePad({ value, onChange, error, label, required }: Props) {
     const [mode, setMode] = useState<"draw" | "upload">("draw");
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const [isDrawing, setIsDrawing] = useState(false);
@@ -134,7 +136,7 @@ export default function SignaturePad({ value, onChange, error }: Props) {
         <div className="space-y-3">
             <div className="flex items-center justify-between">
                 <Label className="text-sm font-medium text-slate-700">
-                    Tanda Tangan Pemohon <span className="text-red-500">*</span>
+                    {label ?? "Tanda Tangan"} {required && <span className="text-red-500">*</span>}
                 </Label>
 
                 {/* Mode Selector Tabs */}

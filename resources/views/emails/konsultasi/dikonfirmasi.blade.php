@@ -1,40 +1,44 @@
 <x-mail::message>
 @if ($confirmed)
-# Permohonan Dikonfirmasi ✅
+# Permohonan Konsultasi Dikonfirmasi
 
-Yth. **{{ $permohonan->nama_pemohon }}**,
+Kepada Yth.
+**{{ $permohonan->nama_pemohon }}**
+di Tempat
 
-Kami dengan senang hati memberitahukan bahwa permohonan **konsultasi / asistensi KKPRL** Anda telah **dikonfirmasi** oleh tim BPRL Makassar.
+Sehubungan dengan permohonan konsultasi/asistensi **Kesesuaian Kegiatan Pemanfaatan Ruang Laut (KKPRL)** yang telah Bapak/Ibu ajukan, dengan ini kami sampaikan bahwa permohonan tersebut **telah dikonfirmasi** oleh Tim BPRL Makassar, dengan rincian sebagai berikut:
 
 <x-mail::panel>
-**Detail Jadwal**
+Hari, Tanggal &nbsp; : {{ optional($permohonan->jadwal)->tanggal ? \Carbon\Carbon::parse($permohonan->jadwal->tanggal)->isoFormat('dddd, D MMMM Y') : $permohonan->tanggal_konsultasi }}
 
-- **Tanggal:** {{ optional($permohonan->jadwal)->tanggal ? \Carbon\Carbon::parse($permohonan->jadwal->tanggal)->isoFormat('dddd, D MMMM Y') : $permohonan->tanggal_konsultasi }}
-- **Waktu:** {{ optional($permohonan->jadwal)->waktu_awal ?? $permohonan->waktu_konsultasi }}{{ optional($permohonan->jadwal)->waktu_akhir ? ' – ' . $permohonan->jadwal->waktu_akhir : '' }}
-- **Pelaksanaan:** {{ optional($permohonan->jadwal)->pelaksanaan ?? $permohonan->pelaksanaan }}
+Waktu &nbsp; : {{ optional($permohonan->child_schedules)->waktu }}
+
+Pelaksanaan &nbsp; : {{ optional($permohonan->jadwal)->pelaksanaan ?? $permohonan->pelaksanaan }}
 @if(optional($permohonan->jadwal)->lokasi)
-- **Lokasi:** {{ $permohonan->jadwal->lokasi->nama_lokasi }}
+
+Lokasi / Media &nbsp; : {{ $permohonan->jadwal->lokasi->nama_lokasi }}
 @endif
 </x-mail::panel>
 
-Mohon hadir tepat waktu dan membawa dokumen yang diperlukan. Jika ada pertanyaan, silakan hubungi kami melalui email ini.
+Demikian pemberitahuan ini kami sampaikan. Mohon Bapak/Ibu berkenan hadir tepat waktu dan membawa dokumen yang diperlukan. Atas perhatian dan kerja sama Bapak/Ibu, kami ucapkan terima kasih.
 
 @else
-# Permohonan Tidak Dapat Dikonfirmasi ❌
+# Permohonan Konsultasi Tidak Dapat Dikonfirmasi
 
-Yth. **{{ $permohonan->nama_pemohon }}**,
+Kepada Yth.
+**{{ $permohonan->nama_pemohon }}**
+di Tempat
 
-Mohon maaf, permohonan **konsultasi / asistensi KKPRL** Anda pada saat ini **tidak dapat kami konfirmasi** oleh tim BPRL Makassar.
+Sehubungan dengan permohonan konsultasi/asistensi **Kesesuaian Kegiatan Pemanfaatan Ruang Laut (KKPRL)** yang telah Bapak/Ibu ajukan, dengan ini kami sampaikan mohon maaf bahwa permohonan tersebut **belum dapat kami konfirmasi** pada saat ini, yang disebabkan oleh keterbatasan jadwal atau kelengkapan berkas.
 
-Hal ini dapat disebabkan oleh keterbatasan jadwal atau kelengkapan berkas. Kami mengundang Anda untuk mengajukan permohonan kembali pada jadwal yang tersedia.
+Kami mengundang Bapak/Ibu untuk mengajukan permohonan kembali pada jadwal yang tersedia.
 
-Jika ada pertanyaan lebih lanjut, jangan ragu untuk menghubungi kami.
+Demikian pemberitahuan ini kami sampaikan. Atas perhatian dan pengertian Bapak/Ibu, kami ucapkan terima kasih.
 
 @endif
 
-Terima kasih atas kepercayaan Anda kepada BPRL Makassar.
+Hormat Kami,
 
-Hormat kami,<br>
-**Tim BPRL Makassar**<br>
+**Tim BPRL Makassar**
 Direktorat Jenderal Pengelolaan Ruang Laut – KKP RI
 </x-mail::message>

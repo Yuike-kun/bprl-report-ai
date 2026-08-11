@@ -11,6 +11,7 @@ import {
     CardTitle,
 } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import SignaturePad from "@/components/signature-pad";
 import { FormEventHandler, useRef, useState, ChangeEvent } from "react";
 import { CheckCircle2, Camera, Upload, X } from "lucide-react";
 
@@ -177,15 +178,14 @@ function UpdateProfileInformationForm({
 }) {
     const { data, setData, patch, errors, processing, recentlySuccessful } =
         useForm({
-            name: user.name,
-            email: user.email,
+            name: user.name ?? "",
+            email: user.email ?? "",
+            signature: user.signature ?? "",
         });
 
     const submit = (e: any) => {
         e.preventDefault();
-        patch("/profile", {
-            onSuccess: () => alert("Profile updated successfully!"),
-        });
+        patch("/profile");
     };
 
     return (
@@ -196,7 +196,7 @@ function UpdateProfileInformationForm({
                     Profile Information
                 </CardTitle>
                 <CardDescription>
-                    Update your account's profile information and email address.
+                    Update your account's profile information, email address, and digital signature.
                 </CardDescription>
             </CardHeader>
             <CardContent className="bg-white">
@@ -231,6 +231,16 @@ function UpdateProfileInformationForm({
                         {errors.email && (
                             <p className="text-sm text-red-500 mt-1">{errors.email}</p>
                         )}
+                    </div>
+
+                    {/* Signature Pad Component */}
+                    <div className="pt-2">
+                        <SignaturePad
+                            label="Tanda Tangan Digital"
+                            value={data.signature}
+                            onChange={(val) => setData("signature", val)}
+                            error={errors.signature}
+                        />
                     </div>
 
                     <div className="flex items-center gap-4 pt-4">
@@ -281,7 +291,6 @@ function UpdatePasswordForm() {
             preserveScroll: true,
             onSuccess: () => {
                 reset();
-                alert("Password updated successfully!");
             },
             onError: (errors) => {
                 if (errors.password) {
@@ -399,7 +408,7 @@ export default function EditProfile() {
                         Profile Configuration
                     </h1>
                     <p className="text-slate-500">
-                        Manage your profile details and security settings.
+                        Manage your profile details, security settings, and digital signature.
                     </p>
                 </div>
 
