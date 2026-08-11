@@ -137,9 +137,8 @@ function Reveal({
 export default function Welcome() {
     return (
         <HomeLayout>
-            <div className="relative w-full overflow-x-hidden text-slate-800">
-                {/* ═══════════ HERO ═══════════ */}
-                <div className="mb-6 px-6 pt-10 lg:px-14">
+            <div className="relative w-full text-slate-800">
+                <div className="mb-24 px-6 pt-10 lg:px-14">
                     <section className="relative isolate min-h-80 overflow-hidden rounded-2xl">
                         {/* Full screen image */}
                         <div className="absolute inset-0 -z-10">
@@ -150,7 +149,7 @@ export default function Welcome() {
                             />
 
                             {/* Optional overlay so text is easier to read */}
-                            <div className="absolute inset-0 bg-linear-to-b from-green-400/30 to-blue-500/50" />
+                            <div className="absolute inset-0 bg-linear-to-r from-white/70 to-blue-500/50" />
 
                             {/* Optional inset shadow */}
                             <div className="pointer-events-none absolute inset-0 shadow-[inset_0_0_60px_rgba(15,23,42,0.15)]" />
