@@ -58,7 +58,7 @@ class GeolocationController extends Controller
         }
 
         if (!empty($validated['search'])) {
-            $query->where('name', 'like', '%' . $validated['search'] . '%');
+            $query->where('name', 'like', '%' . $validated['search'] . '%')->orWhere('province_id', 'like', '%' . $validated['search'] . '%');
         }
 
         $results = $query->limit($validated['per_page'] ?? self::PER_PAGE)->get();
@@ -87,7 +87,7 @@ class GeolocationController extends Controller
         }
 
         if (!empty($validated['search'])) {
-            $query->where('name', 'like', '%' . $validated['search'] . '%');
+            $query->where('name', 'like', '%' . $validated['search'] . '%')->orWhere('regency_id', 'like', '%' . $validated['search'] . '%');
         }
 
         $results = $query->limit($validated['per_page'] ?? self::PER_PAGE)->get();
@@ -116,7 +116,7 @@ class GeolocationController extends Controller
         }
 
         if (!empty($validated['search'])) {
-            $query->where('name', 'like', '%' . $validated['search'] . '%');
+            $query->where('name', 'like', '%' . $validated['search'] . '%')->orWhere('district_id', 'like', '%' . $validated['search'] . '%');
         }
 
         $results = $query->limit($validated['per_page'] ?? self::PER_PAGE)->get();

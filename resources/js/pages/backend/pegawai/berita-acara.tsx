@@ -1096,7 +1096,7 @@ export default function BeritaAcara({
                                     <ComboboxSearch
                                         value={form.regency}
                                         onChange={(val) => set('regency', val)}
-                                        fetchUrl="/api/geolocation/regencies"
+                                        fetchUrl={`/api/geolocation/regencies?province_id=${form.province}`}
                                         labelKey="name"
                                         valueKey="id"
                                         placeholder="Pilih kabupaten"
@@ -1107,7 +1107,11 @@ export default function BeritaAcara({
                                     <ComboboxSearch
                                         value={form.district}
                                         onChange={(val) => set('district', val)}
-                                        fetchUrl="/api/geolocation/districts"
+                                        fetchUrl={
+                                            form.regency
+                                                ? `/api/geolocation/districts?regency_id=${form.regency}`
+                                                : ''
+                                        }
                                         labelKey="name"
                                         valueKey="id"
                                         placeholder="Pilih kecamatan"
