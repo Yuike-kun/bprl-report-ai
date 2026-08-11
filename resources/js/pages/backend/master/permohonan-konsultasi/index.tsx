@@ -159,16 +159,6 @@ export default function PermohonanKonsultasiIndex({ submissions, filters, succes
                                         <Eye className="w-4 h-4" />
                                     </Button>
                                 </Link>
-                                <Link href={`/master/permohonan-konsultasi/${item.id}/edit`}>
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-8 w-8 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50"
-                                        title="Edit"
-                                    >
-                                        <Pencil className="w-4 h-4" />
-                                    </Button>
-                                </Link>
                                 <Button
                                     variant="ghost"
                                     size="icon"
