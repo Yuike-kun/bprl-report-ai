@@ -6,11 +6,23 @@ use Illuminate\Database\Eloquent\Model;
 class PermohonanKonsultasi extends Model
 {
     protected $fillable = [
-        'jadwal_konsultasi_id', 'child_schedule_id', 'waktu_konsultasi',
-        'nama_pemohon', 'jabatan_pemohon', 'instansi',
-        'rencana_kegiatan', 'kabupaten', 'provinsi', 'nomor_telepon',
-        'email', 'permintaan_khusus', 'setuju_syarat_ketentuan',
-        'tanda_tangan', 'status',
+        'jadwal_konsultasi_id',
+        'child_schedule_id',
+        'waktu_konsultasi',
+        'nama_pemohon',
+        'jabatan_pemohon',
+        'instansi',
+        'rencana_kegiatan',
+        'kabupaten',
+        'provinsi',
+        'nomor_telepon',
+        'email',
+        'permintaan_khusus',
+        'setuju_syarat_ketentuan',
+        'tanda_tangan',
+        'status',
+        'provinsi',
+        'kabupaten',  // ← add these
     ];
 
     public function layanan()

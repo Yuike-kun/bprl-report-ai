@@ -30,6 +30,19 @@ class BeritaAcaraController extends Controller
             ]);
     }
 
+    private function syncPermohonanKonsultasi(PermohonanKonsultasi $konsultasi, array $data): void
+    {
+        $konsultasi->update([
+            'nama_pemohon' => $data['requester_name'] ?? $konsultasi->nama_pemohon,
+            'jabatan_pemohon' => $data['requester_position'] ?? $konsultasi->jabatan_pemohon,
+            'instansi' => $data['legal_entity_name'] ?? $konsultasi->instansi,
+            'email' => $data['contact_email'] ?? $konsultasi->email,
+            'provinsi' => $data['province'] ?? $konsultasi->provinsi,
+            'kabupaten' => $data['regency'] ?? $konsultasi->kabupaten,
+            'status' => 'berita_acara',
+        ]);
+    }
+
     public function index(Request $request): Response
     {
         $rows = BeritaAcaraKonsultasi::query()
@@ -109,9 +122,7 @@ class BeritaAcaraController extends Controller
                 $this->handleUploads($request, $record);
 
                 $konsultasi = PermohonanKonsultasi::find($request->request_form_id);
-                $konsultasi->update([
-                    'status' => 'berita_acara',
-                ]);
+                $this->syncPermohonanKonsultasi($konsultasi, $data);
                 return $record;
             });
 
@@ -162,9 +173,7 @@ class BeritaAcaraController extends Controller
             $beritaAcara->update($data);
             $this->handleUploads($request, $beritaAcara);
             $konsultasi = PermohonanKonsultasi::find($request->request_form_id);
-            $konsultasi->update([
-                'status' => 'berita_acara',
-            ]);
+            $this->syncPermohonanKonsultasi($konsultasi, $data);
         });
 
         return redirect()
@@ -208,9 +217,7 @@ class BeritaAcaraController extends Controller
             $this->handleUploads($request, $beritaAcara);
 
             $konsultasi = PermohonanKonsultasi::find($request->request_form_id);
-            $konsultasi->update([
-                'status' => 'berita_acara',
-            ]);
+            $this->syncPermohonanKonsultasi($konsultasi, $data);
 
             DB::commit();
 
