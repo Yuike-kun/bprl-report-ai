@@ -31,6 +31,7 @@ Route::inertia('/', 'welcome')->name('home');
 Route::get('/request-form', [RequestFormController::class, 'index'])->name('request-form');
 Route::post('/request-form', [RequestFormController::class, 'store'])->name('request-form.store');
 
+Route::get('/kkprl', [KkprlProposalController::class, 'index_iframe'])->name('kkprl');
 Route::get('/kkprl-proposal', [KkprlProposalController::class, 'create'])->name('kkprl-proposal.create');
 Route::post('/kkprl-proposal', [KkprlProposalController::class, 'store'])->name('kkprl-proposal.store');
 

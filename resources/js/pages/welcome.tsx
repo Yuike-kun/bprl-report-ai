@@ -232,24 +232,13 @@ export default function Welcome() {
                                             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                                         </Button>
                                     </Link>
-                                    <Dialog>
-                                        <DialogTrigger
-                                            render={
-                                                <Button className="inline-flex w-fit items-center gap-2 rounded-full border border-slate-900/10 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:-translate-y-0.5 hover:bg-slate-50">
-                                                    <FileText className="h-4 w-4" />
-                                                    Isi Proposal KKPRL
-                                                </Button>
-                                            }
-                                        />
-                                        <DialogContent className="w-[95vw] max-w-5xl overflow-hidden border-0 p-0">
-                                            <iframe
-                                                src="https://egeraibprlmakassar-production.up.railway.app"
-                                                className="h-[85vh] w-full border-0"
-                                                title="Asisten Proposal KKPRL"
-                                                allow="clipboard-write" // Optional: allows the iframe to copy/paste
-                                            />
-                                        </DialogContent>
-                                    </Dialog>
+                                    <Link
+                                        href="/kkprl"
+                                        className="inline-flex w-full items-center gap-2 rounded-full border border-slate-900/10 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:-translate-y-0.5 hover:bg-slate-50"
+                                    >
+                                        <FileText className="h-4 w-4" />
+                                        Isi Proposal KKPRL
+                                    </Link>
                                     <Dialog>
                                         <DialogTrigger
                                             render={
@@ -268,13 +257,6 @@ export default function Welcome() {
                                             />
                                         </DialogContent>
                                     </Dialog>
-                                    {/* <Link
-                                        href="/kkprl-proposal"
-                                        className="inline-flex w-full items-center gap-2 rounded-full border border-slate-900/10 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:-translate-y-0.5 hover:bg-slate-50"
-                                    >
-                                        <FileText className="h-4 w-4" />
-                                        Isi Proposal KKPRL
-                                    </Link> */}
                                 </div>
                             </div>
                         </div>
