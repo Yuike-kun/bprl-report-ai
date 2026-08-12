@@ -21,6 +21,11 @@
                 "label": "Staff",
                 "url": "/staff",
                 "icon": "CalendarDays"
+            },
+            {
+                "label": "Changelog",
+                "url": "/master/changelog",
+                "icon": "History"
             }
         ]
     },

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Master\ChangelogController;
 use App\Http\Controllers\Master\JadwalKonsultasiController;
 use App\Http\Controllers\Master\KkprlProposalMasterController;
 use App\Http\Controllers\Master\LokasiKonsultasiController;
@@ -61,6 +62,15 @@ Route::middleware('auth')->group(function () {
             Route::get('/{lokasiKonsultasi}/edit', [LokasiKonsultasiController::class, 'edit'])->name('edit');
             Route::put('/{lokasiKonsultasi}', [LokasiKonsultasiController::class, 'update'])->name('update');
             Route::delete('/{lokasiKonsultasi}', [LokasiKonsultasiController::class, 'destroy'])->name('destroy');
+        });
+
+        Route::prefix('master/changelog')->as('master.changelog.')->middleware('role:admin,pegawai')->group(function () {
+            Route::get('/', [ChangelogController::class, 'index'])->name('index');
+            Route::get('/create', [ChangelogController::class, 'create'])->name('create');
+            Route::post('/', [ChangelogController::class, 'store'])->name('store');
+            Route::get('/{changelog}/edit', [ChangelogController::class, 'edit'])->name('edit');
+            Route::put('/{changelog}', [ChangelogController::class, 'update'])->name('update');
+            Route::delete('/{changelog}', [ChangelogController::class, 'destroy'])->name('destroy');
         });
 
         Route::prefix('master/jadwal-konsultasi')->as('master.jadwal-konsultasi.')->middleware('role:admin,pegawai')->group(function () {
