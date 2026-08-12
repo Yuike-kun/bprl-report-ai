@@ -10,11 +10,21 @@ import {
     BadgeCheck,
     FileText,
     Compass,
+    FileQuestion,
 } from 'lucide-react';
 import { Link } from '@inertiajs/react';
 import logo from '/public/egerai-logo.png';
 import heroIllustration from '/public/hero-illustration.png';
 import HomeLayout from './layout';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 
 const quickAccess = [
     {
@@ -215,34 +225,60 @@ export default function Welcome() {
                                     Ruang Laut — presisi dan resmi.
                                 </p>
 
-                                <div className="grid grid-cols-1 items-center gap-3 pt-1 lg:grid-cols-2">
-                                    <Link
-                                        href="/request-form"
-                                        className="group inline-flex w-full items-center gap-2 rounded-full bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-slate-900/20 transition-all hover:-translate-y-0.5 hover:bg-blue-700 active:scale-[0.98]"
-                                    >
-                                        Ajukan Konsultasi
-                                        <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                                <div className="flex max-w-lg flex-col items-center gap-4 lg:flex-row">
+                                    <Link href="/request-form">
+                                        <Button className="group inline-flex w-full items-center gap-2 rounded-full bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-slate-900/20 transition-all hover:-translate-y-0.5 hover:bg-blue-700 active:scale-[0.98]">
+                                            Ajukan Konsultasi
+                                            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                                        </Button>
                                     </Link>
-
-                                    <Link
+                                    <Dialog>
+                                        <DialogTrigger
+                                            render={
+                                                <Button className="inline-flex w-fit items-center gap-2 rounded-full border border-slate-900/10 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:-translate-y-0.5 hover:bg-slate-50">
+                                                    <FileText className="h-4 w-4" />
+                                                    Isi Proposal KKPRL
+                                                </Button>
+                                            }
+                                        />
+                                        <DialogContent className="w-[95vw] max-w-5xl overflow-hidden border-0 p-0">
+                                            <iframe
+                                                src="https://egeraibprlmakassar-production.up.railway.app"
+                                                className="h-[85vh] w-full border-0"
+                                                title="Asisten Proposal KKPRL"
+                                                allow="clipboard-write" // Optional: allows the iframe to copy/paste
+                                            />
+                                        </DialogContent>
+                                    </Dialog>
+                                    <Dialog>
+                                        <DialogTrigger
+                                            render={
+                                                <Button className="">
+                                                    <FileQuestion className="h-4 w-4" />
+                                                    FAQ
+                                                </Button>
+                                            }
+                                        />
+                                        <DialogContent className="w-[95vw] max-w-5xl overflow-hidden border-0 p-0">
+                                            <iframe
+                                                src="https://egeraibprlmakassar-production.up.railway.app/asisten"
+                                                className="h-[85vh] w-full border-0"
+                                                title="Asisten Proposal KKPRL"
+                                                allow="clipboard-write" // Optional: allows the iframe to copy/paste
+                                            />
+                                        </DialogContent>
+                                    </Dialog>
+                                    {/* <Link
                                         href="/kkprl-proposal"
                                         className="inline-flex w-full items-center gap-2 rounded-full border border-slate-900/10 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:-translate-y-0.5 hover:bg-slate-50"
                                     >
                                         <FileText className="h-4 w-4" />
                                         Isi Proposal KKPRL
-                                    </Link>
+                                    </Link> */}
                                 </div>
                             </div>
                         </div>
                     </section>
-                </div>
-
-                <div className="mb-6 flex h-full w-full justify-center overflow-hidden rounded-md px-6 pt-10 lg:px-14">
-                    <iframe
-                        src="https://egeraibprlmakassar-production.up.railway.app/asisten"
-                        width={document.body.clientWidth}
-                        height="900"
-                    ></iframe>
                 </div>
 
                 {/* ═══════════ ALUR LAYANAN ═══════════ */}
