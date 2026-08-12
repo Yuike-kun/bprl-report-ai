@@ -105,13 +105,6 @@ function Navbar({ scrolled }: { scrolled: boolean }) {
                             alt="Logo DJPRL"
                             className="h-full object-contain transition-transform group-hover:scale-105"
                         />
-                        <div className="flex h-full w-full flex-col justify-center border-l border-slate-300/80 pl-3">
-                            <img
-                                src={logo_klp_white}
-                                alt="Logo KPL"
-                                className="h-full object-contain transition-transform group-hover:scale-105"
-                            />
-                        </div>
                     </Link>
 
                     {/* Desktop Middle Menu Navigation */}
@@ -179,7 +172,7 @@ function Navbar({ scrolled }: { scrolled: boolean }) {
                             )}
                         >
                             <img
-                                src={logo_kkp}
+                                src={logo_klp_white}
                                 alt="Logo KKP"
                                 className="h-full object-contain"
                             />
