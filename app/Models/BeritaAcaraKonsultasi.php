@@ -56,6 +56,8 @@ class BeritaAcaraKonsultasi extends Model
         'environmental_condition',
         'other_information',
         'consultation_result',
+        // Step 2 - Konsuktasi/Koordinasi
+        'consultation_notes'
     ];
 
     protected $casts = [

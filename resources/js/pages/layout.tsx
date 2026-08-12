@@ -30,7 +30,7 @@ const services = [
         badge: 'Publik',
     },
     {
-        href: '/kkprl-proposal',
+        href: '/login',
         icon: BadgeCheck,
         title: 'Proposal KKPRL',
         desc: 'Formulir penyusunan proposal KKPRL mandiri terstruktur.',
@@ -353,7 +353,7 @@ export default function HomeLayout({ children }: { children: ReactNode }) {
                                 </li>
                                 <li>
                                     <Link
-                                        href="/kkprl-proposal"
+                                        href="/login"
                                         className="flex items-center gap-1.5 transition-colors hover:text-blue-600"
                                     >
                                         <ArrowRight className="h-3 w-3 text-blue-500" />
