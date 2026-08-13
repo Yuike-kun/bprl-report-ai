@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Services;
 
 use Exception;
@@ -8,9 +9,10 @@ use Illuminate\Support\Facades\Log;
 class GeminiService
 {
     protected string $apiKey;
+
     protected string $model;
 
-        protected const REQUIRED_SECTIONS = [
+    protected const REQUIRED_SECTIONS = [
         'batimetri',
         'gelombang',
         'arus',
@@ -35,10 +37,10 @@ class GeminiService
     ];
 
     protected const SECTION_PROMPTS = [
-        'arus'              => 'Disampaikan sumber data arus yang digunakan dalam permohonan apakah data sekunder atau primer, untuk data sekunder disampaikan sumber pengambilan dan rentang tahun pengambilan. Variabel arus yang disampaikan dapat berupa Kecepatan Arus maksimal dalam periode tertentu dan atau Kecepatan Arus rata-rata dalam periode tertentu serta arah kecepatan arus dominan dalam periode tertentu.',
-        'gelombang'         => 'Disampaikan sumber data gelombang yang digunakan dalam permohonan apakah data sekunder atau primer ataupun analisis gelombang dengan menggunakan data angin, untuk data sekunder disampaikan sumber pengambilan dan rentang tahun pengambilan. Variabel gelombang yang disampaikan dapat berupa Tinggi Gelombang Signifikan maksimal dalam periode tertentu dan atau Tinggi Gelombang Signifikan Rata-rata dalam periode tertentu, Pero gelombang signifikan serta arah Gelombang dominan dalam periode tertentu.',
-        'pasang_surut'      => 'Disampaikan data pasang surut yang digunakan dalam permohonan apakah data sekunder atau primer, untuk data sekunder disampaikan sumber pengambilan dan periode tinjauan pasang surut. Untuk data primer pengambilan data pasang surut merujuk kepada standar analisis pasang surut baik Least Square maupun Admiralty. Variabel Pasang Surut yang disampaikan dapat berupa Elevasi Pasang tertinggi : HWS/HHWL/HAT ; Elevasi Muka Air Rata-rata (MSL/MWL) ; Elevasi Surut terendah (LWS/LLWL/LAT); Tipe Pasang Surut ; Grafik Muka Air Pasang Surut dan Range Pasang Surut.',
-        'batimetri'         => 'Disampaikan peta batimetri/Kontur kedalaman dilengkapi dengan posisi permohonan ruang lautnya. Disampaikan sumber data batimetri apakah berasal dari data sekunder (BIG/BATNAS/GEBCO/DISHIDROS TNI-AL/ dll) atau berasal dari pengambilan data primer. Jika menggunakan data primer, disampaikan alat yang digunakan dalam pengambilan dan pemrosesan datanya menjadi kontur. Peta tersebut kemudian dibuat narasi/deskripsi yang menggambarkan kondisi batimetri di lokasi tersebut.',
+        'arus' => 'Disampaikan sumber data arus yang digunakan dalam permohonan apakah data sekunder atau primer, untuk data sekunder disampaikan sumber pengambilan dan rentang tahun pengambilan. Variabel arus yang disampaikan dapat berupa Kecepatan Arus maksimal dalam periode tertentu dan atau Kecepatan Arus rata-rata dalam periode tertentu serta arah kecepatan arus dominan dalam periode tertentu.',
+        'gelombang' => 'Disampaikan sumber data gelombang yang digunakan dalam permohonan apakah data sekunder atau primer ataupun analisis gelombang dengan menggunakan data angin, untuk data sekunder disampaikan sumber pengambilan dan rentang tahun pengambilan. Variabel gelombang yang disampaikan dapat berupa Tinggi Gelombang Signifikan maksimal dalam periode tertentu dan atau Tinggi Gelombang Signifikan Rata-rata dalam periode tertentu, Pero gelombang signifikan serta arah Gelombang dominan dalam periode tertentu.',
+        'pasang_surut' => 'Disampaikan data pasang surut yang digunakan dalam permohonan apakah data sekunder atau primer, untuk data sekunder disampaikan sumber pengambilan dan periode tinjauan pasang surut. Untuk data primer pengambilan data pasang surut merujuk kepada standar analisis pasang surut baik Least Square maupun Admiralty. Variabel Pasang Surut yang disampaikan dapat berupa Elevasi Pasang tertinggi : HWS/HHWL/HAT ; Elevasi Muka Air Rata-rata (MSL/MWL) ; Elevasi Surut terendah (LWS/LLWL/LAT); Tipe Pasang Surut ; Grafik Muka Air Pasang Surut dan Range Pasang Surut.',
+        'batimetri' => 'Disampaikan peta batimetri/Kontur kedalaman dilengkapi dengan posisi permohonan ruang lautnya. Disampaikan sumber data batimetri apakah berasal dari data sekunder (BIG/BATNAS/GEBCO/DISHIDROS TNI-AL/ dll) atau berasal dari pengambilan data primer. Jika menggunakan data primer, disampaikan alat yang digunakan dalam pengambilan dan pemrosesan datanya menjadi kontur. Peta tersebut kemudian dibuat narasi/deskripsi yang menggambarkan kondisi batimetri di lokasi tersebut.',
         'ekosistem_pesisir' => 'Sesuai Pasal 42 ayat (4) Permen KP Nomor 28 Tahun 2021, kajian ekosistem pesisir mencakup mangrove, terumbu karang, dan padang lamun di sekitar lokasi kegiatan. Jika pada lokasi tidak terdapat salah satu ekosistem, wajib dinyatakan tidak ada disertai dokumentasi dan narasi yang relevan.',
         'uraian_kegiatan' => 'Jelaskan uraian jenis usaha, meliputi pembangunan bangunan dan instalasi di laut (dermaga/tambak/instalasi kabel/dll). Sebutkan tujuan kegiatan, manfaat kegiatan usaha, nilai investasi (estimasi jika perlu), dan keterlibatan masyarakat lokal dalam tenaga kerja.',
         'kegiatan_eksisting' => 'Jelaskan apakah terdapat kegiatan pemanfaatan ruang laut menetap (eksisting) di lokasi ini, atau jelaskan rencana kegiatan yang akan dimohonkan.',
@@ -60,8 +62,8 @@ class GeminiService
 
     public function __construct()
     {
-        $this->apiKey = config('services.gemini.key');
-        $this->model  = config('services.gemini.model', 'gemini-1.5-pro');
+        $this->apiKey = (string) config('services.gemini.key', '');
+        $this->model = (string) config('services.gemini.model', 'gemini-1.5-pro');
     }
 
     /* ────────────────────────────────────────────────────────────────
@@ -82,7 +84,7 @@ class GeminiService
 
                 Log::warning('Narasi belum lengkap, mencoba ulang.', [
                     'attempt' => $attempt,
-                    'empty'   => $this->emptySections($narasi),
+                    'empty' => $this->emptySections($narasi),
                 ]);
             } catch (Exception $e) {
                 Log::error('Error saat call Gemini.', ['error' => $e->getMessage()]);
@@ -114,6 +116,79 @@ class GeminiService
         return $this->normalizeOutput($narasi);
     }
 
+    /**
+     * Fill only explicitly missing proposal metadata. This keeps the PDF
+     * deterministic parser as the source of truth and limits what is sent to AI.
+     */
+    public function extractProposalFields(string $documentText, array $missing): array
+    {
+        if (blank($this->apiKey) || empty($missing)) {
+            return [];
+        }
+
+        $properties = collect($missing)->mapWithKeys(fn ($key) => [$key => [
+            'type' => 'STRING',
+            'description' => 'Nilai persis dari dokumen. Gunakan string kosong bila tidak ditemukan.',
+        ]])->all();
+        $prompt = 'Ekstrak hanya field metadata proposal PKKPRL berikut dari teks. Jangan mengarang nilai. '
+            ."Kembalikan JSON valid dengan seluruh key yang diminta; gunakan string kosong jika tidak ada.\n"
+            .'FIELD: '.implode(', ', $missing)."\nDOKUMEN:\n".$documentText;
+
+        try {
+            return $this->callGemini($prompt, [
+                'type' => 'OBJECT',
+                'properties' => $properties,
+                'required' => array_values($missing),
+            ]);
+        } catch (Exception $exception) {
+            Log::warning('AI fallback ekstraksi proposal gagal.', ['error' => $exception->getMessage()]);
+
+            return [];
+        }
+    }
+
+    public function answerKkprl(string $question): string
+    {
+        if (blank($this->apiKey)) {
+            return 'Asisten belum aktif. Silakan hubungi BPRL Makassar atau gunakan layanan e-SEA resmi.';
+        }
+        $prompt = 'Anda adalah Asisten KKPRL BPRL Makassar. Jawab ringkas dalam Bahasa Indonesia berdasarkan aturan KKPRL. '
+            ."Jangan mengarang dasar hukum atau keputusan izin; sarankan verifikasi ke OSS/e-SEA bila informasinya tidak pasti.\nPERTANYAAN: {$question}";
+        try {
+            $response = Http::timeout(30)->post("https://generativelanguage.googleapis.com/v1beta/models/{$this->model}:generateContent?key={$this->apiKey}", [
+                'contents' => [['parts' => [['text' => $prompt]]]],
+                'generationConfig' => ['temperature' => 0.2, 'maxOutputTokens' => 1000],
+            ]);
+
+            if ($response->failed()) {
+                Log::warning('Gemini Asisten KKPRL API error.', [
+                    'status' => $response->status(),
+                    'model' => $this->model,
+                    'body' => $response->json(),
+                ]);
+
+                return 'Asisten belum dapat dihubungi. Periksa GEMINI_API_KEY dan GEMINI_MODEL pada konfigurasi server.';
+            }
+
+            $answer = trim((string) $response->json('candidates.0.content.parts.0.text'));
+            if (blank($answer)) {
+                Log::warning('Gemini Asisten KKPRL tidak mengembalikan jawaban.', [
+                    'model' => $this->model,
+                    'finish_reason' => $response->json('candidates.0.finishReason'),
+                    'response' => $response->json(),
+                ]);
+
+                return 'Asisten tidak menerima jawaban dari model. Periksa konfigurasi model lalu coba lagi.';
+            }
+
+            return $answer;
+        } catch (Exception $exception) {
+            Log::warning('Asisten KKPRL gagal.', ['error' => $exception->getMessage()]);
+
+            return 'Maaf, asisten sedang tidak dapat dihubungi. Silakan coba lagi.';
+        }
+    }
+
     /* ────────────────────────────────────────────────────────────────
      * API CALL
      * ──────────────────────────────────────────────────────────────── */
@@ -122,14 +197,14 @@ class GeminiService
         $url = "https://generativelanguage.googleapis.com/v1beta/models/{$this->model}:generateContent?key={$this->apiKey}";
 
         $payload = [
-            'contents'         => [
+            'contents' => [
                 ['parts' => [['text' => $prompt]]],
             ],
             'generationConfig' => [
-                'temperature'      => 0.3,
-                'maxOutputTokens'  => 8192, // ✅ prevents truncation → empty trailing fields
+                'temperature' => 0.3,
+                'maxOutputTokens' => 8192, // ✅ prevents truncation → empty trailing fields
                 'responseMimeType' => 'application/json',
-                'responseSchema'   => $schema ?? $this->responseSchema(),
+                'responseSchema' => $schema ?? $this->responseSchema(),
             ],
         ];
 
@@ -137,7 +212,7 @@ class GeminiService
 
         if ($response->failed()) {
             Log::error('Gemini API error', ['status' => $response->status(), 'body' => $response->body()]);
-            throw new Exception('Gagal menghubungi Gemini API: ' . $response->status());
+            throw new Exception('Gagal menghubungi Gemini API: '.$response->status());
         }
 
         $text = $response->json('candidates.0.content.parts.0.text');
@@ -152,7 +227,7 @@ class GeminiService
             $decoded = json_decode(preg_replace('/^```(?:json)?\s*|\s*```$/', '', trim($text)), true);
 
             if (json_last_error() !== JSON_ERROR_NONE) {
-                throw new Exception('Gagal parse JSON dari Gemini: ' . json_last_error_msg());
+                throw new Exception('Gagal parse JSON dari Gemini: '.json_last_error_msg());
             }
         }
 
@@ -164,10 +239,10 @@ class GeminiService
      * ──────────────────────────────────────────────────────────────── */
     protected function fillMissingSections(array $missing, string $documentText, array $profileContext): array
     {
-        $list  = implode(', ', $missing);
+        $list = implode(', ', $missing);
         $guide = collect(self::SECTION_PROMPTS)
             ->only($missing)
-            ->map(fn($text, $key) => "- [{$key}] {$text}")
+            ->map(fn ($text, $key) => "- [{$key}] {$text}")
             ->implode("\n");
 
         $prompt = <<<PROMPT
@@ -198,9 +273,9 @@ PROMPT;
 
         return $this->normalizeOutput(
             $this->callGemini($prompt, [
-                'type'       => 'OBJECT',
+                'type' => 'OBJECT',
                 'properties' => $properties,
-                'required'   => array_values($missing),
+                'required' => array_values($missing),
             ]),
             $missing
         );
@@ -209,7 +284,7 @@ PROMPT;
     protected function sectionSchema(): array
     {
         return [
-            'type'        => 'STRING',
+            'type' => 'STRING',
             'description' => 'Narasi teknis formal 1-3 paragraf yang memenuhi panduan resmi template PKKPRL untuk bagian ini. Gunakan data spesifik dari dokumen sumber; jika tidak ada, gunakan pengetahuan teknis standar kelautan/rekayasa pantai yang masuk akal. Wajib diisi, tidak boleh kosong.',
         ];
     }
@@ -217,7 +292,7 @@ PROMPT;
     /* ────────────────────────────────────────────────────────────────
      * PROMPT & SCHEMA
      * ──────────────────────────────────────────────────────────────── */
-        protected function buildPrompt(string $documentText, array $profileContext): string
+    protected function buildPrompt(string $documentText, array $profileContext): string
     {
         $guide = collect(self::SECTION_PROMPTS)
             ->map(fn ($text, $key) => "- [{$key}] {$text}")
@@ -253,9 +328,9 @@ PROMPT;
         }
 
         return [
-            'type'       => 'OBJECT',
+            'type' => 'OBJECT',
             'properties' => $properties,
-            'required'   => self::REQUIRED_SECTIONS,
+            'required' => self::REQUIRED_SECTIONS,
         ];
     }
 
@@ -265,8 +340,8 @@ PROMPT;
     protected function formatContext(array $profileContext): string
     {
         return collect($profileContext)
-            ->filter(fn($value) => ! empty($value))
-            ->map(fn($value, $key) => "- {$key}: {$value}")
+            ->filter(fn ($value) => ! empty($value))
+            ->map(fn ($value, $key) => "- {$key}: {$value}")
             ->implode("\n") ?: '- (tidak ada konteks tambahan)';
     }
 
@@ -299,7 +374,7 @@ PROMPT;
     {
         return array_values(array_filter(
             self::REQUIRED_SECTIONS,
-            fn($key) => empty(trim((string) ($narasi[$key] ?? '')))
+            fn ($key) => empty(trim((string) ($narasi[$key] ?? '')))
         ));
     }
 }

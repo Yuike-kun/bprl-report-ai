@@ -4,5 +4,11 @@
         "label": "Dashboard",
         "url": "/pegawai/dashboard",
         "icon": "LayoutDashboard"
+    },
+    {
+        "type": "link",
+        "label": "Ekstrak Proposal",
+        "url": "/proposal-extractions/create",
+        "icon": "FileSearch"
     }
 ]

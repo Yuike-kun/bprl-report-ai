@@ -1,11 +1,5 @@
 <?php
 
-use App\Http\Controllers\Master\ChangelogController;
-use App\Http\Controllers\Master\JadwalKonsultasiController;
-use App\Http\Controllers\Master\KkprlProposalMasterController;
-use App\Http\Controllers\Master\LokasiKonsultasiController;
-use App\Http\Controllers\Master\PermohonanKonsultasiController;
-use App\Http\Controllers\Pegawai\DashboardController as PegawaiDashboardController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BeritaAcaraController;
 use App\Http\Controllers\DashboardController;
@@ -13,7 +7,14 @@ use App\Http\Controllers\GeneralDraftController;
 use App\Http\Controllers\GenerateDocxController;
 use App\Http\Controllers\GeolocationController;
 use App\Http\Controllers\KkprlProposalController;
+use App\Http\Controllers\Master\ChangelogController;
+use App\Http\Controllers\Master\JadwalKonsultasiController;
+use App\Http\Controllers\Master\KkprlProposalMasterController;
+use App\Http\Controllers\Master\LokasiKonsultasiController;
+use App\Http\Controllers\Master\PermohonanKonsultasiController;
+use App\Http\Controllers\Pegawai\DashboardController as PegawaiDashboardController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ProposalExtractionController;
 use App\Http\Controllers\RequestFormController;
 use App\Http\Controllers\StaffController;
 use App\Http\Controllers\UsersController;
@@ -105,6 +106,14 @@ Route::middleware('auth')->group(function () {
         });
     });
 
+    Route::middleware('role:admin,pegawai')->prefix('proposal-extractions')->as('proposal-extractions.')->group(function () {
+        Route::get('/create', [ProposalExtractionController::class, 'create'])->name('create');
+        Route::post('/', [ProposalExtractionController::class, 'store'])->name('store');
+        Route::get('/{proposalExtraction}/edit', [ProposalExtractionController::class, 'edit'])->name('edit');
+        Route::put('/{proposalExtraction}', [ProposalExtractionController::class, 'update'])->name('update');
+        Route::get('/{proposalExtraction}/download', [ProposalExtractionController::class, 'download'])->name('download');
+    });
+
     Route::prefix('berita-acara')->as('berita-acara.')->group(function () {
         Route::middleware(['auth', 'role:pegawai'])->group(function () {
             Route::get('/pegawai', [BeritaAcaraController::class, 'index_pegawai'])->name('index.pegawai');
@@ -145,3 +154,7 @@ Route::post('/pkkprl/generate-docx-from-report', [GenerateDocxController::class,
     ->name('pkkprl.generate-docx-from-report');
 Route::get('/pkkprl/download-proposal/{draftId}', [GenerateDocxController::class, 'generateFromDraft'])
     ->name('pkkprl.download-proposal');
+
+Route::post('/kkprl/assistant', [ProposalExtractionController::class, 'assistant'])
+    ->middleware('throttle:20,1')
+    ->name('kkprl.assistant');

@@ -41,6 +41,11 @@
                 "icon": "FilePlus2"
             },
             {
+                "label": "Ekstrak Proposal",
+                "url": "/proposal-extractions/create",
+                "icon": "FileSearch"
+            },
+            {
                 "label": "Proposal KKPRL",
                 "url": "/master/kkprl-proposal",
                 "icon": "FileText"

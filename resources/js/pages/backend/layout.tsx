@@ -36,6 +36,7 @@ import {
     Menu,
     Home,
     History,
+    FileSearch,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { ReactNode, useEffect, useLayoutEffect, useRef, useState } from 'react';
@@ -75,6 +76,7 @@ const ICONS: Record<string, LucideIcon> = {
     CalendarDays,
     Users,
     History,
+    FileSearch,
 };
 
 const getIcon = (name?: string): LucideIcon =>

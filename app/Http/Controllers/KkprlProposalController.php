@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use App\Models\KkprlProposal;
@@ -9,7 +10,7 @@ class KkprlProposalController extends Controller
 {
     public function index_iframe()
     {
-        return Inertia::render('iframe-kkprl');
+        return Inertia::render('kkprl-dashboard');
     }
 
     public function create()
@@ -119,7 +120,7 @@ class KkprlProposalController extends Controller
         // Multi-file: dokumentasi pemanfaatan ruang laut
         if ($request->hasFile('marine_spatial_docs')) {
             $validated['marine_spatial_docs_path'] = collect($request->file('marine_spatial_docs'))
-                ->map(fn($file) => $file->store('kkprl/ruang-laut', 'public'))
+                ->map(fn ($file) => $file->store('kkprl/ruang-laut', 'public'))
                 ->values()
                 ->all();
         }
