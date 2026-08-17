@@ -1,42 +1,318 @@
-import { Head, Link } from '@inertiajs/react';
+import { useEffect, useRef, useState } from 'react';
 import {
     ArrowRight,
-    Bot,
-    CheckCircle2,
-    CloudUpload,
+    ShieldCheck,
+    Zap,
+    UserRound,
+    ClipboardCheck,
+    FileCheck2,
+    BadgeCheck,
     FileText,
-    FileUp,
-    ScanSearch,
-    Settings2,
-    Waves,
+    MapPin,
 } from 'lucide-react';
+import { Link } from '@inertiajs/react';
+import logo from '/public/egerai-logo.png';
+import heroIllustration from '/public/hero-illustration.png';
 import HomeLayout from './layout';
-import heroBanner from '/public/hero-banner.png';
 
-const flow = [
-    { icon: CloudUpload, title: 'Siapkan Proposal', description: 'Gunakan draft proposal PKKPRL dalam format digital.', style: 'bg-blue-700' },
-    { icon: Waves, title: 'Siapkan Laporan', description: 'Lengkapi dengan laporan kondisi eksisting atau hidro-oseanografi.', style: 'bg-sky-500' },
-    { icon: Settings2, title: 'Review Data', description: 'Periksa data kegiatan, lokasi, koordinat, serta lampiran pendukung.', style: 'bg-violet-600' },
-    { icon: FileUp, title: 'Generate Dokumen', description: 'Simpan draft dan unduh dokumen Word setelah data lengkap.', style: 'bg-amber-500' },
+const steps = [
+    {
+        icon: ClipboardCheck,
+        code: 'WP-01',
+        title: 'Pengajuan',
+        desc: 'Isi permohonan konsultasi atau proposal KKPRL secara daring.',
+    },
+    {
+        icon: FileCheck2,
+        code: 'WP-02',
+        title: 'Verifikasi',
+        desc: 'Tim BPRL memeriksa kelengkapan berkas & kesesuaian zonasi.',
+    },
+    {
+        icon: Zap,
+        code: 'WP-03',
+        title: 'Drafting AI',
+        desc: 'Sistem e-GeRAI menyusun draf laporan pertimbangan teknis.',
+    },
+    {
+        icon: BadgeCheck,
+        code: 'WP-04',
+        title: 'Penerbitan',
+        desc: 'Pengesahan dokumen resmi dengan tanda tangan digital.',
+    },
 ];
 
+const services = [
+    {
+        icon: ClipboardCheck,
+        tag: 'PUBLIK',
+        title: 'Konsultasi & Asistensi',
+        desc: 'Ajukan permohonan konsultasi pemanfaatan ruang laut secara daring.',
+        href: '/request-form',
+        cta: 'Ajukan Sekarang',
+    },
+    {
+        icon: FileText,
+        tag: 'MANDIRI',
+        title: 'Proposal KKPRL',
+        desc: 'Susun berkas usulan kesesuaian kegiatan pemanfaatan ruang laut.',
+        href: '/kkprl-proposal',
+        cta: 'Isi Proposal',
+    },
+    {
+        icon: UserRound,
+        tag: 'INTERNAL',
+        title: 'Portal Petugas',
+        desc: 'Masuk untuk generate dokumen dan pengesahan e-sign petugas BPRL.',
+        href: '/login',
+        cta: 'Masuk Portal',
+    },
+];
+
+function Reveal({
+    children,
+    className = '',
+}: {
+    children: React.ReactNode;
+    className?: string;
+}) {
+    const ref = useRef<HTMLDivElement>(null);
+    const [visible, setVisible] = useState(false);
+
+    useEffect(() => {
+        const el = ref.current;
+        if (!el) return;
+        const obs = new IntersectionObserver(
+            ([entry]) => {
+                if (entry.isIntersecting) {
+                    setVisible(true);
+                    obs.disconnect();
+                }
+            },
+            { threshold: 0.1 },
+        );
+        obs.observe(el);
+        return () => obs.disconnect();
+    }, []);
+
+    return (
+        <div
+            ref={ref}
+            className={`mx-6 transition-all duration-700 ease-out motion-reduce:transition-none sm:mx-10 lg:mx-24 ${
+                visible
+                    ? 'translate-y-0 opacity-100'
+                    : 'translate-y-6 opacity-0 motion-reduce:translate-y-0 motion-reduce:opacity-100'
+            } ${className}`}
+        >
+            {children}
+        </div>
+    );
+}
+
 export default function Welcome() {
-    return <HomeLayout>
-        <Head title="e-GeRAI KKPRL" />
-        <section className="-mx-6 w-[calc(100%+3rem)] lg:-mx-8 lg:w-[calc(100%+4rem)]">
-            <div className="mx-auto max-w-[1600px]">
-                <img src={heroBanner} alt="e-GeRAI — Generate dan Asistensi Dokumen KKPRL" className="block h-auto w-full" />
+    return (
+        <HomeLayout>
+            <div className="relative w-full text-slate-800">
+                <div className="px-6 pt-10 pb-24 lg:px-14">
+                    <section className="relative isolate min-h-[34rem] overflow-hidden rounded-2xl">
+                        {/* Full screen image */}
+                        <div className="absolute inset-0 -z-10">
+                            <img
+                                src={heroIllustration}
+                                alt="Petugas BPRL Makassar melayani konsultasi KKPRL"
+                                className="h-full w-full object-cover object-bottom"
+                            />
+
+                            {/* Chart-style overlay so text is readable and ties to the coordinate theme */}
+                            <div className="absolute inset-0 bg-linear-to-r from-blue-500/60 to-blue-200/50" />
+                            <div
+                                className="absolute inset-0 opacity-[0.15] mix-blend-overlay"
+                                style={{
+                                    backgroundImage:
+                                        'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)',
+                                    backgroundSize: '48px 48px',
+                                }}
+                            />
+                            <div className="pointer-events-none absolute inset-0 shadow-[inset_0_0_80px_rgba(11,37,69,0.35)]" />
+                        </div>
+
+                        {/* Content */}
+                        <div className="relative z-10 flex w-full items-center px-6 py-16 sm:px-10">
+                            <div className="max-w-xl space-y-6">
+                                <div className="w-32">
+                                    <img
+                                        src={logo}
+                                        alt="e-GeRAI – Generate, Asistensi, Informasi"
+                                        className="h-auto w-full object-contain object-left"
+                                    />
+                                </div>
+
+                                <p className="font-mono text-[11px] tracking-[0.25em] text-[#7FD8D4] uppercase">
+                                    05°08&apos;S · 119°25&apos;E — BPRL Makassar
+                                </p>
+
+                                <h1 className="text-5xl leading-[1.02] font-black tracking-tight text-white sm:text-6xl lg:text-[3.75rem]">
+                                    Layanan Digital
+                                    <br />
+                                    Dokumen KKPRL
+                                </h1>
+
+                                <p className="max-w-md text-base leading-relaxed text-slate-100/90 sm:text-lg">
+                                    Konsultasi, asistensi teknis, dan penyusunan
+                                    dokumen Kesesuaian Kegiatan Pemanfaatan
+                                    Ruang Laut — presisi dan resmi.
+                                </p>
+
+                                <div className="grid grid-cols-1 items-center gap-3 pt-1 lg:grid-cols-2">
+                                    <Link
+                                        href="/request-form"
+                                        className="group inline-flex w-full items-center justify-center gap-2 rounded-full bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-[#0B2545]/30 transition-all hover:-translate-y-0.5 hover:bg-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white active:scale-[0.98]"
+                                    >
+                                        Ajukan Konsultasi
+                                        <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                                    </Link>
+
+                                    <Link
+                                        href="/kkprl"
+                                        className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/25 bg-white/10 px-5 py-3 text-sm font-semibold text-white backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                                    >
+                                        <FileText className="h-4 w-4" />
+                                        Proposal KKPRL
+                                    </Link>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+
+                {/* ═══════════ ALUR LAYANAN — rendered as a waypoint route ═══════════ */}
+                <Reveal className="pb-16 lg:pb-24">
+                    <div className="mb-12 max-w-xl space-y-3">
+                        <p className="font-mono text-[11px] tracking-[0.25em] text-[#0E7C86] uppercase">
+                            Rute Layanan
+                        </p>
+                        <h2 className="text-2xl font-extrabold tracking-tight text-[#0B2545] sm:text-3xl">
+                            Alur Layanan
+                        </h2>
+                        <p className="text-sm text-slate-500 sm:text-base">
+                            Empat titik singgah, dari pengajuan hingga
+                            penerbitan dokumen.
+                        </p>
+                    </div>
+
+                    <div className="relative grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
+                        {/* dotted route line, desktop only */}
+                        <div
+                            className="pointer-events-none absolute top-5 right-[12.5%] left-[12.5%] hidden h-px lg:block"
+                            style={{
+                                backgroundImage:
+                                    'linear-gradient(90deg, #0E7C8666 0 6px, transparent 6px 14px)',
+                                backgroundSize: '14px 1px',
+                            }}
+                        />
+                        {steps.map((step) => {
+                            const StepIcon = step.icon;
+                            return (
+                                <div
+                                    key={step.title}
+                                    className="relative space-y-3"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <span className="relative z-10 flex h-10 w-10 items-center justify-center rounded-full border border-[#0E7C86]/30 bg-white text-[#0E7C86] shadow-sm">
+                                            <StepIcon className="h-4 w-4" />
+                                        </span>
+                                        <span className="font-mono text-xs font-semibold text-slate-400">
+                                            {step.code}
+                                        </span>
+                                    </div>
+                                    <h3 className="text-base font-bold text-[#0B2545]">
+                                        {step.title}
+                                    </h3>
+                                    <p className="text-xs leading-relaxed text-slate-500">
+                                        {step.desc}
+                                    </p>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </Reveal>
+
+                {/* ═══════════ LAYANAN ═══════════ */}
+                <Reveal className="pb-16 lg:pb-24">
+                    <div className="mb-10 max-w-xl space-y-3">
+                        <p className="font-mono text-[11px] tracking-[0.25em] text-[#0E7C86] uppercase">
+                            Pilih Jalur
+                        </p>
+                        <h2 className="text-2xl font-extrabold tracking-tight text-[#0B2545] sm:text-3xl">
+                            Layanan
+                        </h2>
+                        <p className="text-sm text-slate-500 sm:text-base">
+                            Pilih layanan sesuai kebutuhan Anda.
+                        </p>
+                    </div>
+
+                    <div className="grid gap-5 md:grid-cols-3">
+                        {services.map((service) => {
+                            const ServiceIcon = service.icon;
+                            return (
+                                <Link
+                                    key={service.title}
+                                    href={service.href}
+                                    className="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#0E7C86]/40 hover:shadow-lg hover:shadow-[#0E7C86]/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0E7C86]"
+                                >
+                                    <div className="flex items-start justify-between">
+                                        <span className="flex h-10 w-10 items-center justify-center rounded-lg border border-[#0E7C86]/20 bg-[#0E7C86]/10 text-[#0E7C86]">
+                                            <ServiceIcon className="h-4 w-4" />
+                                        </span>
+                                        <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 font-mono text-[10px] font-bold tracking-wider text-slate-500">
+                                            {service.tag}
+                                        </span>
+                                    </div>
+                                    <h3 className="mt-4 text-base font-bold text-[#0B2545]">
+                                        {service.title}
+                                    </h3>
+                                    <p className="mt-1.5 text-xs leading-relaxed text-slate-500">
+                                        {service.desc}
+                                    </p>
+                                    <span className="mt-4 inline-flex items-center gap-1.5 text-xs font-bold text-[#0E7C86] transition-all group-hover:gap-2.5">
+                                        {service.cta}
+                                        <ArrowRight className="h-3.5 w-3.5" />
+                                    </span>
+                                </Link>
+                            );
+                        })}
+                    </div>
+                </Reveal>
+
+                {/* ═══════════ PENUTUP — styled like an official seal panel ═══════════ */}
+                <Reveal className="pb-16 lg:pb-24">
+                    <div className="relative overflow-hidden rounded-2xl border border-[#0B2545]/15 bg-white px-7 py-10 text-center shadow-sm sm:px-12">
+                        <h2 className="text-xl font-extrabold tracking-tight text-[#0B2545] sm:text-2xl">
+                            Siap mengajukan permohonan?
+                        </h2>
+                        <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-slate-500">
+                            Mulai konsultasi pemanfaatan ruang laut Anda hari
+                            ini.
+                        </p>
+                        <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+                            <Link
+                                href="/request-form"
+                                className="inline-flex items-center gap-2 rounded-xl bg-blue-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 transition-all hover:bg-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+                            >
+                                Ajukan Permohonan
+                                <ArrowRight className="h-4 w-4" />
+                            </Link>
+                            <Link
+                                href="/login"
+                                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition-all hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0E7C86]"
+                            >
+                                <MapPin className="h-4 w-4" />
+                                Masuk Petugas
+                            </Link>
+                        </div>
+                    </div>
+                </Reveal>
             </div>
-        </section>
-
-        <section className="relative z-10 mx-auto -mt-6 grid w-full max-w-[1600px] gap-6 px-4 pb-10 sm:px-8 lg:grid-cols-[1fr_1fr_340px] lg:px-10">
-            <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"><div className="flex items-center justify-between"><span className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-700 text-sm font-black text-white">1</span><FileText className="h-5 w-5 text-blue-700" /></div><h2 className="mt-5 text-base font-extrabold text-slate-900">Draft Proposal PKKPRL</h2><p className="mt-2 text-sm leading-relaxed text-slate-500">Isi proposal secara bertahap: pemohon, kegiatan, lokasi, koordinat, dan dokumen pendukung.</p><Link href="/kkprl-proposal" className="mt-5 flex min-h-32 flex-col items-center justify-center rounded-xl border-2 border-dashed border-blue-200 bg-blue-50/50 text-center transition hover:border-blue-400 hover:bg-blue-50"><CloudUpload className="h-6 w-6 text-blue-600" /><span className="mt-2 text-sm font-bold text-blue-700">Isi formulir proposal</span><span className="mt-1 text-xs text-slate-500">Buka form proposal terstruktur</span></Link></article>
-            <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"><div className="flex items-center justify-between"><span className="flex h-9 w-9 items-center justify-center rounded-full bg-sky-500 text-sm font-black text-white">2</span><Waves className="h-5 w-5 text-sky-600" /></div><h2 className="mt-5 text-base font-extrabold text-slate-900">Proposal & Data Koordinat</h2><p className="mt-2 text-sm leading-relaxed text-slate-500">Unggah PDF proposal untuk mengekstrak data utama, serta CSV/XLSX/DOCX untuk koordinat.</p><Link href="/proposal-extractions/create" className="mt-5 flex min-h-32 flex-col items-center justify-center rounded-xl border-2 border-dashed border-sky-200 bg-sky-50/50 text-center transition hover:border-sky-400 hover:bg-sky-50"><ScanSearch className="h-6 w-6 text-sky-600" /><span className="mt-2 text-sm font-bold text-sky-700">Ekstrak & review proposal</span><span className="mt-1 text-xs text-slate-500">PDF hingga 30 MB</span></Link></article>
-            <aside className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200"><h2 className="text-sm font-extrabold text-blue-700">Alur Proses</h2><div className="mt-5 space-y-5">{flow.map((item, index) => <div className="flex gap-3" key={item.title}><span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white ${item.style}`}><item.icon className="h-4 w-4" /></span><div><h3 className="text-sm font-bold text-slate-800">{index + 1}. {item.title}</h3><p className="mt-0.5 text-xs leading-relaxed text-slate-500">{item.description}</p></div></div>)}</div></aside>
-        </section>
-
-        <section className="mx-auto mt-8 w-full max-w-7xl"><Link href="/kkprl#faq" className="group relative flex flex-col gap-5 overflow-hidden rounded-2xl bg-linear-to-r from-blue-950 via-blue-800 to-cyan-600 p-6 text-white shadow-xl shadow-blue-900/15 sm:flex-row sm:items-center sm:p-8"><div className="absolute -top-20 right-0 h-56 w-56 rounded-full bg-amber-300/25 blur-3xl" /><span className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white text-blue-800 shadow-lg"><Bot className="h-7 w-7" /></span><div className="relative flex-1"><p className="text-[11px] font-bold tracking-[0.16em] text-amber-300 uppercase">Asisten e-GeRAI · Tanya Jawab Otomatis</p><h2 className="mt-1 text-lg font-extrabold">Punya pertanyaan seputar KKPRL?</h2><p className="mt-1 text-sm leading-relaxed text-blue-100">Temukan jawaban tentang persyaratan, OSS/e-SEA, biaya PNBP, reklamasi, dan tracking permohonan melalui FAQ interaktif.</p></div><span className="relative inline-flex items-center justify-center rounded-xl bg-amber-500 px-5 py-3 text-sm font-bold text-white transition group-hover:bg-amber-400">Tanya sekarang <ArrowRight className="ml-2 h-4 w-4" /></span></Link></section>
-
-        <section className="mx-auto mt-8 flex w-full max-w-7xl flex-wrap items-center justify-between gap-5 rounded-2xl border border-emerald-100 bg-white px-6 py-5 shadow-sm"><div className="flex items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600"><CheckCircle2 className="h-5 w-5" /></span><div><p className="text-sm font-bold text-slate-800">Data tetap dalam proses review</p><p className="text-xs text-slate-500">Hasil ekstraksi wajib diperiksa sebelum digunakan dalam pengajuan resmi.</p></div></div><Link href="/request-form" className="text-sm font-bold text-blue-700 hover:text-blue-900">Butuh konsultasi BPRL? <ArrowRight className="inline h-4 w-4" /></Link></section>
-    </HomeLayout>;
+        </HomeLayout>
+    );
 }

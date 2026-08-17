@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button';
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import { ReactNode, useEffect, useRef, useState } from 'react';
 import logo_djprl from '/public/logo-djprl.png';
 import logo_kkp from '/public/logo-kkp.png';
@@ -30,11 +30,11 @@ const services = [
         badge: 'Publik',
     },
     {
-        href: '/login',
+        href: '/kkprl',
         icon: BadgeCheck,
         title: 'Proposal KKPRL',
         desc: 'Formulir penyusunan proposal KKPRL mandiri terstruktur.',
-        badge: 'Pemohon',
+        badge: 'User',
     },
     {
         href: '/login',
@@ -46,6 +46,7 @@ const services = [
 ];
 
 function Navbar({ scrolled }: { scrolled: boolean }) {
+    const { auth } = usePage().props;
     const [open, setOpen] = useState(false);
     const navRef = useRef<HTMLElement>(null);
 
@@ -151,7 +152,7 @@ function Navbar({ scrolled }: { scrolled: boolean }) {
                             className="hidden items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 transition-all hover:bg-blue-50/80 hover:text-blue-600 sm:inline-flex"
                         >
                             <User className="h-3.5 w-3.5" />
-                            Masuk
+                            {auth.user ? auth.user.name : 'Masuk'}
                         </Link>
 
                         <Link href="/request-form" onClick={close}>
@@ -289,7 +290,7 @@ export default function HomeLayout({ children }: { children: ReactNode }) {
     };
 
     return (
-        <div className="relative min-h-screen overflow-x-hidden bg-slate-50/70 bg-linear-to-b from-blue-50 via-sky-50/50 to-transparent font-sans selection:bg-blue-500 selection:text-white">
+        <div className="relative min-h-screen overflow-x-hidden bg-slate-50/70 bg-linear-to-b from-blue-300/40 via-sky-50/50 to-transparent font-sans selection:bg-blue-500 selection:text-white">
             {/* Global Top Glow Ambient */}
             <div className="pointer-events-none absolute top-0 left-0 -z-10 h-[600px] w-full bg-gradient-to-b from-blue-100/70 via-sky-50/40 to-transparent" />
             <div className="pointer-events-none absolute top-0 right-0 -z-10 h-[550px] w-[550px] translate-x-1/3 -translate-y-1/3 rounded-full bg-cyan-200/30 blur-3xl" />
@@ -346,7 +347,7 @@ export default function HomeLayout({ children }: { children: ReactNode }) {
                                 </li>
                                 <li>
                                     <Link
-                                        href="/login"
+                                        href="/kkprl"
                                         className="flex items-center gap-1.5 transition-colors hover:text-blue-600"
                                     >
                                         <ArrowRight className="h-3 w-3 text-blue-500" />

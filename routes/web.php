@@ -1,5 +1,11 @@
 <?php
 
+use App\Http\Controllers\Master\ChangelogController;
+use App\Http\Controllers\Master\JadwalKonsultasiController;
+use App\Http\Controllers\Master\KkprlProposalMasterController;
+use App\Http\Controllers\Master\LokasiKonsultasiController;
+use App\Http\Controllers\Master\PermohonanKonsultasiController;
+use App\Http\Controllers\Pegawai\DashboardController as PegawaiDashboardController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BeritaAcaraController;
 use App\Http\Controllers\DashboardController;
@@ -7,12 +13,6 @@ use App\Http\Controllers\GeneralDraftController;
 use App\Http\Controllers\GenerateDocxController;
 use App\Http\Controllers\GeolocationController;
 use App\Http\Controllers\KkprlProposalController;
-use App\Http\Controllers\Master\ChangelogController;
-use App\Http\Controllers\Master\JadwalKonsultasiController;
-use App\Http\Controllers\Master\KkprlProposalMasterController;
-use App\Http\Controllers\Master\LokasiKonsultasiController;
-use App\Http\Controllers\Master\PermohonanKonsultasiController;
-use App\Http\Controllers\Pegawai\DashboardController as PegawaiDashboardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProposalExtractionController;
 use App\Http\Controllers\RequestFormController;
@@ -32,16 +32,16 @@ Route::inertia('/', 'welcome')->name('home');
 Route::get('/request-form', [RequestFormController::class, 'index'])->name('request-form');
 Route::post('/request-form', [RequestFormController::class, 'store'])->name('request-form.store');
 
-Route::get('/kkprl', [KkprlProposalController::class, 'index_iframe'])->name('kkprl');
-Route::get('/kkprl-proposal', [KkprlProposalController::class, 'create'])->name('kkprl-proposal.create');
-Route::post('/kkprl-proposal', [KkprlProposalController::class, 'store'])->name('kkprl-proposal.store');
-
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login'])->name('login.post');
 });
 
 Route::middleware('auth')->group(function () {
+    Route::get('/kkprl', [KkprlProposalController::class, 'index_iframe'])->name('kkprl');
+    Route::get('/kkprl-proposal', [KkprlProposalController::class, 'create'])->name('kkprl-proposal.create');
+    Route::post('/kkprl-proposal', [KkprlProposalController::class, 'store'])->name('kkprl-proposal.store');
+
     Route::prefix('/pegawai')->as('pegawai.')->middleware('role:pegawai')->group(function () {
         Route::get('/dashboard', [PegawaiDashboardController::class, 'index'])->name('dashboard');
     });
