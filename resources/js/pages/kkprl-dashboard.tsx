@@ -1,4 +1,4 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import {
     Bot,
     Download,
@@ -18,27 +18,49 @@ export default function Home() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const submit = () => {
-        if (!proposal || !report) {
-            setError('Mohon unggah kedua file (proposal & laporan).');
+        if (!proposal) {
+            setError('Mohon unggah file proposal.');
             return;
         }
         setError('');
         setLoading(true);
-        router.post(
-            '/review',
-            { proposal, report },
-            {
-                forceFormData: true,
-                onError: () => {
-                    setLoading(false);
-                    setError(
-                        'File tidak dapat diproses. Pastikan PDF/DOCX valid dan maksimal 30 MB.',
-                    );
-                },
-                onFinish: () => setLoading(false),
-            },
-        );
+
+        // Build FormData and submit via fetch so we can handle the DOCX download blob
+        const fd = new FormData();
+        fd.append('proposal', proposal);
+        if (report) fd.append('report', report);
+        // CSRF token from meta tag
+        const csrfToken = (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement | null)?.content ?? '';
+
+        fetch('/kkprl/review', {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/octet-stream, application/json' },
+            body: fd,
+        })
+            .then(async (res) => {
+                if (!res.ok) {
+                    const json = await res.json().catch(() => ({ message: 'Gagal memproses dokumen.' }));
+                    throw new Error(json.message ?? 'Gagal memproses dokumen.');
+                }
+                // Content-Disposition header means it's the DOCX file
+                const blob = await res.blob();
+                const disposition = res.headers.get('Content-Disposition') ?? '';
+                const match = disposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+                const filename = match ? match[1].replace(/['"]/g, '') : 'Proposal_PKKPRL.docx';
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
+            })
+            .catch((err: Error) => {
+                setError(err.message || 'File tidak dapat diproses. Pastikan PDF/DOCX valid dan maksimal 30 MB.');
+            })
+            .finally(() => setLoading(false));
     };
+
     return (
         <AppLayout>
             <Head title="e-GeRAI KKPRL" />
@@ -79,8 +101,8 @@ export default function Home() {
                     />
                     <DocumentUpload
                         number={2}
-                        title="Laporan Kondisi Eksisting / Hidro-Oseanografi"
-                        description="Unggah file PDF atau Word laporan hidro-oseanografi."
+                        title="Laporan Kondisi Eksisting / Hidro-Oseanografi (Opsional)"
+                        description="Unggah file PDF atau Word laporan hidro-oseanografi (dapat dikosongkan jika belum ada)."
                         onFile={setReport}
                     />
                     <aside className="rounded-2xl bg-white p-[23px] shadow-[0_6px_24px_#123a6314] md:col-span-2 md:grid md:grid-cols-4 md:gap-[10px] xl:col-span-1 xl:row-span-2 xl:block">

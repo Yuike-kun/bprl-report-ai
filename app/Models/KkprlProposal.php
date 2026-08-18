@@ -68,13 +68,35 @@ class KkprlProposal extends Model
             'supporting_documents'        => 'array',
             'marine_spatial_docs_path'    => 'array',
 
-            // Numeric
-            'area_size'                   => 'decimal:4',
-            'mangrove_cover_percentage'   => 'decimal:2',
-            'seagrass_cover_percentage'   => 'decimal:2',
-            'coral_reef_cover_percentage' => 'decimal:2',
+            // Array / JSON
+            'activity_details'         => 'array',
+            'installation_location'    => 'array',
+            'supporting_documents'     => 'array',
+            'marine_spatial_docs_path' => 'array',
         ];
     }
+
+    public function setAttribute($key, $value)
+    {
+        $numericFields = [
+            'area_size',
+            'mangrove_cover_percentage',
+            'seagrass_cover_percentage',
+            'coral_reef_cover_percentage',
+            'investment_value',
+            'population_count',
+            'village_area',
+            'local_workers',
+            'foreign_workers',
+        ];
+
+        if (in_array($key, $numericFields) && ($value === '' || $value === null)) {
+            $value = null;
+        }
+
+        return parent::setAttribute($key, $value);
+    }
+
 
     public function permohonanKonsultasi()
     {

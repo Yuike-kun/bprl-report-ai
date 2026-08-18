@@ -41,6 +41,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/kkprl', [KkprlProposalController::class, 'index_iframe'])->name('kkprl');
     Route::get('/kkprl-proposal', [KkprlProposalController::class, 'create'])->name('kkprl-proposal.create');
     Route::post('/kkprl-proposal', [KkprlProposalController::class, 'store'])->name('kkprl-proposal.store');
+    Route::get('/kkprl-proposal/{kkprlProposal}/review', [KkprlProposalController::class, 'review'])->name('kkprl-proposal.review');
+    Route::post('/kkprl-proposal/{kkprlProposal}/finalize', [KkprlProposalController::class, 'finalize'])->name('kkprl-proposal.finalize');
 
     Route::prefix('/pegawai')->as('pegawai.')->middleware('role:pegawai')->group(function () {
         Route::get('/dashboard', [PegawaiDashboardController::class, 'index'])->name('dashboard');
@@ -154,6 +156,14 @@ Route::post('/pkkprl/generate-docx-from-report', [GenerateDocxController::class,
     ->name('pkkprl.generate-docx-from-report');
 Route::get('/pkkprl/download-proposal/{draftId}', [GenerateDocxController::class, 'generateFromDraft'])
     ->name('pkkprl.download-proposal');
+Route::get('/pkkprl/download-kkprl-proposal/{proposalId}', [GenerateDocxController::class, 'generateFromProposal'])
+    ->name('pkkprl.download-kkprl-proposal');
+
+// Dashboard quick-generate: mirrors Python's POST /review
+// Accepts proposal (required) + laporan/report (optional), returns DOCX immediately.
+Route::post('/kkprl/review', [GenerateDocxController::class, 'reviewAndGenerate'])
+    ->name('kkprl.review');
+
 
 Route::post('/kkprl/assistant', [ProposalExtractionController::class, 'assistant'])
     ->middleware('throttle:20,1')

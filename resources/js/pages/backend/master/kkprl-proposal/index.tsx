@@ -97,14 +97,14 @@ export default function KkprlProposalMasterIndex({
                 title="Master Proposal KKPRL"
                 description="Daftar permohonan Persetujuan Kesesuaian Kegiatan Pemanfaatan Ruang Laut."
             >
-                <Button
-                    size={'icon'}
-                    render={
-                        <Link href="/master/kkprl-proposal/create">
-                            <Plus />
-                        </Link>
-                    }
-                />
+                {/* <Button
+                        size={'icon'}
+                        render={
+                            <Link href="/master/kkprl-proposal/create">
+                                <Plus />
+                            </Link>
+                        }
+                    /> */}
             </Heading>
 
             {success && (
@@ -130,28 +130,6 @@ export default function KkprlProposalMasterIndex({
                         </span>{' '}
                         proposal
                     </>
-                }
-                extraFilters={
-                    <div className="flex items-center gap-2">
-                        <select
-                            value={statusFilter}
-                            onChange={(e) => {
-                                setStatusFilter(e.target.value);
-                                router.get(
-                                    '/master/kkprl-proposal',
-                                    { search, status: e.target.value },
-                                    { preserveState: true, replace: true },
-                                );
-                            }}
-                            className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-700 outline-none focus:border-blue-400"
-                        >
-                            <option value="">Semua Status</option>
-                            <option value="dikirim">Dikirim</option>
-                            <option value="diproses">Diproses</option>
-                            <option value="disetujui">Disetujui</option>
-                            <option value="ditolak">Ditolak</option>
-                        </select>
-                    </div>
                 }
                 tableHead={
                     <tr className="border-b border-slate-100 bg-slate-50/60">
@@ -246,17 +224,33 @@ export default function KkprlProposalMasterIndex({
                         <td className="px-5 py-4">
                             <div className="flex items-center justify-center gap-1.5">
                                 <Link
-                                    href={`/master/kkprl-proposal/${item.id}`}
+                                    href={`/kkprl-proposal/${item.id}/review`}
+                                    title="Tinjau & Koreksi Data"
                                 >
                                     <Button
                                         variant="ghost"
                                         size="icon"
-                                        className="h-8 w-8 rounded-lg text-slate-400 hover:bg-blue-50 hover:text-blue-600"
-                                        title="Detail"
+                                        className="h-8 w-8 rounded-lg text-slate-400 hover:bg-amber-50 hover:text-amber-600"
+                                        title="Tinjau Data"
                                     >
                                         <Eye className="h-4 w-4" />
                                     </Button>
                                 </Link>
+                                <a
+                                    href={`/pkkprl/download-kkprl-proposal/${item.id}`}
+                                    title="Unduh Dokumen DOCX"
+                                    target="_blank"
+                                    rel="noreferrer"
+                                >
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 rounded-lg text-slate-400 hover:bg-emerald-50 hover:text-emerald-600"
+                                        title="Unduh DOCX"
+                                    >
+                                        <FileSpreadsheet className="h-4 w-4" />
+                                    </Button>
+                                </a>
                                 <Button
                                     variant="ghost"
                                     size="icon"
