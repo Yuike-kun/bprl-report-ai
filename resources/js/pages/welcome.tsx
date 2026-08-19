@@ -172,13 +172,13 @@ export default function Welcome() {
                                         <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                                     </Link>
 
-                                    <Link
-                                        href="/kkprl"
+                                    <a
+                                        href="https://egeraibprlmakassar-production.up.railway.app"
                                         className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/25 bg-white/10 px-5 py-3 text-sm font-semibold text-white backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
                                     >
                                         <FileText className="h-4 w-4" />
                                         Generate Dokumen
-                                    </Link>
+                                    </a>
                                 </div>
                             </div>
                         </div>

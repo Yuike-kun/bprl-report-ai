@@ -473,24 +473,21 @@ class GenerateDocxController extends Controller
     }
 
     // ──────────────────────────────────────────────────────────────────────────
-    // DASHBOARD: Mirrors Python POST /review — upload files → generate DOCX
+    // DASHBOARD: Upload files → extract via AI → save as "on_review" → redirect
     // Accepts: proposal (required), laporan/report (optional)
-    // Returns: DOCX download directly (no intermediate DB/review step)
+    // Returns: Redirect to kkprl-proposal.review for user correction & download
     // ──────────────────────────────────────────────────────────────────────────
     public function reviewAndGenerate(Request $request)
     {
         $request->validate([
-            'proposal' => ['required', 'file', 'mimes:pdf,docx', 'max:65536'],
-            'laporan'  => ['nullable', 'file', 'mimes:pdf,docx', 'max:65536'],
-            'report'   => ['nullable', 'file', 'mimes:pdf,docx', 'max:65536'],
+            'proposal' => ['required', 'file', 'mimes:pdf,docx', 'max:262144'],
+            'laporan'  => ['nullable', 'file', 'mimes:pdf,docx', 'max:262144'],
+            'report'   => ['nullable', 'file', 'mimes:pdf,docx', 'max:262144'],
         ]);
 
         $proposalFile = $request->file('proposal');
         // Python uses "laporan", dashboard sends "report" — accept both
         $laporanFile  = $request->file('laporan') ?? $request->file('report');
-
-        $tempImages = [];
-        $tmpFiles   = [];
 
         try {
             // ── 1. Extract text from proposal ─────────────────────────────
@@ -504,18 +501,9 @@ class GenerateDocxController extends Controller
                 $laporanPath = $laporanFile->getRealPath();
                 $laporanText = $this->extractTextFromFile($laporanPath, $laporanFile->getClientOriginalName());
                 $laporanText = $this->cleanDocumentText($laporanText);
-
-                // Extract images from laporan PDF for template figures
-                if (strtolower($laporanFile->getClientOriginalExtension()) === 'pdf') {
-                    try {
-                        $tempImages = $this->imageExtractor->extractSectionImages($laporanPath);
-                    } catch (\Exception $e) {
-                        Log::warning('Image extraction skipped: ' . $e->getMessage());
-                    }
-                }
             }
 
-            // ── 3. AI narasi from proposal text (+ laporan context) ────────
+            // ── 3. AI extraction from combined text ────────────────────────
             $combinedText = trim($proposalText . "\n\n" . $laporanText);
             $narasi = [];
             if (!empty($combinedText)) {
@@ -523,94 +511,50 @@ class GenerateDocxController extends Controller
                 $narasi    = $this->cleanAiOutput($rawNarasi);
             }
 
-            // ── 4. Build $data from form fields (if any were sent) ─────────
-            // Matches the prop_data fields that Python's extract_proposal extracts
-            $data = array_merge([
-                'Nama Pemohon'             => '',
-                'Jabatan Pemohon'          => '',
-                'Nama Perusahaan/Instansi' => '',
-                'NIB'                      => '',
-                'NPWP'                     => '',
-                'Nomor Telepon Selular'    => '',
-                'Surat Elektronik'         => '',
-                'Jenis Kegiatan'           => '',
-                'Nama Perairan'            => '',
-                'Luas Kebutuhan Ruang'     => '',
-                'KBLI'                     => '',
-                'Tanggal Penyusunan'       => now()->format('d F Y'),
-                'Provinsi'                 => '',
-                'Kabupaten'                => '',
-                'Kecamatan'                => '',
-                'Desa'                     => '',
-                // legacy template keys
-                'nama_perusahaan'    => '',
-                'nib'                => '',
-                'npwp'               => '',
-                'telp'               => '',
-                'email'              => '',
-                'jenis_kegiatan'     => '',
-                'no_referensi'       => 'KKPRL-' . strtoupper(substr(uniqid(), -6)),
-                'tanggal_penyusunan' => now()->format('d F Y'),
-                'nama_perairan'      => '',
-                'provinsi'           => '',
-                'kabupaten'          => '',
-                'kecamatan'          => '',
-                'desa'               => '',
-                'uraian_kegiatan'    => '',
-                'jadwal_konstruksi'  => '',
-                'luas_ruang_total'   => '',
-                'ada_reklamasi'      => 'Tidak',
-            ], array_filter($request->only([
-                'Nama Pemohon', 'Jabatan Pemohon', 'Nama Perusahaan/Instansi',
-                'NIB', 'NPWP', 'Nomor Telepon Selular', 'Surat Elektronik',
-                'Jenis Kegiatan', 'Nama Perairan', 'Luas Kebutuhan Ruang', 'KBLI',
-                'nama_perusahaan', 'nib', 'npwp', 'telp', 'email', 'jenis_kegiatan',
-                'no_referensi', 'tanggal_penyusunan', 'nama_perairan', 'provinsi',
-                'kabupaten', 'kecamatan', 'desa', 'uraian_kegiatan', 'jadwal_konstruksi',
-                'luas_ruang_total', 'ada_reklamasi',
-            ]), fn($v) => $v !== null && $v !== ''));
+            // ── 4. Store uploaded files permanently ───────────────────────
+            $storedProposalPath = $proposalFile->store('kkprl', 'public');
+            $storedLaporanPath  = $laporanFile ? $laporanFile->store('kkprl', 'public') : null;
 
-            // Also populate legacy keys from narasi if AI extracted them
-            foreach (['nama_perusahaan', 'email', 'telp', 'jenis_kegiatan', 'nama_perairan',
-                      'provinsi', 'kabupaten', 'kecamatan', 'desa', 'uraian_kegiatan',
-                      'luas_ruang_total'] as $key) {
-                if (empty($data[$key]) && !empty($narasi[$key])) {
-                    $data[$key] = $narasi[$key];
-                }
-            }
+            // ── 5. Save to kkprl_proposals DB with status = on_review ─────
+            $kkprlProposal = \App\Models\KkprlProposal::create([
+                'status'                      => 'on_review',
+                'applicant_name'              => $narasi['nama_pemohon'] ?? null,
+                'applicant_position'          => $narasi['jabatan_pemohon'] ?? null,
+                'company_name'                => $narasi['nama_perusahaan'] ?? null,
+                'phone_number'                => $narasi['telp'] ?? null,
+                'email'                       => $narasi['email'] ?? null,
+                'activity_type'               => $narasi['jenis_kegiatan'] ?? null,
+                'water_name'                  => $narasi['nama_perairan'] ?? null,
+                'area_size'                   => is_numeric($narasi['luas_ruang_total'] ?? null)
+                                                    ? $narasi['luas_ruang_total']
+                                                    : null,
+                'province'                    => $narasi['provinsi'] ?? null,
+                'regency'                     => $narasi['kabupaten'] ?? null,
+                'district'                    => $narasi['kecamatan'] ?? null,
+                'village'                     => $narasi['desa'] ?? null,
+                'activity_description'        => $narasi['deskripsi_kegiatan'] ?? ($narasi['uraian_kegiatan'] ?? null),
+                'activity_purpose'            => $narasi['tujuan_kegiatan'] ?? null,
+                'activity_benefit'            => $narasi['manfaat_kegiatan'] ?? null,
+                'schedule_description'        => $narasi['jadwal_konstruksi'] ?? null,
+                'is_reclamation'              => in_array(
+                                                    strtolower((string) ($narasi['ada_reklamasi'] ?? 'tidak')),
+                                                    ['ya', 'yes', '1', 'true']
+                                                ),
+                'existing_doc_path'           => $storedProposalPath,
+                'hydro_oceanography_doc_path' => $storedLaporanPath,
+            ]);
 
-            // ── 5. Fill template and return download ──────────────────────
-            $templatePath = public_path('template-docx.docx');
-            $outputPath   = storage_path('app/tmp/Proposal_PKKPRL_' . uniqid() . '.docx');
-            if (! is_dir(dirname($outputPath))) {
-                mkdir(dirname($outputPath), 0755, true);
-            }
-
-            if (file_exists($templatePath)) {
-                $this->fillTemplate($templatePath, $outputPath, $data, $narasi, $tempImages);
-            } else {
-                $this->buildDocxFromScratch($data, $narasi, $outputPath);
-            }
-
-            $this->removeReklamasiSection($outputPath,
-                in_array(strtolower((string) ($data['ada_reklamasi'] ?? 'tidak')), ['ya', 'yes', '1', 'true'])
-            );
-
-            $timestamp = now()->format('HisYmd');
-            return response()->download($outputPath, 'Proposal_PKKPRL_' . $timestamp . '.docx')
-                ->deleteFileAfterSend(true);
+            // ── 6. Redirect to review page so user can verify & download ──
+            return redirect()->route('kkprl-proposal.review', $kkprlProposal->id);
 
         } catch (Exception $e) {
             Log::error('reviewAndGenerate failed', ['message' => $e->getMessage()]);
             return response()->json([
                 'message' => 'Gagal memproses dokumen: ' . $e->getMessage(),
             ], 500);
-        } finally {
-            foreach ($tempImages as $imgPath) {
-                @unlink($imgPath);
-            }
         }
     }
+
 
     // ──────────────────────────────────────────────────────────────────────────
     // LEGACY: Upload PDF + DOCX template together, generate on the fly

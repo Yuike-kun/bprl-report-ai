@@ -52,7 +52,7 @@
         ],
         "dev": [
             "Composer\\Config::disableProcessTimeout",
-            "@php -d upload_max_filesize=64M -d post_max_size=64M -d max_execution_time=300 -d max_input_time=300 artisan dev"
+            "@php -d upload_max_filesize=256M -d post_max_size=256M -d max_execution_time=300 -d max_input_time=300 artisan dev"
         ],
         "lint": [
             "pint --parallel"

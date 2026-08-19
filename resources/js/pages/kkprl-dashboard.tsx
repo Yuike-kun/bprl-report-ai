@@ -1,4 +1,4 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import {
     Bot,
     Download,
@@ -25,40 +25,20 @@ export default function Home() {
         setError('');
         setLoading(true);
 
-        // Build FormData and submit via fetch so we can handle the DOCX download blob
         const fd = new FormData();
         fd.append('proposal', proposal);
         if (report) fd.append('report', report);
-        // CSRF token from meta tag
-        const csrfToken = (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement | null)?.content ?? '';
 
-        fetch('/kkprl/review', {
-            method: 'POST',
-            headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/octet-stream, application/json' },
-            body: fd,
-        })
-            .then(async (res) => {
-                if (!res.ok) {
-                    const json = await res.json().catch(() => ({ message: 'Gagal memproses dokumen.' }));
-                    throw new Error(json.message ?? 'Gagal memproses dokumen.');
-                }
-                // Content-Disposition header means it's the DOCX file
-                const blob = await res.blob();
-                const disposition = res.headers.get('Content-Disposition') ?? '';
-                const match = disposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
-                const filename = match ? match[1].replace(/['"]/g, '') : 'Proposal_PKKPRL.docx';
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = filename;
-                document.body.appendChild(a);
-                a.click();
-                setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
-            })
-            .catch((err: Error) => {
-                setError(err.message || 'File tidak dapat diproses. Pastikan PDF/DOCX valid dan maksimal 30 MB.');
-            })
-            .finally(() => setLoading(false));
+        router.post('/kkprl/review', fd, {
+            onError: (errors: any) => {
+                const messages = Object.values(errors).flat().join(' ');
+                setError(
+                    messages || 'File tidak dapat diproses. Pastikan PDF/DOCX valid dan maksimal 30 MB.'
+                );
+                setLoading(false);
+            },
+            onFinish: () => setLoading(false),
+        });
     };
 
     return (
@@ -96,7 +76,19 @@ export default function Home() {
                     <DocumentUpload
                         number={1}
                         title="Draft Proposal PKKPRL (PDF/Word)"
-                        description={<>Unggah file proposal yang akan digabungkan. Belum punya file-nya? <Link href="/kkprl-proposal" className="underline text-blue-600">Isi formulir manual</Link>.</>}
+                        description={
+                            <>
+                                Unggah file proposal yang akan digabungkan.
+                                Belum punya file-nya?{' '}
+                                <Link
+                                    href="/kkprl-proposal"
+                                    className="text-blue-600 underline"
+                                >
+                                    Isi formulir manual
+                                </Link>
+                                .
+                            </>
+                        }
                         onFile={setProposal}
                     />
                     <DocumentUpload
