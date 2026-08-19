@@ -177,7 +177,7 @@ export default function Welcome() {
                                         className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/25 bg-white/10 px-5 py-3 text-sm font-semibold text-white backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
                                     >
                                         <FileText className="h-4 w-4" />
-                                        Proposal KKPRL
+                                        Generate Dokumen
                                     </Link>
                                 </div>
                             </div>
