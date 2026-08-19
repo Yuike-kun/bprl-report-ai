@@ -37,12 +37,13 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [AuthController::class, 'login'])->name('login.post');
 });
 
+Route::get('/kkprl', [KkprlProposalController::class, 'index_iframe'])->name('kkprl');
+Route::get('/kkprl-proposal', [KkprlProposalController::class, 'create'])->name('kkprl-proposal.create');
+Route::post('/kkprl-proposal', [KkprlProposalController::class, 'store'])->name('kkprl-proposal.store');
+Route::get('/kkprl-proposal/{kkprlProposal}/review', [KkprlProposalController::class, 'review'])->name('kkprl-proposal.review');
+Route::post('/kkprl-proposal/{kkprlProposal}/finalize', [KkprlProposalController::class, 'finalize'])->name('kkprl-proposal.finalize');
+
 Route::middleware('auth')->group(function () {
-    Route::get('/kkprl', [KkprlProposalController::class, 'index_iframe'])->name('kkprl');
-    Route::get('/kkprl-proposal', [KkprlProposalController::class, 'create'])->name('kkprl-proposal.create');
-    Route::post('/kkprl-proposal', [KkprlProposalController::class, 'store'])->name('kkprl-proposal.store');
-    Route::get('/kkprl-proposal/{kkprlProposal}/review', [KkprlProposalController::class, 'review'])->name('kkprl-proposal.review');
-    Route::post('/kkprl-proposal/{kkprlProposal}/finalize', [KkprlProposalController::class, 'finalize'])->name('kkprl-proposal.finalize');
 
     Route::prefix('/pegawai')->as('pegawai.')->middleware('role:pegawai')->group(function () {
         Route::get('/dashboard', [PegawaiDashboardController::class, 'index'])->name('dashboard');

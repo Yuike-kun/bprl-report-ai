@@ -51,10 +51,14 @@ export default function DocumentUpload({
                         {size(file.size)}
                     </small>
                     <button
-                        onClick={() => setFile(undefined)}
-                        className="border-0 bg-transparent"
+                        type="button"
+                        onClick={() => {
+                            setFile(undefined);
+                            onFile?.(undefined as any);
+                        }}
+                        className="border-0 bg-transparent cursor-pointer"
                     >
-                        <Trash2 />
+                        <Trash2 className="w-4 h-4 text-red-500 hover:text-red-700" />
                     </button>
                 </div>
             ) : (
@@ -83,7 +87,7 @@ export default function DocumentUpload({
                     </strong>
                     <span>atau klik untuk memilih file</span>
                     <small className="mt-[5px] text-[11px]">
-                        Maksimum 10 MB · PDF atau .docx
+                        Maksimum 256 MB · PDF atau .docx
                     </small>
                 </div>
             )}
@@ -91,7 +95,7 @@ export default function DocumentUpload({
                 ref={input}
                 className="hidden"
                 type="file"
-                accept=".pdf,.docx,application/pdf"
+                accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                 onChange={(e) => choose(e.target.files?.[0])}
             />
         </section>

@@ -480,78 +480,58 @@ class GenerateDocxController extends Controller
     public function reviewAndGenerate(Request $request)
     {
         $request->validate([
-            'proposal' => ['required', 'file', 'mimes:pdf,docx', 'max:262144'],
-            'laporan'  => ['nullable', 'file', 'mimes:pdf,docx', 'max:262144'],
-            'report'   => ['nullable', 'file', 'mimes:pdf,docx', 'max:262144'],
+            'proposal' => ['required', 'file', 'extensions:pdf,doc,docx', 'max:262144'],
+            'laporan'  => ['nullable', 'file', 'extensions:pdf,doc,docx', 'max:262144'],
+            'report'   => ['nullable', 'file', 'extensions:pdf,doc,docx', 'max:262144'],
         ]);
 
         $proposalFile = $request->file('proposal');
-        // Python uses "laporan", dashboard sends "report" — accept both
         $laporanFile  = $request->file('laporan') ?? $request->file('report');
 
         try {
-            // ── 1. Extract text from proposal ─────────────────────────────
-            $proposalPath = $proposalFile->getRealPath();
-            $proposalText = $this->extractTextFromFile($proposalPath, $proposalFile->getClientOriginalName());
-            $proposalText = $this->cleanDocumentText($proposalText);
+            $jobId = \Illuminate\Support\Str::uuid()->toString();
+            $base  = storage_path('app/private/egerai/' . $jobId);
+            \Illuminate\Support\Facades\File::ensureDirectoryExists($base);
 
-            // ── 2. Extract text from laporan (if provided) ─────────────────
-            $laporanText = '';
+            $images = [];
+
+            // Extract images from proposal
+            if ($proposalFile) {
+                $propPath = $base . '/proposal.' . $proposalFile->getClientOriginalExtension();
+                $proposalFile->move($base, basename($propPath));
+                foreach ((new \App\Services\DocumentImageExtractor())->extract($propPath, 'proposal', $base . '/images-proposal') as $tag => $paths) {
+                    $images[$tag] = array_merge($images[$tag] ?? [], $paths);
+                }
+            }
+
+            // Extract images from laporan/report if provided
             if ($laporanFile) {
-                $laporanPath = $laporanFile->getRealPath();
-                $laporanText = $this->extractTextFromFile($laporanPath, $laporanFile->getClientOriginalName());
-                $laporanText = $this->cleanDocumentText($laporanText);
+                $repPath = $base . '/report.' . $laporanFile->getClientOriginalExtension();
+                $laporanFile->move($base, basename($repPath));
+                foreach ((new \App\Services\DocumentImageExtractor())->extract($repPath, 'report', $base . '/images-report') as $tag => $paths) {
+                    $images[$tag] = array_merge($images[$tag] ?? [], $paths);
+                }
             }
 
-            // ── 3. AI extraction from combined text ────────────────────────
-            $combinedText = trim($proposalText . "\n\n" . $laporanText);
-            $narasi = [];
-            if (!empty($combinedText)) {
-                $rawNarasi = $this->gemini->generateNarasi($combinedText, []);
-                $narasi    = $this->cleanAiOutput($rawNarasi);
-            }
+            $request->session()->put('egerai_jobs.' . $jobId, ['images' => $images]);
 
-            // ── 4. Store uploaded files permanently ───────────────────────
-            $storedProposalPath = $proposalFile->store('kkprl', 'public');
-            $storedLaporanPath  = $laporanFile ? $laporanFile->store('kkprl', 'public') : null;
-
-            // ── 5. Save to kkprl_proposals DB with status = on_review ─────
+            // Save to DB for review page editing
             $kkprlProposal = \App\Models\KkprlProposal::create([
-                'status'                      => 'on_review',
-                'applicant_name'              => $narasi['nama_pemohon'] ?? null,
-                'applicant_position'          => $narasi['jabatan_pemohon'] ?? null,
-                'company_name'                => $narasi['nama_perusahaan'] ?? null,
-                'phone_number'                => $narasi['telp'] ?? null,
-                'email'                       => $narasi['email'] ?? null,
-                'activity_type'               => $narasi['jenis_kegiatan'] ?? null,
-                'water_name'                  => $narasi['nama_perairan'] ?? null,
-                'area_size'                   => is_numeric($narasi['luas_ruang_total'] ?? null)
-                                                    ? $narasi['luas_ruang_total']
-                                                    : null,
-                'province'                    => $narasi['provinsi'] ?? null,
-                'regency'                     => $narasi['kabupaten'] ?? null,
-                'district'                    => $narasi['kecamatan'] ?? null,
-                'village'                     => $narasi['desa'] ?? null,
-                'activity_description'        => $narasi['deskripsi_kegiatan'] ?? ($narasi['uraian_kegiatan'] ?? null),
-                'activity_purpose'            => $narasi['tujuan_kegiatan'] ?? null,
-                'activity_benefit'            => $narasi['manfaat_kegiatan'] ?? null,
-                'schedule_description'        => $narasi['jadwal_konstruksi'] ?? null,
-                'is_reclamation'              => in_array(
-                                                    strtolower((string) ($narasi['ada_reklamasi'] ?? 'tidak')),
-                                                    ['ya', 'yes', '1', 'true']
-                                                ),
-                'existing_doc_path'           => $storedProposalPath,
-                'hydro_oceanography_doc_path' => $storedLaporanPath,
+                'status'            => 'on_review',
+                'existing_doc_path' => $base . '/proposal',
             ]);
 
-            // ── 6. Redirect to review page so user can verify & download ──
             return redirect()->route('kkprl-proposal.review', $kkprlProposal->id);
 
-        } catch (Exception $e) {
-            Log::error('reviewAndGenerate failed', ['message' => $e->getMessage()]);
-            return response()->json([
-                'message' => 'Gagal memproses dokumen: ' . $e->getMessage(),
-            ], 500);
+        } catch (\Throwable $e) {
+            Log::error('reviewAndGenerate failed', [
+                'message' => $e->getMessage(),
+                'trace'   => $e->getTraceAsString(),
+            ]);
+
+            return redirect()->back()->withErrors([
+                'proposal' => 'Gagal memproses dokumen: ' . $e->getMessage(),
+            ]);
         }
     }
 
@@ -562,10 +542,10 @@ class GenerateDocxController extends Controller
     public function generate(Request $request)
     {
         $request->validate([
-            'laporan_pdf'        => ['nullable', 'file', 'mimes:pdf,docx', 'max:30720'],
-            'template_docx'      => ['nullable', 'file', 'mimes:docx', 'max:30720'],
-            'proposal'           => ['nullable', 'file', 'mimes:pdf,docx', 'max:30720'],
-            'report'             => ['nullable', 'file', 'mimes:pdf,docx', 'max:30720'],
+            'laporan_pdf'        => ['nullable', 'file', 'extensions:pdf,doc,docx', 'max:262144'],
+            'template_docx'      => ['nullable', 'file', 'extensions:docx', 'max:262144'],
+            'proposal'           => ['nullable', 'file', 'extensions:pdf,doc,docx', 'max:262144'],
+            'report'             => ['nullable', 'file', 'extensions:pdf,doc,docx', 'max:262144'],
             'nama_perusahaan'    => ['nullable', 'string', 'max:255'],
             'nib'                => ['nullable', 'string', 'max:255'],
             'npwp'               => ['nullable', 'string', 'max:255'],
@@ -732,72 +712,10 @@ class GenerateDocxController extends Controller
         $this->cleanDummyContent($outputPath); // The safe DOM version
     }
 
-    private function buildDocxFromScratch(array $data, array $narasi, string $outputPath): void
+    private function buildDocxFromScratch(array $data, array $narasi, string $outputPath, array $tempImages = []): void
     {
-        $phpWord = new PhpWord();
-        $phpWord->addTitleStyle(1, ['bold' => true, 'size' => 16], ['spaceAfter' => 200, 'alignment' => 'center']);
-        $phpWord->addTitleStyle(2, ['bold' => true, 'size' => 13, 'color' => '1E40AF'], ['spaceBefore' => 300, 'spaceAfter' => 100]);
-        $phpWord->addTitleStyle(3, ['bold' => true, 'size' => 11], ['spaceBefore' => 150, 'spaceAfter' => 50]);
-        $phpWord->addTableStyle('T', ['borderSize' => 6, 'borderColor' => 'D1D5DB', 'cellMargin' => 80]);
-
-        $section = $phpWord->addSection();
-        $section->addTitle('PROPOSAL PERSETUJUAN KESESUAIAN KEGIATAN PEMANFAATAN RUANG LAUT (PKKPRL)');
-        $section->addTextBreak();
-
-        $this->addTableRows($section, $phpWord, 'IDENTITAS PEMOHON', [
-            'Nama Perusahaan' => $data['nama_perusahaan'], 'NIB'          => $data['nib'],
-            'NPWP'            => $data['npwp'], 'Telepon'                 => $data['telp'], 'Email' => $data['email'],
-            'Jenis Kegiatan'  => $data['jenis_kegiatan'], 'No. Referensi' => $data['no_referensi'],
-            'Tanggal'         => $data['tanggal_penyusunan'],
-        ]);
-
-        $this->addTableRows($section, $phpWord, 'I. RENCANA BANGUNAN & INSTALASI LAUT', [
-            'Nama Perairan'     => $data['nama_perairan'], 'Provinsi' => $data['provinsi'],
-            'Kabupaten'         => $data['kabupaten'], 'Kecamatan'    => $data['kecamatan'],
-            'Desa'              => $data['desa'], 'Uraian Kegiatan'   => $data['uraian_kegiatan'],
-            'Jadwal Konstruksi' => $data['jadwal_konstruksi'], 'Luas' => $data['luas_ruang_total'],
-        ]);
-
-        $this->addTableRows($section, $phpWord, 'II. PEMANFAATAN RUANG LAUT', [
-            'Permukiman Nelayan' => $data['permukiman_nelayan'],
-            'Alur Pelayaran'     => $data['alur_pelayaran'],
-            'Area Tangkap'       => $data['area_tangkap'],
-            'Aktivitas Lain'     => $data['aktivitas_lain'],
-        ]);
-
-        $section->addTitle('III. DATA KONDISI TERKINI LOKASI & ANALISIS TEKNIS (AI)', 2);
-        $sectionsToCheck = [
-            'Batimetri'         => 'batimetri',
-            'Gelombang'         => 'gelombang',
-            'Arus'              => 'arus',
-            'Pasang Surut'      => 'pasang_surut',
-            'Ekosistem Pesisir' => 'ekosistem_pesisir',
-        ];
-        foreach ($sectionsToCheck as $label => $key) {
-            $section->addTitle($label, 3);
-            $content = $narasi[$key] ?? null;
-            if ($content) {
-                foreach (explode("\n", (string) $content) as $p) {
-                    if (trim($p)) {
-                        $section->addText(trim($p), ['size' => 11], ['spaceAfter' => 100]);
-                    }
-
-                }
-            } else {
-                $section->addText('Data narasi belum tersedia.', ['italic' => true, 'color' => '6B7280']);
-            }
-        }
-
-        if (! empty($data['ada_reklamasi']) && strtolower((string) $data['ada_reklamasi']) !== 'tidak') {
-            $this->addTableRows($section, $phpWord, 'IV. PERSYARATAN REKLAMASI', [
-                'Ada Reklamasi'    => $data['ada_reklamasi'], 'Sumber Material' => $data['sumber_material'],
-                'Metode'           => $data['metode_reklamasi'], 'Jenis Tanah'  => $data['jenis_tanah'],
-                'Daya Dukung'      => $data['daya_dukung'], 'Pemanfaatan Lahan' => $data['pemanfaatan_lahan'],
-                'Jadwal Reklamasi' => $data['jadwal_reklamasi'],
-            ]);
-        }
-
-        IOFactory::createWriter($phpWord, 'Word2007')->save($outputPath);
+        $mergedData = array_merge($data, $narasi);
+        (new \App\Services\ProposalDocumentGenerator())->create($mergedData, $outputPath, $tempImages);
     }
 
     private function addTableRows($section, PhpWord $phpWord, string $title, array $rows): void
