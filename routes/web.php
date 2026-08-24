@@ -160,12 +160,12 @@ Route::get('/pkkprl/download-proposal/{draftId}', [GenerateDocxController::class
 Route::get('/pkkprl/download-kkprl-proposal/{proposalId}', [GenerateDocxController::class, 'generateFromProposal'])
     ->name('pkkprl.download-kkprl-proposal');
 
-// Dashboard quick-generate: mirrors Python's POST /review
-// Accepts proposal (required) + laporan/report (optional), returns DOCX immediately.
 Route::post('/kkprl/review', [GenerateDocxController::class, 'reviewAndGenerate'])
     ->name('kkprl.review');
 
 
+Route::get('/asisten', fn () => inertia('Assistant'))->name('asisten');
+
 Route::post('/kkprl/assistant', [ProposalExtractionController::class, 'assistant'])
-    ->middleware('throttle:20,1')
+    ->middleware(['throttle:20,1', 'api'])
     ->name('kkprl.assistant');

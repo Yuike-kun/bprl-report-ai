@@ -477,7 +477,7 @@ class GenerateDocxController extends Controller
     // Accepts: proposal (required), laporan/report (optional)
     // Returns: Redirect to kkprl-proposal.review for user correction & download
     // ──────────────────────────────────────────────────────────────────────────
-    public function reviewAndGenerate(Request $request)
+    public function reviewAndGenerate(Request $request, \App\Services\KKPRL\ProposalExtractionService $extractor)
     {
         $request->validate([
             'proposal' => ['required', 'file', 'extensions:pdf,doc,docx', 'max:262144'],
@@ -494,13 +494,21 @@ class GenerateDocxController extends Controller
             \Illuminate\Support\Facades\File::ensureDirectoryExists($base);
 
             $images = [];
+            $extractedFields = [];
 
-            // Extract images from proposal
+            // Extract images and fields from proposal
             if ($proposalFile) {
                 $propPath = $base . '/proposal.' . $proposalFile->getClientOriginalExtension();
                 $proposalFile->move($base, basename($propPath));
                 foreach ((new \App\Services\DocumentImageExtractor())->extract($propPath, 'proposal', $base . '/images-proposal') as $tag => $paths) {
                     $images[$tag] = array_merge($images[$tag] ?? [], $paths);
+                }
+
+                try {
+                    $result = $extractor->extract($propPath);
+                    $extractedFields = $result['fields'] ?? [];
+                } catch (\Throwable $e) {
+                    Log::warning('Auto-fill extraction failed: ' . $e->getMessage());
                 }
             }
 
@@ -515,10 +523,29 @@ class GenerateDocxController extends Controller
 
             $request->session()->put('egerai_jobs.' . $jobId, ['images' => $images]);
 
+            // Clean up area size string
+            $areaSize = null;
+            if (isset($extractedFields['luas_ruang_total'])) {
+                $cleaned = preg_replace('/[^0-9.]/', '', str_replace(',', '.', $extractedFields['luas_ruang_total']));
+                if ($cleaned !== '') {
+                    $areaSize = (float) $cleaned;
+                }
+            }
+
             // Save to DB for review page editing
             $kkprlProposal = \App\Models\KkprlProposal::create([
-                'status'            => 'on_review',
-                'existing_doc_path' => $base . '/proposal',
+                'status'               => 'on_review',
+                'existing_doc_path'    => $base . '/proposal',
+                'company_name'         => $extractedFields['nama_perusahaan'] ?? null,
+                'applicant_name'       => $extractedFields['nama_perusahaan'] ?? null,
+                'nib'                  => $extractedFields['nib'] ?? null,
+                'npwp'                 => $extractedFields['npwp'] ?? null,
+                'phone_number'         => $extractedFields['telp'] ?? null,
+                'email'                => $extractedFields['email'] ?? null,
+                'activity_type'        => $extractedFields['jenis_kegiatan'] ?? null,
+                'water_name'           => $extractedFields['nama_perairan'] ?? null,
+                'area_size'            => $areaSize,
+                'activity_description' => $extractedFields['uraian_kegiatan'] ?? null,
             ]);
 
             return redirect()->route('kkprl-proposal.review', $kkprlProposal->id);
@@ -780,11 +807,15 @@ class GenerateDocxController extends Controller
             if ($zip->open($filePath) === true) {
                 $index = $zip->locateName('word/document.xml');
                 if ($index !== false) {
-                    $dom = new DOMDocument();
-                    @$dom->loadXML($zip->getFromIndex($index));
-                    $text = preg_replace('/\s+/', ' ', trim($dom->textContent));
+                    $xml = $zip->getFromIndex($index);
                     $zip->close();
-                    return $text;
+                    $xmlWithSpaces = str_replace(
+                        ['</w:p>', '</w:tc>', '</w:tr>', '<w:tab/>', '</w:t>'],
+                        ' ',
+                        $xml
+                    );
+                    $text = preg_replace('/\s+/', ' ', trim(strip_tags($xmlWithSpaces)));
+                    return html_entity_decode($text);
                 }
                 $zip->close();
             }
