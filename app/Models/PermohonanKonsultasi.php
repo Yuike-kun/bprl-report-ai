@@ -19,6 +19,7 @@ class PermohonanKonsultasi extends Model
         'email',
         'permintaan_khusus',
         'setuju_syarat_ketentuan',
+        'staff_tanda_tangan',
         'tanda_tangan',
         'status',
         'provinsi',

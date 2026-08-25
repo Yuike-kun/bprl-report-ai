@@ -7,6 +7,12 @@
     },
     {
         "type": "link",
+        "label": "Tanda Tangan Konsultasi",
+        "url": "/pegawai/signature-konsultasi",
+        "icon": "Signature"
+    },
+    {
+        "type": "link",
         "label": "Ekstrak Proposal",
         "url": "/proposal-extractions/create",
         "icon": "FileSearch"

@@ -1,11 +1,5 @@
 <?php
 
-use App\Http\Controllers\Master\ChangelogController;
-use App\Http\Controllers\Master\JadwalKonsultasiController;
-use App\Http\Controllers\Master\KkprlProposalMasterController;
-use App\Http\Controllers\Master\LokasiKonsultasiController;
-use App\Http\Controllers\Master\PermohonanKonsultasiController;
-use App\Http\Controllers\Pegawai\DashboardController as PegawaiDashboardController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BeritaAcaraController;
 use App\Http\Controllers\DashboardController;
@@ -13,6 +7,13 @@ use App\Http\Controllers\GeneralDraftController;
 use App\Http\Controllers\GenerateDocxController;
 use App\Http\Controllers\GeolocationController;
 use App\Http\Controllers\KkprlProposalController;
+use App\Http\Controllers\Master\ChangelogController;
+use App\Http\Controllers\Master\JadwalKonsultasiController;
+use App\Http\Controllers\Master\KkprlProposalMasterController;
+use App\Http\Controllers\Master\LokasiKonsultasiController;
+use App\Http\Controllers\Master\PermohonanKonsultasiController;
+use App\Http\Controllers\Pegawai\DashboardController as PegawaiDashboardController;
+use App\Http\Controllers\Pegawai\SignatureKonsultasiController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProposalExtractionController;
 use App\Http\Controllers\RequestFormController;
@@ -47,6 +48,10 @@ Route::middleware('auth')->group(function () {
 
     Route::prefix('/pegawai')->as('pegawai.')->middleware('role:pegawai')->group(function () {
         Route::get('/dashboard', [PegawaiDashboardController::class, 'index'])->name('dashboard');
+        Route::prefix('signature-konsultasi')->as('signature-konsultasi.')->group(function () {
+            Route::get('/', [SignatureKonsultasiController::class, 'index'])->name('index');
+            Route::post('/{permohonanKonsultasi}', [SignatureKonsultasiController::class, 'signature'])->name('signature');
+        });
     });
 
     Route::middleware('role:admin,pemohon')->group(function () {
@@ -163,8 +168,7 @@ Route::get('/pkkprl/download-kkprl-proposal/{proposalId}', [GenerateDocxControll
 Route::post('/kkprl/review', [GenerateDocxController::class, 'reviewAndGenerate'])
     ->name('kkprl.review');
 
-
-Route::get('/asisten', fn () => inertia('Assistant'))->name('asisten');
+Route::get('/asisten', fn() => inertia('Assistant'))->name('asisten');
 
 Route::post('/kkprl/assistant', [ProposalExtractionController::class, 'assistant'])
     ->middleware(['throttle:20,1', 'api'])
