@@ -4,7 +4,13 @@ import {
     ArrowLeft,
     BadgeCheck,
     Edit3,
+    ExternalLink,
+    File,
+    FileImage,
+    FileSpreadsheet,
+    FileText,
     Mail,
+    Paperclip,
     Trash2,
     UserRound,
     XCircle,
@@ -35,6 +41,7 @@ type Submission = {
     lokasi?: { id: number; nama_lokasi: string } | null;
     jadwal?: any;
     staff: any[];
+    dokumen?: { id: number; file_name: string; file_url: string }[];
 };
 
 type Props = { submission: Submission };
@@ -469,6 +476,95 @@ export default function PermohonanKonsultasiShow({ submission }: Props) {
                                 </div>
                             </div>
                         )}
+
+                        {/* Bahan Konsultasi */}
+                        <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4">
+                            <div className="mb-3 flex items-center gap-2">
+                                <Paperclip className="h-4 w-4 text-slate-400" />
+                                <p className="text-xs font-semibold tracking-wide text-slate-400 uppercase">
+                                    Bahan Konsultasi
+                                </p>
+                                {submission.dokumen && submission.dokumen.length > 0 && (
+                                    <span className="ml-auto rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-700">
+                                        {submission.dokumen.length} file
+                                    </span>
+                                )}
+                            </div>
+
+                            {submission.dokumen && submission.dokumen.length > 0 ? (
+                                <ul className="space-y-2">
+                                    {submission.dokumen.map((doc) => {
+                                        const ext = doc.file_name.split('.').pop()?.toLowerCase() ?? '';
+                                        const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext);
+                                        const isPdf = ext === 'pdf';
+                                        const isSheet = ['xls', 'xlsx', 'csv'].includes(ext);
+                                        const FileIcon = isImage
+                                            ? FileImage
+                                            : isSheet
+                                                ? FileSpreadsheet
+                                                : isPdf
+                                                    ? FileText
+                                                    : File;
+                                        const iconColor = isImage
+                                            ? 'text-violet-500'
+                                            : isSheet
+                                                ? 'text-emerald-500'
+                                                : isPdf
+                                                    ? 'text-red-500'
+                                                    : 'text-slate-400';
+
+                                        return (
+                                            <li key={doc.id}>
+                                                {isImage ? (
+                                                    <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
+                                                        <img
+                                                            src={doc.file_url}
+                                                            alt={doc.file_name}
+                                                            className="max-h-48 w-full object-contain p-2"
+                                                        />
+                                                        <div className="flex items-center justify-between border-t border-slate-100 px-3 py-2">
+                                                            <span className="flex items-center gap-1.5 truncate text-xs font-medium text-slate-600">
+                                                                <FileIcon className={`h-3.5 w-3.5 shrink-0 ${iconColor}`} />
+                                                                {doc.file_name}
+                                                            </span>
+                                                            <a
+                                                                href={doc.file_url}
+                                                                download={doc.file_name}
+                                                                target="_blank"
+                                                                rel="noreferrer"
+                                                                className="ml-2 shrink-0 rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-blue-50 hover:text-blue-600"
+                                                                title="Unduh"
+                                                            >
+                                                                <ExternalLink className="h-3.5 w-3.5" />
+                                                            </a>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2.5">
+                                                        <span className="flex items-center gap-2 truncate text-xs font-medium text-slate-700">
+                                                            <FileIcon className={`h-4 w-4 shrink-0 ${iconColor}`} />
+                                                            {doc.file_name}
+                                                        </span>
+                                                        <a
+                                                            href={doc.file_url}
+                                                            download={doc.file_name}
+                                                            target="_blank"
+                                                            rel="noreferrer"
+                                                            className="ml-3 shrink-0 rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-blue-50 hover:text-blue-600"
+                                                            title="Unduh / Buka"
+                                                        >
+                                                            <ExternalLink className="h-3.5 w-3.5" />
+                                                        </a>
+                                                    </div>
+                                                )}
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+                            ) : (
+                                <p className="text-sm text-slate-400">Tidak ada file yang diunggah.</p>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>

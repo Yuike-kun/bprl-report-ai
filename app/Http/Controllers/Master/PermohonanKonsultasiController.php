@@ -19,7 +19,7 @@ class PermohonanKonsultasiController extends Controller
         $search = trim((string) $request->query('search', ''));
 
         $submissions = PermohonanKonsultasi::query()
-            ->with(['jadwal.lokasi', 'kabupaten', 'provinsi', 'child_schedules'])
+            ->with(['jadwal.lokasi', 'kabupaten', 'provinsi', 'child_schedules', 'dokumen'])
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($inner) use ($search) {
                     $inner
@@ -44,7 +44,7 @@ class PermohonanKonsultasiController extends Controller
 
     public function show(PermohonanKonsultasi $permohonanKonsultasi): Response
     {
-        $permohonanKonsultasi->load(['jadwal.lokasi', 'kabupaten', 'provinsi']);
+        $permohonanKonsultasi->load(['jadwal.lokasi', 'kabupaten', 'provinsi', 'dokumen', 'assign_to_staff.Staff']);
 
         return Inertia::render('backend/master/permohonan-konsultasi/show', [
             'submission' => $permohonanKonsultasi,

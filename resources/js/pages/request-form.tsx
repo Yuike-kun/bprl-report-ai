@@ -44,6 +44,8 @@ import {
 
 import SignaturePad from '@/components/signature-pad';
 import { ComboboxSearch } from '@/components/backend/combobox-searchable';
+import DocumentUpload from '@/components/document-upload';
+import { FileUpload } from '@/components/berita_acara_components/FileUpload';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                               */
@@ -82,25 +84,25 @@ const METODE_OPTIONS: Array<{
     desc: string;
     icon: LucideIcon;
 }> = [
-    {
-        value: 'Daring',
-        title: 'Konsultasi Daring',
-        desc: 'Melalui video conference (Zoom / Google Meet)',
-        icon: Video,
-    },
-    {
-        value: 'Luring',
-        title: 'Konsultasi Tatap Muka',
-        desc: 'Datang langsung ke kantor BPRL Makassar',
-        icon: Users,
-    },
-    {
-        value: 'Hybrid',
-        title: 'Hybrid',
-        desc: 'Kombinasi daring dan tatap muka',
-        icon: Layers,
-    },
-];
+        {
+            value: 'Daring',
+            title: 'Konsultasi Daring',
+            desc: 'Melalui video conference (Zoom / Google Meet)',
+            icon: Video,
+        },
+        {
+            value: 'Luring',
+            title: 'Konsultasi Tatap Muka',
+            desc: 'Datang langsung ke kantor BPRL Makassar',
+            icon: Users,
+        },
+        {
+            value: 'Hybrid',
+            title: 'Hybrid',
+            desc: 'Kombinasi daring dan tatap muka',
+            icon: Layers,
+        },
+    ];
 
 const GUIDE_ITEMS = [
     {
@@ -183,6 +185,7 @@ export default function RequestForm() {
         permintaan_khusus: '',
         tanda_tangan: '',
         setuju_syarat_ketentuan: false,
+        bahan_konsultasi: null,
     });
 
     const [attempted, setAttempted] = useState(false);
@@ -234,8 +237,8 @@ export default function RequestForm() {
                 ? undefined
                 : 'Wajib disetujui.'
             : value.trim()
-              ? undefined
-              : 'Wajib diisi.';
+                ? undefined
+                : 'Wajib diisi.';
 
     const requiredFields: Array<keyof typeof data> = [
         'nama_pemohon',
@@ -279,6 +282,7 @@ export default function RequestForm() {
         }
         post('/request-form', {
             preserveScroll: true,
+            forceFormData: true,
             onSuccess: () => {
                 reset();
                 setAttempted(false);
@@ -614,11 +618,10 @@ export default function RequestForm() {
                                                         mode.value,
                                                     )
                                                 }
-                                                className={`relative cursor-pointer rounded-xl border p-4 text-left transition-all ${
-                                                    active
-                                                        ? 'border-blue-600 bg-blue-50/50 ring-1 ring-blue-600/30'
-                                                        : 'border-slate-200 bg-white hover:border-blue-300 hover:bg-blue-50/30'
-                                                }`}
+                                                className={`relative cursor-pointer rounded-xl border p-4 text-left transition-all ${active
+                                                    ? 'border-blue-600 bg-blue-50/50 ring-1 ring-blue-600/30'
+                                                    : 'border-slate-200 bg-white hover:border-blue-300 hover:bg-blue-50/30'
+                                                    }`}
                                             >
                                                 {active && (
                                                     <span className="absolute top-3 right-3 flex h-5 w-5 items-center justify-center rounded-full bg-blue-600">
@@ -720,11 +723,10 @@ export default function RequestForm() {
                                                                 '',
                                                             );
                                                         }}
-                                                        className={`min-w-28 cursor-pointer rounded-xl border px-3 py-3 text-center transition-all ${
-                                                            active
-                                                                ? 'border-blue-600 bg-blue-50/50 ring-1 ring-blue-600/30'
-                                                                : 'border-slate-200 bg-white hover:border-blue-300'
-                                                        }`}
+                                                        className={`min-w-28 cursor-pointer rounded-xl border px-3 py-3 text-center transition-all ${active
+                                                            ? 'border-blue-600 bg-blue-50/50 ring-1 ring-blue-600/30'
+                                                            : 'border-slate-200 bg-white hover:border-blue-300'
+                                                            }`}
                                                     >
                                                         <p className="text-[11px] text-slate-400 capitalize">
                                                             {dateObj.toLocaleDateString(
@@ -818,13 +820,12 @@ export default function RequestForm() {
                                                                 String(slot.id),
                                                             )
                                                         }
-                                                        className={`relative rounded-xl border px-3 py-3 text-center transition-all ${
-                                                            full
-                                                                ? 'cursor-not-allowed border-slate-100 bg-slate-50 opacity-70'
-                                                                : active
-                                                                  ? 'cursor-pointer border-blue-600 bg-blue-50/50 ring-1 ring-blue-600/30'
-                                                                  : 'cursor-pointer border-slate-200 bg-white hover:border-blue-300'
-                                                        }`}
+                                                        className={`relative rounded-xl border px-3 py-3 text-center transition-all ${full
+                                                            ? 'cursor-not-allowed border-slate-100 bg-slate-50 opacity-70'
+                                                            : active
+                                                                ? 'cursor-pointer border-blue-600 bg-blue-50/50 ring-1 ring-blue-600/30'
+                                                                : 'cursor-pointer border-slate-200 bg-white hover:border-blue-300'
+                                                            }`}
                                                     >
                                                         {active && (
                                                             <span className="absolute top-2 right-2 flex h-5 w-5 items-center justify-center rounded-full bg-blue-600">
@@ -869,6 +870,19 @@ export default function RequestForm() {
                                     message={fieldError('child_schedule_id')}
                                 />
                             </div>
+                        </section>
+
+                        <section className="space-y-5 border-t border-slate-100 pt-8">
+                            <Label className="text-sm font-medium text-slate-700">
+                                Unggah Bahan Konsultasi{' '}
+                                <span className="text-red-500">*</span>
+                            </Label>
+                            <FileUpload label="Bahan Konsultasi"
+                                name="bahan_konsultasi"
+                                multiple
+                                max={5}
+                                files={(data.bahan_konsultasi as File[]) ?? []}
+                                onChange={(files: File[]) => setData('bahan_konsultasi', files as any)} />
                         </section>
 
                         {/* ============ Persetujuan ============ */}

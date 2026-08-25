@@ -2,6 +2,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ChildSchedule;
+use App\Models\DokumenKonsultasi;
 use App\Models\JadwalKonsultasi;
 use App\Models\LokasiKonsultasi;
 use App\Models\PermohonanKonsultasi;
@@ -11,6 +12,7 @@ use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -84,6 +86,8 @@ class RequestFormController extends Controller
             'permintaan_khusus'       => ['nullable', 'string'],
             'tanda_tangan'            => ['required', 'string'],
             'setuju_syarat_ketentuan' => ['accepted'],
+            'bahan_konsultasi'        => ['nullable', 'array', 'max:5'],
+            'bahan_konsultasi.*'      => ['file', 'max:10240', 'mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,jpg,jpeg,png'],
         ]);
 
         if (in_array($validated['pelaksanaan'], ['Luring', 'Hybrid'], true) && empty($validated['lokasi_konsultasi_id'])) {
@@ -120,7 +124,7 @@ class RequestFormController extends Controller
                 ->withInput();
         }
 
-        PermohonanKonsultasi::create([
+        $permohonan = PermohonanKonsultasi::create([
             'jadwal_konsultasi_id'    => $parentSchedule->id,
             'child_schedule_id'       => $childSchedule->id,
             'waktu_konsultasi'        => $childSchedule->waktu,
@@ -137,6 +141,17 @@ class RequestFormController extends Controller
             'tanda_tangan'            => $validated['tanda_tangan'],
             'status'                  => 'draft',
         ]);
+
+        if (! empty($validated['bahan_konsultasi'])) {
+            foreach ($validated['bahan_konsultasi'] as $file) {
+                $path = $file->store("bahan_konsultasi/{$permohonan->id}", 'public');
+                DokumenKonsultasi::create([
+                    'permohonan_id' => $permohonan->id,
+                    'file_url'      => Storage::url($path),
+                    'file_name'     => $file->getClientOriginalName(),
+                ]);
+            }
+        }
 
         return redirect()
             ->route('request-form')

@@ -1,6 +1,6 @@
 import MainLayout from '../../layout';
 import { Head, Link, router } from '@inertiajs/react';
-import { Eye, Pencil, Search, Trash2, UserRound } from 'lucide-react';
+import { Eye, Paperclip, Pencil, Search, Trash2, UserRound } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 import { PaginatedTable } from '@/components/backend/paginated-table';
@@ -15,6 +15,7 @@ type Submission = {
     pelaksanaan: 'Luring' | 'Daring' | 'Hybrid';
     status: 'draft' | 'dikirim' | 'selesai';
     created_at: string;
+    dokumen?: { id: number }[];
 };
 
 type PaginatedSubmissions = {
@@ -136,6 +137,9 @@ export default function PermohonanKonsultasiIndex({
                             Status
                         </th>
                         <th className="px-5 py-3 text-center text-xs font-semibold tracking-wider whitespace-nowrap text-slate-500 uppercase">
+                            File
+                        </th>
+                        <th className="px-5 py-3 text-center text-xs font-semibold tracking-wider whitespace-nowrap text-slate-500 uppercase">
                             Aksi
                         </th>
                     </tr>
@@ -144,7 +148,7 @@ export default function PermohonanKonsultasiIndex({
                 emptyState={
                     <tr>
                         <td
-                            colSpan={6}
+                            colSpan={7}
                             className="py-16 text-center text-slate-400"
                         >
                             <Search className="mx-auto mb-3 h-10 w-10 text-slate-200" />
@@ -212,6 +216,16 @@ export default function PermohonanKonsultasiIndex({
                             >
                                 {item.status}
                             </span>
+                        </td>
+                        <td className="px-5 py-4 text-center">
+                            {item.dokumen && item.dokumen.length > 0 ? (
+                                <span className="inline-flex items-center gap-1 rounded-lg bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-600">
+                                    <Paperclip className="h-3 w-3" />
+                                    {item.dokumen.length}
+                                </span>
+                            ) : (
+                                <span className="text-xs text-slate-300">—</span>
+                            )}
                         </td>
                         <td className="px-5 py-4">
                             <div className="flex items-center justify-center gap-1.5">
