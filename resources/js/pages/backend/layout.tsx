@@ -86,7 +86,7 @@ const sectionKey = (s: MenuSection) => (s.type === 'link' ? s.url : s.id);
 function useIsActive() {
     const { url } = usePage<any>();
     return (itemUrl: string) =>
-        url === itemUrl || url.startsWith(itemUrl + '/');
+        url === itemUrl || url.startsWith(itemUrl + '/') || url.startsWith(itemUrl + '?');
 }
 
 function visibleSectionsFor(user: any) {

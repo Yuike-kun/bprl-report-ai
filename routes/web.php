@@ -12,6 +12,7 @@ use App\Http\Controllers\Master\JadwalKonsultasiController;
 use App\Http\Controllers\Master\KkprlProposalMasterController;
 use App\Http\Controllers\Master\LokasiKonsultasiController;
 use App\Http\Controllers\Master\PermohonanKonsultasiController;
+use App\Http\Controllers\Master\TandaTanganUserController;
 use App\Http\Controllers\Pegawai\DashboardController as PegawaiDashboardController;
 use App\Http\Controllers\Pegawai\SignatureKonsultasiController;
 use App\Http\Controllers\ProfileController;
@@ -45,6 +46,11 @@ Route::get('/kkprl-proposal/{kkprlProposal}/review', [KkprlProposalController::c
 Route::post('/kkprl-proposal/{kkprlProposal}/finalize', [KkprlProposalController::class, 'finalize'])->name('kkprl-proposal.finalize');
 
 Route::middleware('auth')->group(function () {
+    Route::middleware('role:admin')->prefix('master/tanda-tangan-user')->as('master.tanda-tangan-user.')->group(function () {
+        Route::get('/', [TandaTanganUserController::class, 'index'])->name('index');
+        Route::put('/{user}', [TandaTanganUserController::class, 'update'])->name('update');
+        Route::delete('/{user}', [TandaTanganUserController::class, 'destroy'])->name('destroy');
+    });
 
     Route::prefix('/pegawai')->as('pegawai.')->middleware('role:pegawai')->group(function () {
         Route::get('/dashboard', [PegawaiDashboardController::class, 'index'])->name('dashboard');

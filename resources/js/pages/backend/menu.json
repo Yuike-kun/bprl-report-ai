@@ -18,6 +18,11 @@
         "icon": "FolderCog",
         "items": [
             {
+                "label": "Tanda Tangan",
+                "url": "/master/tanda-tangan-user",
+                "icon": "FileSignature"
+            },
+            {
                 "label": "Staff",
                 "url": "/staff",
                 "icon": "CalendarDays"

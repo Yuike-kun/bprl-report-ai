@@ -193,10 +193,10 @@ function UpdateProfileInformationForm({
             <div className="h-1 w-full bg-linear-to-r from-blue-500 to-indigo-500" />
             <CardHeader className="bg-white">
                 <CardTitle className="text-xl font-bold bg-clip-text text-transparent bg-linear-to-r from-slate-800 to-slate-600">
-                    Profile Information
+                    Informasi Profil
                 </CardTitle>
                 <CardDescription>
-                    Update your account's profile information, email address, and digital signature.
+                    Perbarui informasi profil akun Anda, alamat email.
                 </CardDescription>
             </CardHeader>
             <CardContent className="bg-white">
@@ -234,14 +234,14 @@ function UpdateProfileInformationForm({
                     </div>
 
                     {/* Signature Pad Component */}
-                    <div className="pt-2">
+                    {/* <div className="pt-2">
                         <SignaturePad
                             label="Tanda Tangan Digital"
                             value={data.signature}
                             onChange={(val) => setData("signature", val)}
                             error={errors.signature}
                         />
-                    </div>
+                    </div> */}
 
                     <div className="flex items-center gap-4 pt-4">
                         <Button
@@ -310,16 +310,16 @@ function UpdatePasswordForm() {
             <div className="h-1 w-full bg-linear-to-r from-purple-500 to-pink-500" />
             <CardHeader className="bg-white">
                 <CardTitle className="text-xl font-bold bg-clip-text text-transparent bg-linear-to-r from-slate-800 to-slate-600">
-                    Update Password
+                    Ubah Kata Sandi
                 </CardTitle>
                 <CardDescription>
-                    Ensure your account is using a long, random password to stay secure.
+                    Disarankan menggunakan symbol, angka, huruf besar dan kecil untuk keamanan kata sandi.
                 </CardDescription>
             </CardHeader>
             <CardContent className="bg-white">
                 <form onSubmit={updatePassword} className="space-y-6 max-w-xl">
                     <div className="space-y-2">
-                        <Label htmlFor="current_password">Current Password</Label>
+                        <Label htmlFor="current_password">Kata Sandi Saat Ini</Label>
                         <Input
                             id="current_password"
                             ref={currentPasswordInput}
@@ -339,7 +339,7 @@ function UpdatePasswordForm() {
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="password">New Password</Label>
+                        <Label htmlFor="password">Kata Sandi Baru</Label>
                         <Input
                             id="password"
                             ref={passwordInput}
@@ -355,7 +355,7 @@ function UpdatePasswordForm() {
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="password_confirmation">Confirm Password</Label>
+                        <Label htmlFor="password_confirmation">Konfirmasi Kata Sandi</Label>
                         <Input
                             id="password_confirmation"
                             type="password"

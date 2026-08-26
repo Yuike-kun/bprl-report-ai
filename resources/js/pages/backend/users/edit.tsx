@@ -13,12 +13,14 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import { Button } from "@/components/ui/button";
+import SignaturePad from "@/components/signature-pad";
 
 type User = {
     id: number;
     name: string;
     email: string;
     role: string;
+    signature?: string | null;
 };
 
 type Props = {
@@ -32,6 +34,7 @@ export default function UsersEdit({ user }: Props) {
         password: "",
         password_confirmation: "",
         role: user.role,
+        signature: user.signature || "",
     });
 
     function handleSubmit(e: FormEvent) {
@@ -138,6 +141,16 @@ export default function UsersEdit({ user }: Props) {
                             value={data.password_confirmation}
                             onChange={e => setData("password_confirmation", e.target.value)}
                             className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
+                        />
+                    </div>
+
+                    <div>
+                        <SignaturePad
+                            value={data.signature}
+                            onChange={(val) => setData("signature", val)}
+                            error={errors.signature}
+                            label="Tanda Tangan"
+                            required
                         />
                     </div>
 

@@ -17,6 +17,7 @@ export default function SignaturePad({ value, onChange, error, label, required }
     const [isDrawing, setIsDrawing] = useState(false);
     const [hasDrawn, setHasDrawn] = useState(false);
     const [fileName, setFileName] = useState<string>("");
+    const [localError, setLocalError] = useState<string>("");
 
     // Setup canvas resolution and drawing context
     useEffect(() => {
@@ -111,6 +112,7 @@ export default function SignaturePad({ value, onChange, error, label, required }
         }
         setHasDrawn(false);
         setFileName("");
+        setLocalError("");
         onChange("");
     };
 
@@ -118,8 +120,11 @@ export default function SignaturePad({ value, onChange, error, label, required }
         const file = e.target.files?.[0];
         if (!file) return;
 
-        if (file.size > 2 * 1024 * 1024) {
-            alert("Ukuran file maksimal 2MB.");
+        setLocalError("");
+
+        if (file.size > 1 * 1024 * 1024) {
+            setLocalError("Ukuran file terlalu besar. Maksimal ukuran gambar adalah 1MB.");
+            onChange("");
             return;
         }
 
@@ -127,7 +132,16 @@ export default function SignaturePad({ value, onChange, error, label, required }
         const reader = new FileReader();
         reader.onload = (event) => {
             const dataUrl = event.target?.result as string;
+            if (dataUrl.length > 1.5 * 1024 * 1024) {
+                setLocalError("Data base64 file terlalu besar untuk diproses.");
+                onChange("");
+                return;
+            }
             onChange(dataUrl);
+        };
+        reader.onerror = () => {
+            setLocalError("Gagal membaca file gambar.");
+            onChange("");
         };
         reader.readAsDataURL(file);
     };
@@ -143,7 +157,10 @@ export default function SignaturePad({ value, onChange, error, label, required }
                 <div className="inline-flex rounded-lg border border-slate-200 bg-slate-100 p-0.5 text-xs font-medium">
                     <button
                         type="button"
-                        onClick={() => setMode("draw")}
+                        onClick={() => {
+                            setMode("draw");
+                            setLocalError("");
+                        }}
                         className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 transition-all ${
                             mode === "draw"
                                 ? "bg-white text-blue-700 shadow-xs font-semibold"
@@ -155,7 +172,10 @@ export default function SignaturePad({ value, onChange, error, label, required }
                     </button>
                     <button
                         type="button"
-                        onClick={() => setMode("upload")}
+                        onClick={() => {
+                            setMode("upload");
+                            setLocalError("");
+                        }}
                         className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 transition-all ${
                             mode === "upload"
                                 ? "bg-white text-blue-700 shadow-xs font-semibold"
@@ -251,9 +271,9 @@ export default function SignaturePad({ value, onChange, error, label, required }
                 </div>
             )}
 
-            {error && (
+            {(error || localError) && (
                 <p className="text-xs font-medium text-red-500 flex items-center gap-1">
-                    {error}
+                    {error || localError}
                 </p>
             )}
         </div>
