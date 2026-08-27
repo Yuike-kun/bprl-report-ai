@@ -118,6 +118,16 @@ function ProfileMenu({ user }: { user?: any }) {
     const firstName = user?.name?.split(' ')[0] || 'Admin';
     const initial = user?.name?.charAt(0)?.toUpperCase() || 'A';
 
+    const handleLogoutClick = (e: React.MouseEvent) => {
+        if (user?.show_logout_animation !== false) {
+            e.preventDefault();
+            window.dispatchEvent(new CustomEvent('trigger-logout-animation'));
+            setTimeout(() => {
+                router.post('/logout');
+            }, 1800);
+        }
+    };
+
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -191,6 +201,7 @@ function ProfileMenu({ user }: { user?: any }) {
                         href="/logout"
                         method="post"
                         as="button"
+                        onClick={handleLogoutClick}
                         className="flex w-full items-center gap-2.5"
                     >
                         <LogOut className="h-4 w-4" />
@@ -996,14 +1007,48 @@ export default function MainLayout({
 }) {
     const { props } = usePage<any>();
     const user = props.auth?.user;
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+    useEffect(() => {
+        const handleLogoutAnimation = () => {
+            setIsLoggingOut(true);
+        };
+        window.addEventListener('trigger-logout-animation', handleLogoutAnimation);
+        return () => window.removeEventListener('trigger-logout-animation', handleLogoutAnimation);
+    }, []);
+
+    const renderOverlay = () => {
+        if (!isLoggingOut) return null;
+        return (
+            <div 
+                className="fixed inset-0 flex flex-col items-center justify-center bg-slate-900/90 text-white animate-in fade-in duration-300"
+                style={{ zIndex: 99999 }}
+            >
+                <div className="relative flex items-center justify-center mb-4">
+                    <div className="w-16 h-16 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
+                    <LogOut className="absolute w-6 h-6 text-blue-400 animate-pulse" />
+                </div>
+                <h2 className="text-xl font-bold tracking-tight animate-bounce">Sedang keluar...</h2>
+                <p className="text-sm text-slate-400 mt-1">Mengamankan sesi Anda</p>
+            </div>
+        );
+    };
 
     if (SIDEBAR_ROLES.includes(user?.role)) {
         return (
-            <SidebarShell pageTitle={pageTitle} user={user}>
-                {children}
-            </SidebarShell>
+            <>
+                {renderOverlay()}
+                <SidebarShell pageTitle={pageTitle} user={user}>
+                    {children}
+                </SidebarShell>
+            </>
         );
     }
 
-    return <NavbarShell user={user}>{children}</NavbarShell>;
+    return (
+        <>
+            {renderOverlay()}
+            <NavbarShell user={user}>{children}</NavbarShell>
+        </>
+    );
 }

@@ -19,10 +19,6 @@ class DashboardController extends Controller
 
         // 1. Total Metrics for Admin & Petugas
         $totalPemohon = User::where('role', 'pemohon')->count();
-        if ($totalPemohon === 0) {
-            $totalPemohon = User::count();
-        }
-
         $totalBeritaAcara = PermohonanKonsultasi::count();
         $totalProposal = KkprlProposal::count();
         $quotaAi = 1600; // Configured / static quota
@@ -37,6 +33,7 @@ class DashboardController extends Controller
 
             $pemohonCount = User::whereYear('created_at', $year)
                 ->whereMonth('created_at', $month)
+                ->where('role', 'pemohon')
                 ->count();
 
             $baCount = PermohonanKonsultasi::whereYear('created_at', $year)
@@ -94,6 +91,21 @@ class DashboardController extends Controller
             ];
         });
 
+        $loginHistory = User::orderBy('last_login_at', 'desc')
+            ->take(12)
+            ->get()
+            ->map(function ($u) {
+                return [
+                    'id' => $u->id,
+                    'name' => $u->name,
+                    'email' => $u->email,
+                    'role' => $u->role,
+                    'avatar' => $u->avatar,
+                    'last_login_at' => $u->last_login_at ? $u->last_login_at->toIso8601String() : null,
+                    'is_online' => $u->last_active_at && $u->last_active_at->diffInMinutes(now()) < 5,
+                ];
+            });
+
         return Inertia::render('backend/dashboard', [
             'dashboardData' => [
                 'stats' => [
@@ -103,6 +115,7 @@ class DashboardController extends Controller
                     'quotaAi' => $quotaAi,
                 ],
                 'chartMonthlyData' => $chartMonthlyData,
+                'loginHistory' => $loginHistory,
                 'petugas' => [
                     'pendingReviews' => $pendingReviewsCount,
                     'proposalsToProcess' => $proposalsToProcessCount,

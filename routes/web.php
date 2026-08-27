@@ -20,6 +20,7 @@ use App\Http\Controllers\ProposalExtractionController;
 use App\Http\Controllers\RequestFormController;
 use App\Http\Controllers\StaffController;
 use App\Http\Controllers\UsersController;
+use App\Http\Controllers\LogHistoryController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('api')->prefix('api/geolocation')->group(function () {
@@ -158,6 +159,10 @@ Route::middleware('auth')->group(function () {
     Route::get('staff/json', [StaffController::class, 'staff_json'])->name('staff.json');
 
     Route::resource('users', UsersController::class)->middleware('role:admin');
+    Route::middleware('role:admin')->group(function () {
+        Route::get('/log-histories', [LogHistoryController::class, 'index'])->name('log-histories.index');
+        Route::delete('/log-histories/clear', [LogHistoryController::class, 'destroyAll'])->name('log-histories.clear');
+    });
 
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 });

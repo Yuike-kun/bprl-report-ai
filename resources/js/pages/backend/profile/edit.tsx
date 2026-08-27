@@ -181,6 +181,7 @@ function UpdateProfileInformationForm({
             name: user.name ?? "",
             email: user.email ?? "",
             signature: user.signature ?? "",
+            show_logout_animation: user.show_logout_animation ?? true,
         });
 
     const submit = (e: any) => {
@@ -231,6 +232,19 @@ function UpdateProfileInformationForm({
                         {errors.email && (
                             <p className="text-sm text-red-500 mt-1">{errors.email}</p>
                         )}
+                    </div>
+
+                    <div className="flex items-center gap-2 pt-2">
+                        <input
+                            type="checkbox"
+                            id="show_logout_animation"
+                            checked={data.show_logout_animation}
+                            onChange={(e) => setData("show_logout_animation", e.target.checked)}
+                            className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                        />
+                        <Label htmlFor="show_logout_animation" className="cursor-pointer font-medium text-slate-700">
+                            Tampilkan Animasi Logout
+                        </Label>
                     </div>
 
                     {/* Signature Pad Component */}

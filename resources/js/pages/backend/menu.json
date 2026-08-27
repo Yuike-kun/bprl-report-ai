@@ -86,5 +86,12 @@
         "url": "/users",
         "icon": "Users",
         "adminOnly": true
+    },
+    {
+        "type": "link",
+        "label": "Log History",
+        "url": "/log-histories",
+        "icon": "History",
+        "adminOnly": true
     }
 ]
