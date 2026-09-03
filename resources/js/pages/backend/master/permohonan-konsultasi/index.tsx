@@ -1,11 +1,21 @@
 import MainLayout from '../../layout';
 import { Head, Link, router } from '@inertiajs/react';
-import { Eye, Paperclip, Pencil, Search, Trash2, UserRound } from 'lucide-react';
+import { ExternalLink, Eye, File, FileImage, FileSpreadsheet, FileText, Paperclip, Pencil, Search, Trash2, UserRound } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 import { PaginatedTable } from '@/components/backend/paginated-table';
 import { Pagination } from '@/components/backend/pagination';
 import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog"
 
 type Submission = {
     id: number;
@@ -218,14 +228,106 @@ export default function PermohonanKonsultasiIndex({
                             </span>
                         </td>
                         <td className="px-5 py-4 text-center">
-                            {item.dokumen && item.dokumen.length > 0 ? (
+                            {/* {item.dokumen && item.dokumen.length > 0 ? (
                                 <span className="inline-flex items-center gap-1 rounded-lg bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-600">
                                     <Paperclip className="h-3 w-3" />
                                     {item.dokumen.length}
                                 </span>
                             ) : (
                                 <span className="text-xs text-slate-300">—</span>
-                            )}
+                            )} */}
+                            <Dialog>
+                                <form>
+                                    <DialogTrigger render={<Button className={'inline-flex items-center gap-1 rounded-lg bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-600 hover:text-white'}>
+                                        <Paperclip className="h-3 w-3" />
+                                        {item?.dokumen?.length}
+                                    </Button>} />
+                                    <DialogContent className="sm:max-w-fit">
+                                        <DialogHeader>
+                                            <DialogTitle>Berkas yg Diunggah</DialogTitle>
+                                            <DialogDescription>
+                                                Berkas2 yang dikirim/unggah oleh pemohon
+                                            </DialogDescription>
+                                            <div>
+                                                {item.dokumen && item.dokumen.length > 0 ? (
+                                                    <ul className="space-y-2">
+                                                        {item.dokumen.map((doc: any) => {
+                                                            const ext = doc.file_name.split('.').pop()?.toLowerCase() ?? '';
+                                                            const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext);
+                                                            const isPdf = ext === 'pdf';
+                                                            const isSheet = ['xls', 'xlsx', 'csv'].includes(ext);
+                                                            const FileIcon = isImage
+                                                                ? FileImage
+                                                                : isSheet
+                                                                    ? FileSpreadsheet
+                                                                    : isPdf
+                                                                        ? FileText
+                                                                        : File;
+                                                            const iconColor = isImage
+                                                                ? 'text-violet-500'
+                                                                : isSheet
+                                                                    ? 'text-emerald-500'
+                                                                    : isPdf
+                                                                        ? 'text-red-500'
+                                                                        : 'text-slate-400';
+
+                                                            return (
+                                                                <li key={doc.id}>
+                                                                    {isImage ? (
+                                                                        <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
+                                                                            <img
+                                                                                src={doc.file_url}
+                                                                                alt={doc.file_name}
+                                                                                className="max-h-48 w-full object-contain p-2"
+                                                                            />
+                                                                            <div className="flex items-center justify-between border-t border-slate-100 px-3 py-2">
+                                                                                <span className="flex items-center gap-1.5 truncate text-xs font-medium text-slate-600">
+                                                                                    <FileIcon className={`h-3.5 w-3.5 shrink-0 ${iconColor}`} />
+                                                                                    {doc.file_name}
+                                                                                </span>
+                                                                                <a
+                                                                                    href={doc.file_url}
+                                                                                    target="_blank"
+                                                                                    rel="noreferrer"
+                                                                                    className="ml-2 shrink-0 rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-blue-50 hover:text-blue-600"
+                                                                                    title="Unduh"
+                                                                                >
+                                                                                    <ExternalLink className="h-3.5 w-3.5" />
+                                                                                </a>
+                                                                            </div>
+                                                                        </div>
+                                                                    ) : (
+                                                                        <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2.5">
+                                                                            <span className="flex items-center gap-2 truncate text-xs font-medium text-slate-700">
+                                                                                <FileIcon className={`h-4 w-4 shrink-0 ${iconColor}`} />
+                                                                                {doc.file_name}
+                                                                            </span>
+                                                                            <a
+                                                                                href={doc.file_url}
+                                                                                target="_blank"
+                                                                                rel="noreferrer"
+                                                                                className="ml-3 shrink-0 rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-blue-50 hover:text-blue-600"
+                                                                                title="Unduh / Buka"
+                                                                            >
+                                                                                <ExternalLink className="h-3.5 w-3.5" />
+                                                                            </a>
+                                                                        </div>
+                                                                    )}
+                                                                </li>
+                                                            );
+                                                        })}
+                                                    </ul>
+                                                ) : (
+                                                    <p className="text-sm text-slate-400">Tidak ada file yang diunggah.</p>
+                                                )}
+                                            </div>
+                                        </DialogHeader>
+                                        <DialogFooter>
+                                            <DialogClose render={<Button variant="outline">Tutup</Button>} />
+                                        </DialogFooter>
+                                    </DialogContent>
+                                </form>
+                            </Dialog>
                         </td>
                         <td className="px-5 py-4">
                             <div className="flex items-center justify-center gap-1.5">

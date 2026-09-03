@@ -6,6 +6,7 @@ use App\Models\DokumenKonsultasi;
 use App\Models\JadwalKonsultasi;
 use App\Models\LokasiKonsultasi;
 use App\Models\PermohonanKonsultasi;
+use App\Mail\KonsultasiDikonfirmasiMail;
 use App\Models\Province;
 use App\Models\Regency;
 use Carbon\Carbon;
@@ -153,8 +154,27 @@ class RequestFormController extends Controller
             }
         }
 
+        $documentUrl = null;
+        $permohonan = $permohonan->load('jadwal.lokasi', 'child_schedules');
+        $pdfContent = (new KonsultasiDikonfirmasiMail($permohonan, true))
+            ->buildPdfFromTemplate();
+
+        if ($pdfContent !== null) {
+            $fileName = 'Surat Konfirmasi KKPRL - ' . $permohonan->nama_pemohon . '.pdf';
+            $path = "request-forms/{$permohonan->id}/{$fileName}";
+
+            Storage::disk('public')->put($path, $pdfContent);
+            $documentUrl = Storage::disk('public')->url($path);
+            DokumenKonsultasi::create([
+                'permohonan_id' => $permohonan->id,
+                'file_url'      => $documentUrl,
+                'file_name'     => $fileName,
+            ]);
+        }
+
         return redirect()
             ->route('request-form')
-            ->with('success', 'Permohonan konsultasi berhasil dikirim. Tim kami akan menindaklanjuti segera.');
+            ->with('success', 'Permohonan konsultasi berhasil dikirim dan Surat Konfirmasi KKPRL berhasil dibuat dalam format PDF.')
+            ->with('document_url', $documentUrl);
     }
 }

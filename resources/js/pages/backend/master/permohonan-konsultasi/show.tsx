@@ -3,6 +3,7 @@ import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import {
     ArrowLeft,
     BadgeCheck,
+    Download,
     Edit3,
     ExternalLink,
     File,
@@ -262,6 +263,20 @@ export default function PermohonanKonsultasiShow({ submission }: Props) {
                     </Link>
 
                     <div className="flex flex-wrap items-center gap-2">
+                        <a
+                            href={`/master/permohonan-konsultasi/${submission.id}/download-confirmation-pdf`}
+                            download
+                            className="inline-flex"
+                        >
+                            <Button
+                                type="button"
+                                variant="outline"
+                                className="gap-2 rounded-xl border-red-200 text-red-600 hover:bg-red-50"
+                            >
+                                <Download className="h-4 w-4" />
+                                Generate &amp; Download PDF
+                            </Button>
+                        </a>
                         {/* Confirmation buttons */}
                         {!['confirmed', 'not_confirmed'].includes(
                             submission.status,
@@ -530,7 +545,6 @@ export default function PermohonanKonsultasiShow({ submission }: Props) {
                                                             </span>
                                                             <a
                                                                 href={doc.file_url}
-                                                                download={doc.file_name}
                                                                 target="_blank"
                                                                 rel="noreferrer"
                                                                 className="ml-2 shrink-0 rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-blue-50 hover:text-blue-600"
@@ -548,7 +562,6 @@ export default function PermohonanKonsultasiShow({ submission }: Props) {
                                                         </span>
                                                         <a
                                                             href={doc.file_url}
-                                                            download={doc.file_name}
                                                             target="_blank"
                                                             rel="noreferrer"
                                                             className="ml-3 shrink-0 rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-blue-50 hover:text-blue-600"

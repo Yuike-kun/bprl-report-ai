@@ -76,7 +76,7 @@ type PageProps = {
     locations: Location[];
     schedules: Schedule[];
     provinsi: any[];
-    flash?: { success?: string };
+    flash?: { success?: string; document_url?: string };
 };
 
 const METODE_OPTIONS: Array<{
@@ -284,14 +284,36 @@ export default function RequestForm() {
         post('/request-form', {
             preserveScroll: true,
             forceFormData: true,
-            onSuccess: () => {
+            onSuccess: (page) => {
                 reset();
                 setAttempted(false);
-                swal(
-                    'Berhasil',
-                    'Permohonan konsultasi berhasil dikirim.',
-                    'success',
-                );
+                const documentUrl = (page.props.flash as PageProps['flash'])
+                    ?.document_url;
+
+                if (documentUrl) {
+                    swal({
+                        title: 'Berhasil',
+                        text: 'Permohonan konsultasi berhasil dikirim dan Surat Konfirmasi KKPRL berhasil dibuat dalam format PDF.',
+                        icon: 'success',
+                        buttons: {
+                            cancel: 'Tutup',
+                            download: {
+                                text: 'Download PDF',
+                                value: 'download',
+                            },
+                        },
+                    }).then((value) => {
+                        if (value === 'download') {
+                            window.location.href = documentUrl;
+                        }
+                    });
+                } else {
+                    swal(
+                        'Berhasil',
+                        'Permohonan berhasil dikirim, tetapi link PDF belum tersedia.',
+                        'success',
+                    );
+                }
             },
         });
     };

@@ -4,11 +4,13 @@ namespace App\Http\Controllers\Master;
 use App\Http\Controllers\Controller;
 use App\Mail\KonsultasiDikonfirmasiMail;
 use App\Models\AssignRequestToStaff;
+use App\Models\DokumenKonsultasi;
 use App\Models\LokasiKonsultasi;
 use App\Models\PermohonanKonsultasi;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -53,6 +55,38 @@ class PermohonanKonsultasiController extends Controller
                 'error' => session('error'),
             ],
         ]);
+    }
+
+    public function downloadConfirmationPdf(PermohonanKonsultasi $permohonanKonsultasi)
+    {
+        $permohonanKonsultasi->load(['jadwal.lokasi', 'layanan']);
+
+        $pdfContent = (new KonsultasiDikonfirmasiMail($permohonanKonsultasi, true))
+            ->buildPdfFromTemplate();
+        $fileName = 'Surat Konfirmasi KKPRL - ' . $permohonanKonsultasi->nama_pemohon . '.pdf';
+        $path = "request-forms/{$permohonanKonsultasi->id}/{$fileName}";
+
+        Storage::disk('public')->put($path, $pdfContent);
+        $documentUrl = Storage::disk('public')->url($path);
+
+        $permohonanKonsultasi->dokumen()
+            ->where('file_name', $fileName)
+            ->get()
+            ->each->delete();
+
+        DokumenKonsultasi::create([
+            'permohonan_id' => $permohonanKonsultasi->id,
+            'file_url' => $documentUrl,
+            'file_name' => $fileName,
+        ]);
+
+        return response()->streamDownload(
+            static function () use ($pdfContent): void {
+                echo $pdfContent;
+            },
+            $fileName,
+            ['Content-Type' => 'application/pdf'],
+        );
     }
 
     public function edit(PermohonanKonsultasi $permohonanKonsultasi): Response
