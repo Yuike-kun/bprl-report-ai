@@ -33,6 +33,7 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useForm, usePage } from '@inertiajs/react';
+import swal from 'sweetalert';
 import {
     Dialog,
     DialogContent,
@@ -286,6 +287,11 @@ export default function RequestForm() {
             onSuccess: () => {
                 reset();
                 setAttempted(false);
+                swal(
+                    'Berhasil',
+                    'Permohonan konsultasi berhasil dikirim.',
+                    'success',
+                );
             },
         });
     };

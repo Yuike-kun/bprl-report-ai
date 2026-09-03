@@ -15,6 +15,7 @@ import {
     type ClipboardEvent,
     type DragEvent,
 } from 'react';
+import swal from 'sweetalert';
 import AppLayout from './layout';
 
 export const cardClass =
@@ -1223,31 +1224,31 @@ export default function ManualProposalForm() {
         );
 
         // Direct backend field names (used by validation)
-        fd.append('applicant_name',     values.prop__Nama_Pemohon ?? '');
+        fd.append('applicant_name', values.prop__Nama_Pemohon ?? '');
         fd.append('applicant_position', values.prop__Jabatan_Pemohon ?? '');
-        fd.append('company_name',       values.prop__Nama_Perusahaan_Instansi ?? '');
-        fd.append('nib',                values.prop__NIB ?? '');
-        fd.append('npwp',               values.prop__NPWP ?? '');
-        fd.append('phone_number',       values.prop__Nomor_Telepon_Selular ?? '');
-        fd.append('email',              email);
-        fd.append('officer_email',      email);
-        fd.append('activity_type',      resolvedJenisKegiatan);
-        fd.append('water_name',         resolvedNamaPerairan);
-        fd.append('activity_category',  resolvedKBLI);
-        fd.append('area_size',          values.prop__Luas_Kebutuhan_Ruang ?? '');
+        fd.append('company_name', values.prop__Nama_Perusahaan_Instansi ?? '');
+        fd.append('nib', values.prop__NIB ?? '');
+        fd.append('npwp', values.prop__NPWP ?? '');
+        fd.append('phone_number', values.prop__Nomor_Telepon_Selular ?? '');
+        fd.append('email', email);
+        fd.append('officer_email', email);
+        fd.append('activity_type', resolvedJenisKegiatan);
+        fd.append('water_name', resolvedNamaPerairan);
+        fd.append('activity_category', resolvedKBLI);
+        fd.append('area_size', values.prop__Luas_Kebutuhan_Ruang ?? '');
 
         // Also send prop__ aliases (propMap in controller is kept for reference)
-        fd.append('prop__Nama_Pemohon',             values.prop__Nama_Pemohon ?? '');
-        fd.append('prop__Jabatan_Pemohon',           values.prop__Jabatan_Pemohon ?? '');
-        fd.append('prop__Nama_Perusahaan_Instansi',  values.prop__Nama_Perusahaan_Instansi ?? '');
-        fd.append('prop__NIB',                       values.prop__NIB ?? '');
-        fd.append('prop__NPWP',                      values.prop__NPWP ?? '');
-        fd.append('prop__Nomor_Telepon_Selular',     values.prop__Nomor_Telepon_Selular ?? '');
-        fd.append('prop__Surat_Elektronik',          email);
-        fd.append('prop__Jenis_Kegiatan',            resolvedJenisKegiatan);
-        fd.append('prop__Nama_Perairan',             resolvedNamaPerairan);
-        fd.append('prop__KBLI',                      resolvedKBLI);
-        fd.append('prop__Luas_Kebutuhan_Ruang',      values.prop__Luas_Kebutuhan_Ruang ?? '');
+        fd.append('prop__Nama_Pemohon', values.prop__Nama_Pemohon ?? '');
+        fd.append('prop__Jabatan_Pemohon', values.prop__Jabatan_Pemohon ?? '');
+        fd.append('prop__Nama_Perusahaan_Instansi', values.prop__Nama_Perusahaan_Instansi ?? '');
+        fd.append('prop__NIB', values.prop__NIB ?? '');
+        fd.append('prop__NPWP', values.prop__NPWP ?? '');
+        fd.append('prop__Nomor_Telepon_Selular', values.prop__Nomor_Telepon_Selular ?? '');
+        fd.append('prop__Surat_Elektronik', email);
+        fd.append('prop__Jenis_Kegiatan', resolvedJenisKegiatan);
+        fd.append('prop__Nama_Perairan', resolvedNamaPerairan);
+        fd.append('prop__KBLI', resolvedKBLI);
+        fd.append('prop__Luas_Kebutuhan_Ruang', values.prop__Luas_Kebutuhan_Ruang ?? '');
 
 
         // ── Location ──────────────────────────────────────────────────────────
@@ -1343,9 +1344,9 @@ export default function ManualProposalForm() {
             ...mangrove.spesies,
             ...(mangrove.spesiesLainnya
                 ? mangrove.spesiesLainnya
-                      .split(',')
-                      .map((s) => s.trim())
-                      .filter(Boolean)
+                    .split(',')
+                    .map((s) => s.trim())
+                    .filter(Boolean)
                 : []),
         ].join(', ');
         fd.append('mangrove_species', mangroveSpecies);
@@ -1361,9 +1362,9 @@ export default function ManualProposalForm() {
             ...lamun.spesies,
             ...(lamun.spesiesLainnya
                 ? lamun.spesiesLainnya
-                      .split(',')
-                      .map((s) => s.trim())
-                      .filter(Boolean)
+                    .split(',')
+                    .map((s) => s.trim())
+                    .filter(Boolean)
                 : []),
         ].join(', ');
         fd.append('seagrass_species', seagrassSpecies);
@@ -1379,9 +1380,9 @@ export default function ManualProposalForm() {
             ...karang.spesies,
             ...(karang.spesiesLainnya
                 ? karang.spesiesLainnya
-                      .split(',')
-                      .map((s) => s.trim())
-                      .filter(Boolean)
+                    .split(',')
+                    .map((s) => s.trim())
+                    .filter(Boolean)
                 : []),
         ].join(', ');
         fd.append('coral_reef_species', coralSpecies);
@@ -1409,8 +1410,18 @@ export default function ManualProposalForm() {
         return fd;
     };
 
-    const submit = (action: string) => {
-        router.post(action, buildFormData(), { forceFormData: true });
+    const submit = (action: string, successMessage: string) => {
+        router.post(action, buildFormData(), {
+            forceFormData: true,
+            onSuccess: () => {
+                swal('Berhasil', successMessage, 'success');
+            },
+        });
+    };
+
+    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        submit('/kkprl-proposal', 'Proposal berhasil dikirim.');
     };
 
     return (
@@ -1419,12 +1430,7 @@ export default function ManualProposalForm() {
 
             <div>
                 <div className="relative z-[2] mx-auto mb-10 max-w-[1600px] px-4 py-6 sm:px-10">
-                    <form
-                        onSubmit={(e) => {
-                            e.preventDefault();
-                            submit('/kkprl-proposal');
-                        }}
-                    >
+                    <form onSubmit={handleSubmit}>
                         {/* Laporan pendukung upload */}
                         <div className={cardClass}>
                             <h3 className={cardTitleClass}>
@@ -1551,7 +1557,10 @@ export default function ManualProposalForm() {
                                     type="button"
                                     className={draftButtonClass}
                                     onClick={() =>
-                                        submit('/kkprl-proposal')
+                                        submit(
+                                            '/kkprl-proposal',
+                                            'Proposal berhasil disimpan.',
+                                        )
                                     }
                                 >
                                     <Save className="h-[19px] w-[19px] shrink-0" />
@@ -1568,7 +1577,10 @@ export default function ManualProposalForm() {
                                     type="button"
                                     className={draftButtonClass}
                                     onClick={() =>
-                                        submit('/kkprl-proposal')
+                                        submit(
+                                            '/kkprl-proposal',
+                                            'Draft proposal berhasil disimpan.',
+                                        )
                                     }
                                 >
                                     <FileDown className="h-[19px] w-[19px] shrink-0" />

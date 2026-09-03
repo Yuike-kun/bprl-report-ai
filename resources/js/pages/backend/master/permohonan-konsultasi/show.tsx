@@ -104,6 +104,7 @@ export default function PermohonanKonsultasiShow({ submission }: Props) {
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         post(`/master/permohonan-konsultasi/${submission.id}/kirim`);
+        
     };
 
     const handleDelete = () => {
@@ -409,7 +410,7 @@ export default function PermohonanKonsultasiShow({ submission }: Props) {
                         />
                         <DetailItem
                             label="Waktu Konsultasi"
-                            value={`${submission.jadwal?.waktu_awal ?? submission.waktu_konsultasi} - ${submission.jadwal?.waktu_akhir ?? ''}`}
+                            value={`${submission.waktu_konsultasi}`}
                         />
                         <DetailItem
                             label="Pelaksanaan"

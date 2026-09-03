@@ -318,7 +318,7 @@
                     <div class="line2">DIREKTORAT JENDERAL PENATAAN RUANG LAUT<br>BALAI PENATAAN RUANG LAUT MAKASSAR</div>
                     <div class="line3">
                         Jalan Makmur Daeng Sitakka Nomor 129 Maros 90511, Telepon (0411) 371337 Faksimili (0411) 371337<br>
-                        Laman www.kkp.go.id &nbsp;|&nbsp; Surel bprlmakassar@kkp.go.id
+                        Laman www.kkp.go.id &nbsp;|&nbsp; Surel bprlmakassar@gmail.com
                     </div>
                 </td>
                 <td class="logo-cell"></td>
