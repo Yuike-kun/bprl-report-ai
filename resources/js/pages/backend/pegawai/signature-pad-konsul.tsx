@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import MainLayout from '../layout';
-import { Head, router, useForm, usePage } from '@inertiajs/react';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import {
     PenTool,
     Search,
@@ -9,6 +9,9 @@ import {
     BadgeCheck,
     Loader2,
     CheckCircle2,
+    ClipboardList,
+    Eye,
+    Clipboard,
 } from 'lucide-react';
 
 import { PaginatedTable } from '@/components/backend/paginated-table';
@@ -36,6 +39,10 @@ type Konsultasi = {
     } | null;
     status: string;
     staff_tanda_tangan?: string | null;
+    berita_acara?: {
+        id: number;
+        status: string;
+    } | null;
 };
 
 type PaginatedKonsultasi = {
@@ -110,20 +117,19 @@ export default function SignaturePadKonsul({ konsultasi, filters }: Props) {
     const baseNumber = konsultasi.from ?? 0;
 
     return (
-        <MainLayout pageTitle="Tanda Tangan Konsultasi">
-            <Head title="Tanda Tangan Konsultasi" />
+        <MainLayout pageTitle="Permohonan Konsultasi">
+            <Head title="Permohonan Konsultasi" />
 
             <div className="mb-6 flex items-center gap-3">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-indigo-500 to-purple-600 shadow-md shadow-indigo-500/20">
-                    <PenTool className="h-5 w-5 text-white" />
+                    <ClipboardList className="h-5 w-5 text-white" />
                 </div>
                 <div>
                     <h1 className="text-xl leading-none font-bold text-slate-900">
-                        Tanda Tangan Konsultasi
+                        Permohonan Konsultasi
                     </h1>
                     <p className="mt-0.5 text-sm text-slate-500">
-                        Pilih permohonan untuk membubuhkan tanda tangan
-                        petugas.
+                        List permohonan konsultasi yang masuk ke petugas dan evaluator KKPRL
                     </p>
                 </div>
             </div>
@@ -260,15 +266,37 @@ export default function SignaturePadKonsul({ konsultasi, filters }: Props) {
                             )}
                         </td>
                         <td className="px-5 py-4 text-center">
-                            <Button
-                                size="sm"
-                                variant="outline"
-                                className="gap-1.5 rounded-lg border-indigo-200 text-indigo-600 hover:bg-indigo-50"
-                                onClick={() => openModal(item)}
-                            >
-                                <PenTool className="h-3.5 w-3.5" />
-                                {item.staff_tanda_tangan ? 'Ubah' : 'Tanda Tangan'}
-                            </Button>
+                            <div className="flex items-center justify-center gap-1.5">
+                                <Button
+                                    size="icon"
+                                    variant="outline"
+                                    className="rounded-lg border-indigo-200 text-indigo-600 hover:bg-indigo-50"
+                                    onClick={() => openModal(item)}
+                                    aria-label="Tanda tangan"
+                                >
+                                    <PenTool className="h-3.5 w-3.5" />
+                                </Button>
+                                <Link href={`/berita-acara/pegawai?konsultasi=${item.id}`}>
+                                    <Button
+                                        size="icon"
+                                        className={'rounded-lg ' + (item.berita_acara ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-amber-600 text-white hover:bg-amber-700')}
+                                        aria-label={item.berita_acara ? 'Edit berita acara' : 'Buat berita acara'}
+                                    >
+                                        <Clipboard className="h-3.5 w-3.5" />
+                                    </Button>
+                                </Link>
+                                {item.berita_acara ? (
+                                    <Link href={`/berita-acara/${item.berita_acara.id}/pdf`} target="_blank">
+                                        <Button size="icon" variant="outline" aria-label="Lihat PDF" className="rounded-lg">
+                                            <Eye className="h-3.5 w-3.5" />
+                                        </Button>
+                                    </Link>
+                                ) : (
+                                    <Button size="icon" variant="outline" className="cursor-not-allowed rounded-lg" disabled aria-label="PDF belum tersedia">
+                                        <Eye className="h-3.5 w-3.5" />
+                                    </Button>
+                                )}
+                            </div>
                         </td>
                     </tr>
                 ))}

@@ -153,7 +153,7 @@ export default function PegawaiDashboard() {
                                         <div className="flex items-center gap-2 shrink-0">
                                             <Link href={`/berita-acara/pegawai?konsultasi=${task.id}`}>
                                                 <Button size="sm" className={`text-xs ${task?.beritaAcara ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-amber-600 hover:bg-amber-700 text-white'}`}>
-                                                    {task.status == 'konsultasi' ? 'Proses Berkas' : "Perbarui Berita Acara"}
+                                                    {task.beritaAcara ? 'Proses Berkas' : "Perbarui Berita Acara"}
                                                 </Button>
                                             </Link>
                                             {task.beritaAcara ? (

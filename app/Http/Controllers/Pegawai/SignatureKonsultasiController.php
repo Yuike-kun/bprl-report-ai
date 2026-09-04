@@ -18,7 +18,7 @@ class SignatureKonsultasiController extends Controller
         $user = $request->user();
 
         $konsultasi = PermohonanKonsultasi::query()
-            ->with(['jadwal'])
+            ->with(['jadwal', 'beritaAcara'])
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($inner) use ($search) {
                     $inner

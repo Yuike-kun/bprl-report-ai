@@ -7,7 +7,7 @@
     },
     {
         "type": "link",
-        "label": "Tanda Tangan Konsultasi",
+        "label": "Permohonan Konsultasi",
         "url": "/pegawai/signature-konsultasi",
         "icon": "Signature"
     },

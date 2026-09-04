@@ -56,10 +56,18 @@ class DashboardController extends Controller
         }
 
         // 3. Petugas Tasks
-        $pendingReviewsCount = PermohonanKonsultasi::whereIn('status', ['pending', 'diproses', 'menunggu_verifikasi'])->count();
+        $pendingReviewsCount = PermohonanKonsultasi::whereHas('assign_to_staff', function ($query) use ($user) {
+            $query->where('staff', $user->staff->id);
+        })->whereIn('status', ['pending', 'diproses', 'menunggu_verifikasi'])->count();
         $proposalsToProcessCount = KkprlProposal::whereIn('status', ['pending', 'diproses', 'draft'])->count();
-        $todayConsultationCount = PermohonanKonsultasi::whereDate('created_at', Carbon::today())->count();
-        $evaluatedCount = PermohonanKonsultasi::whereIn('status', ['disetujui', 'selesai', 'approved'])->count();
+        $todayConsultationCount = PermohonanKonsultasi::whereDate('created_at', Carbon::today())
+            ->whereHas('assign_to_staff', function ($query) use ($user) {
+                $query->where('staff', $user->staff->id);
+            })->count();
+        $evaluatedCount = PermohonanKonsultasi::whereIn('status', ['disetujui', 'selesai', 'approved'])
+            ->whereHas('assign_to_staff', function ($query) use ($user) {
+                $query->where('staff', $user->staff->id);
+            })->count();
 
         $recentTasks = PermohonanKonsultasi::latest()
             ->with('beritaAcara')
