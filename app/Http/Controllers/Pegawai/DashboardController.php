@@ -62,6 +62,7 @@ class DashboardController extends Controller
         $evaluatedCount = PermohonanKonsultasi::whereIn('status', ['disetujui', 'selesai', 'approved'])->count();
 
         $recentTasks = PermohonanKonsultasi::latest()
+            ->with('beritaAcara')
             ->whereHas('assign_to_staff', function ($query) use ($user) {
                 $query->where('staff', $user->staff->id);
             })
@@ -75,6 +76,10 @@ class DashboardController extends Controller
                     'tgl' => $item->created_at ? $item->created_at->format('d M Y') : '-',
                     'status' => ucfirst($item->status ?? 'Menunggu Verifikasi'),
                     'color' => $item->status === 'disetujui' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800',
+                    'beritaAcara' => $item->beritaAcara ? [
+                        'id' => $item->beritaAcara->id,
+                        'status' => $item->beritaAcara->status ?? 'Draft',
+                    ] : null,
                 ];
             });
 

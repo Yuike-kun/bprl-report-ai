@@ -23,6 +23,10 @@ interface RecentTask {
     tgl: string;
     status: string;
     color: string;
+    beritaAcara?: {
+        id: number;
+        status: string;
+    };
 }
 
 interface PetugasData {
@@ -148,10 +152,21 @@ export default function PegawaiDashboard() {
                                         </div>
                                         <div className="flex items-center gap-2 shrink-0">
                                             <Link href={`/berita-acara/pegawai?konsultasi=${task.id}`}>
-                                                <Button size="sm" className={`text-xs ${task.status == 'konsultasi' ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-amber-600 hover:bg-amber-700 text-white'}`}>
+                                                <Button size="sm" className={`text-xs ${task?.beritaAcara ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-amber-600 hover:bg-amber-700 text-white'}`}>
                                                     {task.status == 'konsultasi' ? 'Proses Berkas' : "Perbarui Berita Acara"}
                                                 </Button>
                                             </Link>
+                                            {task.beritaAcara ? (
+                                                <Link href={`/berita-acara/${task.beritaAcara.id}/pdf`} target="_blank">
+                                                    <Button size="sm" variant="outline" className="text-xs">
+                                                        Preview Berita Acara
+                                                    </Button>
+                                                </Link>
+                                            ) : (
+                                                <Button size="sm" variant="outline" className="text-xs cursor-not-allowed" disabled>
+                                                    Preview Berita Acara
+                                                </Button>
+                                            )}
                                         </div>
                                     </div>
                                 ))

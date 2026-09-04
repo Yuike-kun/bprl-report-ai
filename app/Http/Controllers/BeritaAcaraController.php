@@ -360,6 +360,6 @@ class BeritaAcaraController extends Controller
         $time_file = $beritaAcara->created_at->format('YmdHis');
         $requester_filename = $beritaAcara->request_form->nama_pemohon;
 
-        return $pdf->download("Berita Acara - {$requester_filename} - {$time_file}.pdf");
+        return $pdf->stream("Berita Acara - {$requester_filename} - {$time_file}.pdf");
     }
 }

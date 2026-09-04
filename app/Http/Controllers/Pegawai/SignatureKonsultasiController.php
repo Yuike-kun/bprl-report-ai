@@ -15,6 +15,8 @@ class SignatureKonsultasiController extends Controller
     {
         $search = trim((string) $request->query('search', ''));
 
+        $user = $request->user();
+
         $konsultasi = PermohonanKonsultasi::query()
             ->with(['jadwal'])
             ->when($search !== '', function ($query) use ($search) {
@@ -24,6 +26,9 @@ class SignatureKonsultasiController extends Controller
                         ->orWhere('instansi', 'like', '%'.$search.'%')
                         ->orWhere('status', 'like', '%'.$search.'%');
                 });
+            })
+            ->whereHas('assign_to_staff', function ($query) use ($user) {
+                $query->where('staff', $user->staff->id);
             })
             ->latest()
             ->paginate(10)
