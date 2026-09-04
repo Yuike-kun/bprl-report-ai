@@ -77,6 +77,11 @@
                 "label": "Jadwal",
                 "url": "/master/jadwal-konsultasi",
                 "icon": "CalendarDays"
+            },
+            {
+                "label": "Hari Libur",
+                "url": "/master/hari-libur",
+                "icon": "CalendarDays"
             }
         ]
     },

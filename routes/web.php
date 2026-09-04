@@ -11,6 +11,7 @@ use App\Http\Controllers\Master\ChangelogController;
 use App\Http\Controllers\Master\JadwalKonsultasiController;
 use App\Http\Controllers\Master\KkprlProposalMasterController;
 use App\Http\Controllers\Master\LokasiKonsultasiController;
+use App\Http\Controllers\Master\HolidayController;
 use App\Http\Controllers\Master\PermohonanKonsultasiController;
 use App\Http\Controllers\Master\TandaTanganUserController;
 use App\Http\Controllers\Pegawai\DashboardController as PegawaiDashboardController;
@@ -98,6 +99,16 @@ Route::middleware('auth')->group(function () {
             Route::get('/{jadwalKonsultasi}/edit', [JadwalKonsultasiController::class, 'edit'])->name('edit');
             Route::put('/{jadwalKonsultasi}', [JadwalKonsultasiController::class, 'update'])->name('update');
             Route::delete('/{jadwalKonsultasi}', [JadwalKonsultasiController::class, 'destroy'])->name('destroy');
+        });
+
+        Route::prefix('master/hari-libur')->as('master.hari-libur.')->middleware('role:admin,pegawai')->group(function () {
+            Route::get('/', [HolidayController::class, 'index'])->name('index');
+            Route::get('/create', [HolidayController::class, 'create'])->name('create');
+            Route::post('/', [HolidayController::class, 'store'])->name('store');
+            Route::post('/import', [HolidayController::class, 'import'])->name('import');
+            Route::get('/{holiday}/edit', [HolidayController::class, 'edit'])->name('edit');
+            Route::put('/{holiday}', [HolidayController::class, 'update'])->name('update');
+            Route::delete('/{holiday}', [HolidayController::class, 'destroy'])->name('destroy');
         });
 
         Route::prefix('master/permohonan-konsultasi')->as('master.permohonan-konsultasi.')->middleware('role:admin,pegawai')->group(function () {

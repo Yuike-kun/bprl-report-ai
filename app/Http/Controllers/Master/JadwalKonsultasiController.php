@@ -1,17 +1,18 @@
 <?php
 namespace App\Http\Controllers\Master;
 
-use App\Http\Controllers\Controller;
-use App\Models\JadwalKonsultasi;
-use App\Models\LokasiKonsultasi;
-use Carbon\CarbonPeriod;
-use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
+use Throwable;
 use Inertia\Inertia;
 use Inertia\Response;
-use Throwable;
+use App\Models\Holiday;
+use Carbon\CarbonPeriod;
+use Illuminate\Http\Request;
+use App\Models\JadwalKonsultasi;
+use App\Models\LokasiKonsultasi;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use App\Http\Controllers\Controller;
+use Illuminate\Http\RedirectResponse;
 
 class JadwalKonsultasiController extends Controller
 {
@@ -101,15 +102,25 @@ class JadwalKonsultasiController extends Controller
             $validated['lokasi_konsultasi_id'] = null;
         }
 
+        $holidays = Holiday::query()
+            ->whereBetween('tanggal', [$validated['tanggal_mulai'] ?? $validated['tanggal'], $validated['tanggal_akhir'] ?? $validated['tanggal']])
+            ->get()
+            ->map(fn($holiday) => $holiday->tanggal->format('Y-m-d'))
+            ->toArray();
+
         $startDate = $validated['tanggal_mulai'] ?? $validated['tanggal'];
         $endDate   = $validated['tanggal_akhir'] ?? $startDate;
 
         $period = CarbonPeriod::create($startDate, $endDate);
 
         try {
-            DB::transaction(function () use ($period, $validated, $childSchedules) {
+            DB::transaction(function () use ($period, $validated, $childSchedules, $holidays) {
                 foreach ($period as $date) {
                     $formattedDate = $date->format('Y-m-d');
+
+                    if(in_array($formattedDate, $holidays)) {
+                        continue;
+                    }
 
                     $exists = JadwalKonsultasi::query()
                         ->whereDate('tanggal', $formattedDate)
