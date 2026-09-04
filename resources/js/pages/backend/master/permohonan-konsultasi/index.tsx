@@ -1,6 +1,6 @@
 import MainLayout from '../../layout';
 import { Head, Link, router } from '@inertiajs/react';
-import { ExternalLink, Eye, File, FileImage, FileSpreadsheet, FileText, Paperclip, Pencil, Search, Trash2, UserRound } from 'lucide-react';
+import { ExternalLink, Eye, File, FileImage, FileSpreadsheet, FileText, Paperclip, Pencil, Plus, Search, Trash2, UserRound } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 import { PaginatedTable } from '@/components/backend/paginated-table';
@@ -88,18 +88,26 @@ export default function PermohonanKonsultasiIndex({
 
     return (
         <MainLayout pageTitle="Master Permohonan Konsultasi">
-            <div className="mb-6 flex items-center gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-cyan-500 to-blue-600 shadow-md shadow-cyan-500/20">
-                    <UserRound className="h-5 w-5 text-white" />
+            <div className="mb-6 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-cyan-500 to-blue-600 shadow-md shadow-cyan-500/20">
+                        <UserRound className="h-5 w-5 text-white" />
+                    </div>
+                    <div>
+                        <h1 className="text-xl leading-none font-bold text-slate-900">
+                            Master Permohonan Konsultasi
+                        </h1>
+                        <p className="mt-0.5 text-sm text-slate-500">
+                            Data permohonan yang sudah dikirim dari form publik.
+                        </p>
+                    </div>
                 </div>
-                <div>
-                    <h1 className="text-xl leading-none font-bold text-slate-900">
-                        Master Permohonan Konsultasi
-                    </h1>
-                    <p className="mt-0.5 text-sm text-slate-500">
-                        Data permohonan yang sudah dikirim dari form publik.
-                    </p>
-                </div>
+                <Link href="/master/permohonan-konsultasi/create">
+                    <Button className="gap-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700">
+                        <Plus className="h-4 w-4" />
+                        Tambah Permohonan
+                    </Button>
+                </Link>
             </div>
 
             {success && (

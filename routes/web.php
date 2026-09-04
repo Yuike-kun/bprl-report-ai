@@ -113,6 +113,7 @@ Route::middleware('auth')->group(function () {
 
         Route::prefix('master/permohonan-konsultasi')->as('master.permohonan-konsultasi.')->middleware('role:admin,pegawai')->group(function () {
             Route::get('/', [PermohonanKonsultasiController::class, 'index'])->name('index');
+            Route::get('/create', [RequestFormController::class, 'index'])->name('create');
             Route::get('/search', [KkprlProposalMasterController::class, 'searchPermohonanKonsultasi'])->name('search');
             Route::get('/{permohonanKonsultasi}/download-confirmation-pdf', [PermohonanKonsultasiController::class, 'downloadConfirmationPdf'])->name('download-confirmation-pdf');
             Route::get('/{permohonanKonsultasi}', [PermohonanKonsultasiController::class, 'show'])->name('show');

@@ -22,7 +22,7 @@ use Inertia\Response;
 
 class RequestFormController extends Controller
 {
-    public function index(): Response
+    public function index(Request $request): Response
     {
         $usageByChildSchedule = PermohonanKonsultasi::query()
             ->whereNotNull('child_schedule_id')
@@ -68,7 +68,8 @@ class RequestFormController extends Controller
             'locations' => LokasiKonsultasi::query()
                 ->orderBy('nama_lokasi')
                 ->get(['id', 'nama_lokasi']),
-            'schedules' => $schedules
+            'schedules' => $schedules,
+            'adminMode' => $request->user()?->isAdmin() ?? false,
         ]);
     }
 
@@ -190,9 +191,14 @@ class RequestFormController extends Controller
             ]);
         }
 
-        return redirect()
-            ->route('request-form')
-            ->with('success', 'Permohonan konsultasi berhasil dikirim dan Surat Konfirmasi KKPRL berhasil dibuat dalam format PDF.')
+        $redirect = $request->user()?->isAdmin()
+            ? redirect()->route('master.permohonan-konsultasi.index')
+            : redirect()->route('request-form');
+
+        return $redirect
+            ->with('success', $request->user()?->isAdmin()
+                ? 'Permohonan konsultasi berhasil ditambahkan.'
+                : 'Permohonan konsultasi berhasil dikirim dan Surat Konfirmasi KKPRL berhasil dibuat dalam format PDF.')
             ->with('document_url', $documentUrl);
     }
 }

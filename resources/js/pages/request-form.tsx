@@ -1,4 +1,5 @@
 import HomeLayout from './layout';
+import MainLayout from './backend/layout';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -77,6 +78,7 @@ type PageProps = {
     schedules: Schedule[];
     provinsi: any[];
     flash?: { success?: string; document_url?: string };
+    adminMode?: boolean;
 };
 
 const METODE_OPTIONS: Array<{
@@ -167,8 +169,9 @@ function SectionHeader({
 /* ------------------------------------------------------------------ */
 export default function RequestForm() {
     const [kabupaten, setKabupaten] = useState<any[]>([]);
-    const { locations, schedules, provinsi, flash } =
+    const { locations, schedules, provinsi, flash, adminMode = false } =
         usePage<PageProps>().props;
+    const Layout: React.ComponentType<any> = adminMode ? MainLayout : HomeLayout;
 
     const { data, setData, post, processing, errors, reset } = useForm({
         nama_pemohon: '',
@@ -232,12 +235,12 @@ export default function RequestForm() {
     const timeSlots = matchedSchedule?.child_schedules ?? [];
 
     /* ---------- validasi ---------- */
-    const required = (value: string | boolean) =>
+    const required = (value: string | boolean | null) =>
         typeof value === 'boolean'
             ? value
                 ? undefined
                 : 'Wajib disetujui.'
-            : value.trim()
+            : value?.trim()
                 ? undefined
                 : 'Wajib diisi.';
 
@@ -287,6 +290,7 @@ export default function RequestForm() {
             onSuccess: (page) => {
                 reset();
                 setAttempted(false);
+                if (adminMode) return;
                 const documentUrl = (page.props.flash as PageProps['flash'])
                     ?.document_url;
 
@@ -301,7 +305,7 @@ export default function RequestForm() {
                                 text: 'Download PDF',
                                 value: 'download',
                             },
-                        },
+                        } as any,
                     }).then((value) => {
                         if (value === 'download') {
                             window.location.href = documentUrl;
@@ -330,7 +334,7 @@ export default function RequestForm() {
         'h-11 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-700 outline-none transition-all focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400';
 
     useEffect(() => {
-        fetch('api/geolocation/districts')
+        fetch('/api/geolocation/districts')
             .then((res) => res.json())
             .then((data) => {
                 setKabupaten(data);
@@ -338,13 +342,13 @@ export default function RequestForm() {
     }, []);
 
     return (
-        <HomeLayout>
+        <Layout pageTitle={adminMode ? 'Tambah Permohonan Konsultasi' : undefined}>
             <div className="mx-auto w-full px-4 py-8">
                 {/* Header */}
                 <div className="mb-6 flex items-start justify-between gap-4">
                     <div className="flex items-start gap-3">
                         <Link
-                            href="/"
+                            href={adminMode ? '/master/permohonan-konsultasi' : '/'}
                             className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-colors hover:border-blue-200 hover:text-blue-700"
                             aria-label="Kembali ke beranda"
                         >
@@ -352,11 +356,12 @@ export default function RequestForm() {
                         </Link>
                         <div>
                             <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-                                Mulai Konsultasi
+                                {adminMode ? 'Tambah Permohonan Konsultasi' : 'Mulai Konsultasi'}
                             </h1>
                             <p className="mt-0.5 text-sm text-slate-500">
-                                Konsultasikan rencana kegiatan pemanfaatan ruang
-                                laut Anda
+                                {adminMode
+                                    ? 'Input permohonan langsung dari panel administrasi'
+                                    : 'Konsultasikan rencana kegiatan pemanfaatan ruang laut Anda'}
                             </p>
                         </div>
                     </div>
@@ -909,7 +914,7 @@ export default function RequestForm() {
                                 name="bahan_konsultasi"
                                 multiple
                                 max={5}
-                                files={(data.bahan_konsultasi as File[]) ?? []}
+                                files={(data.bahan_konsultasi as unknown as File[]) ?? []}
                                 onChange={(files: File[]) => setData('bahan_konsultasi', files as any)} />
                         </section>
 
@@ -965,6 +970,6 @@ export default function RequestForm() {
                     </div>
                 </form>
             </div>
-        </HomeLayout>
+        </Layout>
     );
 }

@@ -15,5 +15,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         DB::unprepared(file_get_contents(database_path('dump/indonesia.sql')));
+
+        $this->call(StaffSeeder::class);
     }
 }

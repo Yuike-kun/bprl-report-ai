@@ -624,7 +624,6 @@ export default function PermohonanKonsultasiShow({ submission }: Props) {
                                         fetchUrl="/staff/json"
                                         searchParam="search"
                                         labelKey="name"
-                                        maxSelected={3}
                                     />
                                 </div>
                                 <Button
