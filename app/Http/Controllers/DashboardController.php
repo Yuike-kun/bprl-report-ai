@@ -2,14 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\KkprlProposal;
-use App\Models\PermohonanKonsultasi;
 use App\Models\User;
-use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
+use Illuminate\Http\Request;
+use App\Models\KkprlProposal;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
+use App\Models\PermohonanKonsultasi;
+use App\Models\BeritaAcaraKonsultasi;
 
 class DashboardController extends Controller
 {
@@ -18,8 +19,8 @@ class DashboardController extends Controller
         $user = $request->user();
 
         // 1. Total Metrics for Admin & Petugas
-        $totalPemohon = User::where('role', 'pemohon')->count();
-        $totalBeritaAcara = PermohonanKonsultasi::count();
+        $totalPemohon = PermohonanKonsultasi::count();
+        $totalBeritaAcara = BeritaAcaraKonsultasi::count();
         $totalProposal = KkprlProposal::count();
         $quotaAi = 1600; // Configured / static quota
 
@@ -31,12 +32,11 @@ class DashboardController extends Controller
             $month = $date->month;
             $monthLabel = $date->format('M');
 
-            $pemohonCount = User::whereYear('created_at', $year)
+            $pemohonCount = PermohonanKonsultasi::whereYear('created_at', $year)
                 ->whereMonth('created_at', $month)
-                ->where('role', 'pemohon')
                 ->count();
 
-            $baCount = PermohonanKonsultasi::whereYear('created_at', $year)
+            $baCount = BeritaAcaraKonsultasi::whereYear('created_at', $year)
                 ->whereMonth('created_at', $month)
                 ->count();
 

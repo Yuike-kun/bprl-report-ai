@@ -1,11 +1,20 @@
 import MainLayout from "../layout";
 import { Head, Link, router } from "@inertiajs/react";
-import { Pencil, Plus, Search, Trash2, UserRound } from "lucide-react";
+import { ClipboardCheck, Pencil, Plus, Search, Trash2, UserRound } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { PaginatedTable } from "@/components/backend/paginated-table";
 import { Pagination } from "@/components/backend/pagination";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+    Item,
+    ItemActions,
+    ItemContent,
+    ItemDescription,
+    ItemMedia,
+    ItemTitle,
+} from "@/components/ui/item"
 
 type StaffUser = { id: number; name: string; email: string };
 
@@ -17,6 +26,7 @@ type StaffItem = {
     joined_at: string;
     is_active: boolean;
     user: StaffUser;
+    permohonan_konsultasi: any[];
 };
 
 type PaginatedStaff = {
@@ -38,6 +48,7 @@ type Props = {
 
 export default function StaffIndex({ staff, filters, flash }: Props) {
     const [search, setSearch] = useState(filters?.search ?? "");
+    const [modalKonsultasiListOpen, setModalKonsultasiListOpen] = useState(false);
 
     const filtered = useMemo(() => {
         const query = search.trim().toLowerCase();
@@ -102,6 +113,7 @@ export default function StaffIndex({ staff, filters, flash }: Props) {
                     <tr className="border-b border-slate-100 bg-slate-50/60">
                         <th className="text-left px-5 py-3 font-semibold text-slate-500 text-xs uppercase tracking-wider whitespace-nowrap">#</th>
                         <th className="text-left px-5 py-3 font-semibold text-slate-500 text-xs uppercase tracking-wider whitespace-nowrap">Nama</th>
+                        <th className="text-left px-5 py-3 font-semibold text-slate-500 text-xs uppercase tracking-wider whitespace-nowrap">Jumlah Penugasan</th>
                         <th className="text-left px-5 py-3 font-semibold text-slate-500 text-xs uppercase tracking-wider whitespace-nowrap">Jabatan</th>
                         <th className="text-left px-5 py-3 font-semibold text-slate-500 text-xs uppercase tracking-wider whitespace-nowrap">Departemen</th>
                         <th className="text-left px-5 py-3 font-semibold text-slate-500 text-xs uppercase tracking-wider whitespace-nowrap">Status</th>
@@ -136,6 +148,11 @@ export default function StaffIndex({ staff, filters, flash }: Props) {
                             <p className="text-slate-700 font-semibold">{item.user?.name ?? "-"}</p>
                             <p className="text-xs text-slate-400">{item.user?.email ?? ""}</p>
                         </td>
+                        <td className="px-5 py-4">
+                            <Button size="sm" variant="outline" className="rounded-xl text-slate-600 text-emerald-600 bg-emerald-50 hover:bg-emerald-100 hover:text-emerald-700 gap-1.5" onClick={() => setModalKonsultasiListOpen(true)}>
+                                {item.permohonan_konsultasi?.length ?? 0} Konsultasi
+                            </Button>
+                        </td>
                         <td className="px-5 py-4 text-sm text-slate-600">{item.position}</td>
                         <td className="px-5 py-4">
                             <span className="inline-flex items-center gap-1.5 bg-cyan-50 text-cyan-700 text-xs font-semibold px-2.5 py-1 rounded-lg">
@@ -144,11 +161,10 @@ export default function StaffIndex({ staff, filters, flash }: Props) {
                         </td>
                         <td className="px-5 py-4">
                             <span
-                                className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-lg ${
-                                    item.is_active
-                                        ? "bg-emerald-50 text-emerald-700"
-                                        : "bg-slate-100 text-slate-500"
-                                }`}
+                                className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-lg ${item.is_active
+                                    ? "bg-emerald-50 text-emerald-700"
+                                    : "bg-slate-100 text-slate-500"
+                                    }`}
                             >
                                 <span className={`w-1.5 h-1.5 rounded-full ${item.is_active ? "bg-emerald-500" : "bg-slate-400"}`} />
                                 {item.is_active ? "Aktif" : "Nonaktif"}
@@ -180,6 +196,47 @@ export default function StaffIndex({ staff, filters, flash }: Props) {
                     </tr>
                 ))}
             </PaginatedTable>
+
+            <Dialog open={modalKonsultasiListOpen} onOpenChange={setModalKonsultasiListOpen}>
+                <DialogContent className="sm:max-w-fit sm:min-w-lg">
+                    <DialogHeader>
+                        <DialogTitle>Daftar Konsultasi</DialogTitle>
+                    </DialogHeader>
+                    {filtered.map((item) => (
+                        <div key={item.id} className="mb-4">
+                            <h3 className="font-semibold text-slate-700">{item.user?.name ?? "-"}</h3>
+                            {item.permohonan_konsultasi.length > 0 ? item.permohonan_konsultasi.map((konsul) => (
+                                <Item className="mt-2 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 transition-colors">
+                                    <ItemMedia variant="icon">
+                                        <ClipboardCheck />
+                                    </ItemMedia>
+                                    <ItemContent>
+                                        <ItemTitle>{konsul.request_form?.nama_pemohon ?? "-"}</ItemTitle>
+                                        <ItemDescription>
+                                            {konsul.request_form?.rencana_kegiatan ?? "-"} <br />
+                                            Diajukan pada {new Date(konsul.request_form?.created_at ?? "").toLocaleDateString("id-ID", {
+                                                day: "numeric",
+                                                month: "long",
+                                                year: "numeric",
+                                            })}
+                                        </ItemDescription>
+                                    </ItemContent>
+                                    <ItemActions>
+                                        <Link href={`/master/permohonan-konsultasi/${konsul.id}`} className="mr-2">
+                                            <Button size="sm" className="rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 gap-1.5">
+                                                <span className="hidden sm:inline">Lihat</span>
+                                                <span className="sm:hidden">Detail</span>
+                                            </Button>
+                                        </Link>
+                                    </ItemActions>
+                                </Item>
+                            )) : (
+                                <p className="text-sm text-slate-500 mt-1">Belum ada konsultasi.</p>
+                            )}
+                        </div>
+                    ))}
+                </DialogContent>
+            </Dialog>
         </MainLayout>
     );
 }

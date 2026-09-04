@@ -24,4 +24,9 @@ class Staff extends Model
     {
         return $this->belongsTo(User::class, 'user_id', 'id');
     }
+
+    public function permohonanKonsultasi()
+    {
+        return $this->hasMany(AssignRequestToStaff::class, 'staff', 'id');
+    }
 }

@@ -21,7 +21,7 @@ class StaffController extends Controller
         $search = $request->input('search');
 
         $staff = Staff::query()
-            ->with('user:id,name,email,role')
+            ->with('user:id,name,email,role', 'permohonanKonsultasi.RequestForm')
             ->when($search, function ($q) use ($search) {
                 $q->where(function ($sub) use ($search) {
                     $sub->where('position', 'like', "%{$search}%")
@@ -35,7 +35,7 @@ class StaffController extends Controller
             })
             ->orderByDesc('is_active')
             ->orderBy('joined_at')
-            ->paginate(20)
+            ->paginate(10)
             ->withQueryString();
 
         return Inertia::render('backend/staff/index', [
