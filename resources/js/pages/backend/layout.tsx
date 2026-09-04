@@ -4,6 +4,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import {
     DropdownMenu,
     DropdownMenuContent,
+    DropdownMenuGroup,
     DropdownMenuItem,
     DropdownMenuLabel,
     DropdownMenuSeparator,
@@ -208,6 +209,110 @@ function ProfileMenu({ user }: { user?: any }) {
                         Keluar
                     </Link>
                 </DropdownMenuItem>
+            </DropdownMenuContent>
+        </DropdownMenu>
+    );
+}
+
+function NotificationMenu() {
+    const { props } = usePage<any>();
+    const notifications = props.notifications ?? [];
+
+    const formatNotificationTime = (createdAt?: string) => {
+        if (!createdAt) return 'Baru saja';
+
+        const elapsedMinutes = Math.max(
+            0,
+            Math.floor((Date.now() - new Date(createdAt).getTime()) / 60000),
+        );
+
+        if (elapsedMinutes < 1) return 'Baru saja';
+        if (elapsedMinutes < 60) return `${elapsedMinutes} mnt lalu`;
+
+        const elapsedHours = Math.floor(elapsedMinutes / 60);
+        if (elapsedHours < 24) return `${elapsedHours} jam lalu`;
+
+        return new Date(createdAt).toLocaleDateString('id-ID', {
+            day: '2-digit',
+            month: 'short',
+        });
+    };
+
+    const openNotification = (notification: any) => {
+        router.post(`/notifications/${notification.id}/read`, {}, {
+            preserveScroll: true,
+            onSuccess: () => router.visit(notification.url),
+        });
+    };
+
+    return (
+        <DropdownMenu>
+            <DropdownMenuTrigger
+                className="relative inline-flex h-9 w-9 items-center justify-center rounded-full text-stone-500 hover:bg-stone-100"
+                aria-label="Notifikasi"
+            >
+                <Bell className="h-[18px] w-[18px]" />
+                {notifications.length > 0 && (
+                    <span className="absolute top-2.5 right-2.5 h-1.5 w-1.5 rounded-full bg-blue-500 ring-2 ring-white" />
+                )}
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+                align="end"
+                sideOffset={10}
+                className="w-80 rounded-2xl border-stone-200/80 p-1.5 shadow-xl shadow-stone-900/[0.06]"
+            >
+                <DropdownMenuGroup>
+                    <DropdownMenuLabel className="px-2.5 py-2 text-sm text-neutral-900">
+                        <div className="flex items-center justify-between gap-3">
+                            <span>Aktivitas masuk</span>
+                            {notifications.length > 0 && (
+                                <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-700">
+                                    {notifications.length} baru
+                                </span>
+                            )}
+                        </div>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator className="bg-stone-100" />
+                    {notifications.length > 0 ? (
+                        notifications.map((notification: any) => (
+                            <DropdownMenuItem
+                                key={notification.id}
+                                onClick={() => openNotification(notification)}
+                                className="cursor-pointer rounded-xl px-2.5 py-2.5 focus:bg-blue-50/70"
+                            >
+                                <div className="flex min-w-0 items-start gap-2.5">
+                                    <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-blue-500 ring-4 ring-blue-50" />
+                                    <div className="min-w-0 flex-1">
+                                        <div className="flex items-start justify-between gap-2">
+                                            <p className="truncate text-xs font-semibold text-neutral-900">
+                                                {notification.title}
+                                            </p>
+                                            <span className="shrink-0 text-[10px] font-medium text-stone-400">
+                                                {formatNotificationTime(notification.created_at)}
+                                            </span>
+                                        </div>
+                                        <p className="mt-0.5 line-clamp-2 text-xs leading-5 text-stone-500">
+                                            {notification.message}
+                                        </p>
+                                        <span className="mt-1.5 inline-flex items-center text-[10px] font-semibold text-blue-600">
+                                            Buka permohonan <span className="ml-1">-&gt;</span>
+                                        </span>
+                                    </div>
+                                </div>
+                            </DropdownMenuItem>
+                        ))
+                    ) : (
+                        <div className="px-2.5 py-5 text-center">
+                            <Bell className="mx-auto mb-2 h-5 w-5 text-stone-300" />
+                            <p className="text-xs font-medium text-stone-600">
+                                Semua aktivitas sudah diperiksa
+                            </p>
+                            <p className="mt-1 text-[11px] text-stone-400">
+                                Notifikasi permohonan baru akan muncul di sini.
+                            </p>
+                        </div>
+                    )}
+                </DropdownMenuGroup>
             </DropdownMenuContent>
         </DropdownMenu>
     );
@@ -509,15 +614,7 @@ function SidebarTopBar({
                     <Plus className="h-4 w-4" />
                 </Button>
 
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    className="relative rounded-full text-stone-500 hover:bg-stone-100"
-                    aria-label="Notifikasi"
-                >
-                    <Bell className="h-[18px] w-[18px]" />
-                    <span className="absolute top-2.5 right-2.5 h-1.5 w-1.5 rounded-full bg-blue-500 ring-2 ring-white" />
-                </Button>
+                <NotificationMenu />
 
                 <div className="mx-0.5 hidden h-5 w-px bg-stone-200 sm:block" />
 
@@ -948,15 +1045,7 @@ function FloatingNavbar({ user }: { user?: any }) {
                             <Plus className="h-4 w-4" />
                         </Button>
 
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="relative rounded-full text-stone-500 hover:bg-stone-100"
-                            aria-label="Notifikasi"
-                        >
-                            <Bell className="h-[18px] w-[18px]" />
-                            <span className="absolute top-2.5 right-2.5 h-1.5 w-1.5 rounded-full bg-blue-500 ring-2 ring-white" />
-                        </Button>
+                        <NotificationMenu />
 
                         <div className="mx-0.5 hidden h-5 w-px bg-stone-200 sm:block" />
 

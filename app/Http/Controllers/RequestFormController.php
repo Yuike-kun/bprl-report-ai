@@ -9,10 +9,13 @@ use App\Models\PermohonanKonsultasi;
 use App\Mail\KonsultasiDikonfirmasiMail;
 use App\Models\Province;
 use App\Models\Regency;
+use App\Models\User;
+use App\Notifications\NewPermohonanKonsultasi;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -142,6 +145,21 @@ class RequestFormController extends Controller
             'tanda_tangan'            => $validated['tanda_tangan'],
             'status'                  => 'draft',
         ]);
+
+        User::query()
+            ->where('role', 'admin')
+            ->get()
+            ->each(function (User $admin) use ($permohonan): void {
+                try {
+                    $admin->notify(new NewPermohonanKonsultasi($permohonan));
+                } catch (\Throwable $exception) {
+                    Log::error('Failed to notify admin about new consultation.', [
+                        'admin_id' => $admin->id,
+                        'permohonan_id' => $permohonan->id,
+                        'error' => $exception->getMessage(),
+                    ]);
+                }
+            });
 
         if (! empty($validated['bahan_konsultasi'])) {
             foreach ($validated['bahan_konsultasi'] as $file) {

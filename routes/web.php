@@ -21,6 +21,7 @@ use App\Http\Controllers\RequestFormController;
 use App\Http\Controllers\StaffController;
 use App\Http\Controllers\UsersController;
 use App\Http\Controllers\LogHistoryController;
+use App\Http\Controllers\NotificationController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('api')->prefix('api/geolocation')->group(function () {
@@ -166,6 +167,7 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+    Route::post('/notifications/{notification}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
 });
 
 Route::post('/pkkprl/analisis-ai', [GenerateDocxController::class, 'analyzeAi'])

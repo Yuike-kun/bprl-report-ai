@@ -41,6 +41,18 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user(),
             ],
+            'notifications' => fn () => $request->user()?->unreadNotifications()
+                ->latest()
+                ->take(8)
+                ->get()
+                ->map(fn ($notification) => [
+                    'id' => $notification->id,
+                    'title' => $notification->data['title'] ?? 'Notifikasi baru',
+                    'message' => $notification->data['message'] ?? '',
+                    'url' => $notification->data['url'] ?? '/dashboard',
+                    'created_at' => $notification->created_at?->toIso8601String(),
+                ])
+                ->values(),
             'flash' => [
                 'success'      => fn () => $request->session()->get('success'),
                 'document_url' => fn () => $request->session()->get('document_url'),
