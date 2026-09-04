@@ -585,7 +585,6 @@ export default function Create() {
         post('/kkprl-proposal', {
             forceFormData: true,
             onSuccess: () => {
-                alert('Proposal berhasil dikirim!');
                 reset();
                 setFileNames({});
             },

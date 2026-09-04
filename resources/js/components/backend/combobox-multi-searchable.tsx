@@ -105,8 +105,6 @@ export function ComboboxMultiSearch({
               : json.data?.data ?? [];
 
           if (debug) {
-            console.log('[ComboboxMultiSearch] Response:', items);
-            console.log('[ComboboxMultiSearch] labelKey:', labelKey);
           }
 
           setOptions(items);

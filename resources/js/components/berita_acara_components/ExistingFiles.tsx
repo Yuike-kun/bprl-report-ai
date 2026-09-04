@@ -1,5 +1,5 @@
 import { X } from 'lucide-react';
-import type { ExistingDocument } from '@/types/berita-acara';
+import type { ExistingDocument } from '@/components/types/berita-acara';
 
 export function ExistingFiles({
     docs,

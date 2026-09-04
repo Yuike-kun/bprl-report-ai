@@ -1,3 +1,4 @@
+import { alertError } from '@/lib/alert';
 import React, { useState, useRef, type ClipboardEvent, type DragEvent } from 'react';
 import { Clipboard, X, Upload } from 'lucide-react';
 
@@ -28,7 +29,7 @@ export const ImageField = React.memo(function ImageField({
     const addFiles = React.useCallback((fileList: FileList | File[]) => {
         const incoming = Array.from(fileList).filter((f) => {
             if (!ALLOWED_TYPES.includes(f.type)) {
-                alert('Format file tidak didukung. Hanya PNG dan JPG/JPEG yang diperbolehkan.');
+                alertError('Format file tidak didukung. Hanya PNG dan JPG/JPEG yang diperbolehkan.');
                 return false;
             }
             return true;

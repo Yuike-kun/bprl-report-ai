@@ -43,6 +43,7 @@ export default function BeritaAcara({
     staffList,
     konsultasi,
     berita_acara,
+    adminMode = false,
 }: BeritaAcaraFormProps) {
     const { errors } = usePage<any>().props;
 
@@ -60,7 +61,7 @@ export default function BeritaAcara({
         removeExistingDoc,
         goToStep2,
         handleSubmit,
-    } = useBeritaAcaraForm(konsultasi, berita_acara);
+    } = useBeritaAcaraForm(konsultasi, berita_acara, adminMode);
 
     // staffOptions is currently unused in the markup below (kept from the
     // original component) — wire it into a staff-assignment field if/when
@@ -82,7 +83,7 @@ export default function BeritaAcara({
     };
 
     return (
-        <MainLayout pageTitle="Buat Berita Acara Konsultasi">
+        <MainLayout pageTitle={berita_acara ? 'Edit Berita Acara Konsultasi' : 'Buat Berita Acara Konsultasi'}>
             <div className="mx-auto max-w-4xl space-y-6">
                 {/* Header */}
                 <div className="flex items-start justify-between gap-4">
@@ -1082,7 +1083,7 @@ export default function BeritaAcara({
                                 ) : (
                                     <BadgeCheck className="h-4 w-4" />
                                 )}
-                                Simpan Berita Acara
+                                {berita_acara ? 'Perbarui Berita Acara' : 'Simpan Berita Acara'}
                             </button>
                         </div>
                     </div>

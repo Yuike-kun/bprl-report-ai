@@ -93,9 +93,11 @@ class BeritaAcaraController extends Controller
         if ($request->konsultasi) {
             $konsultasi = PermohonanKonsultasi::find($request->konsultasi);
 
-            return Inertia::render('backend/berita-acara/create', [
+            return Inertia::render('backend/pegawai/berita-acara', [
                 'staffList' => $this->staffList(),
                 'konsultasi' => $konsultasi,
+                'berita_acara' => null,
+                'adminMode' => true,
             ]);
         }
 
@@ -117,7 +119,7 @@ class BeritaAcaraController extends Controller
                 $data['request_form_id'] = $request->request_form_id;
                 $data['status'] = 'draft';
                 $data['requester'] = '-';
-                $data['staff_1_id'] = auth()->user()->staff->id;
+                $data['staff_1_id'] = $data['staff_1_id'] ?: auth()->user()->staff?->id;
                 $record = BeritaAcaraKonsultasi::create($data);
                 $this->handleUploads($request, $record);
 
@@ -145,19 +147,25 @@ class BeritaAcaraController extends Controller
             'documents',
         ]);
 
-        return Inertia::render('backend/berita-acara/show', [
-            'record' => $beritaAcara,
+        $beritaAcara->load(['documents', 'permohonanKonsultasi']);
+
+        return Inertia::render('backend/pegawai/berita-acara', [
+            'berita_acara' => $beritaAcara,
+            'konsultasi' => $beritaAcara->permohonanKonsultasi,
             'staffList' => $this->staffList(),
+            'adminMode' => true,
         ]);
     }
 
     public function edit(BeritaAcaraKonsultasi $beritaAcara): Response
     {
-        $beritaAcara->load('documents');
+        $beritaAcara->load(['documents', 'permohonanKonsultasi']);
 
-        return Inertia::render('backend/berita-acara/edit', [
-            'record' => $beritaAcara,
+        return Inertia::render('backend/pegawai/berita-acara', [
+            'berita_acara' => $beritaAcara,
+            'konsultasi' => $beritaAcara->permohonanKonsultasi,
             'staffList' => $this->staffList(),
+            'adminMode' => true,
         ]);
     }
 
@@ -177,7 +185,7 @@ class BeritaAcaraController extends Controller
         });
 
         return redirect()
-            ->route('berita-acara.show', $beritaAcara)
+            ->route('berita-acara.index')
             ->with('success', 'Berita Acara berhasil diperbarui.');
     }
 

@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { router } from '@inertiajs/react';
 import type { ExistingDocument, FormData } from '@/components/types/berita-acara';
 import { EMPTY_FORM } from '@/components/types/berita-acara';
+import { alertError } from '@/lib/alert';
 
 const EMPTY_FILES: Record<string, File[]> = {
     dokumentasi_konsultasi: [],
@@ -23,6 +24,7 @@ const MULTI_FILE_SLOTS = new Set([
 export function useBeritaAcaraForm(
     konsultasi: any,
     berita_acara: any,
+    adminMode = false,
 ) {
     const isEdit = !!berita_acara;
     const storageKey = `berita_acara_form_${konsultasi?.id || berita_acara?.id || 'new'}`;
@@ -107,12 +109,12 @@ export function useBeritaAcaraForm(
 
     const removeExistingDoc = useCallback((doc: ExistingDocument) => {
         if (!confirm(`Hapus file "${doc.file_name}"?`)) return;
-        router.delete(`/pegawai/berita-acara/documents/${doc.id}`, {
+        router.delete(`${adminMode ? '' : '/pegawai'}/berita-acara/documents/${doc.id}`, {
             preserveScroll: true,
             onSuccess: () =>
                 setExistingDocs((prev) => prev.filter((d) => d.id !== doc.id)),
         });
-    }, []);
+    }, [adminMode]);
 
     // "asistensi" gets the full technical-review Step 2; "konsultasi" gets a
     // single summary-notes field instead (mirrors the two paths on the
@@ -132,14 +134,14 @@ export function useBeritaAcaraForm(
                 !form.other_information ||
                 !form.consultation_result
             ) {
-                alert('Harap lengkapi semua field wajib di Langkah 2 terlebih dahulu.');
+                alertError('Harap lengkapi semua field wajib di Langkah 2 terlebih dahulu.');
                 return false;
             }
             return true;
         }
 
         if (!form.consultation_notes.trim()) {
-            alert('Harap isi catatan hasil Konsultasi/Koordinasi terlebih dahulu.');
+            alertError('Harap isi catatan hasil Konsultasi/Koordinasi terlebih dahulu.');
             return false;
         }
         return true;
@@ -162,7 +164,7 @@ export function useBeritaAcaraForm(
             !form.regency ||
             !form.water_name
         ) {
-            alert('Harap lengkapi semua field wajib di Langkah 1 terlebih dahulu.');
+            alertError('Harap lengkapi semua field wajib di Langkah 1 terlebih dahulu.');
             return false;
         }
         setStep(2);
@@ -199,7 +201,11 @@ export function useBeritaAcaraForm(
         });
 
         if (isEdit) {
-            router.post(`/berita-acara/${berita_acara.id}/pegawai`, fd, {
+            const endpoint = adminMode
+                ? `/berita-acara/${berita_acara.id}`
+                : `/berita-acara/${berita_acara.id}/pegawai`;
+            if (adminMode) fd.append('_method', 'PUT');
+            router.post(endpoint, fd, {
                 forceFormData: true,
                 onFinish: () => setSubmitting(false),
             });

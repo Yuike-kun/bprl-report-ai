@@ -7,6 +7,7 @@ import {
     Waves, Calendar, Hash, Radio, Layers, BadgeCheck
 } from "lucide-react";
 import { ComboboxSearch } from "@/components/backend/combobox-searchable";
+import { alertError } from "@/lib/alert";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -70,6 +71,7 @@ interface StaffOption {
 }
 
 interface FormData {
+    request_form_id: string;
     // Step 1 – Session
     consultation_stage: string;
     consultation_date: string;
@@ -303,9 +305,11 @@ function SectionCard({ title, icon: Icon, children }: {
 interface Props {
     staffList: StaffOption[];
     konsultasi?: any;
+    record?: any;
 }
 
 const EMPTY: FormData = {
+    request_form_id: "",
     consultation_stage: "", consultation_date: "", berita_acara_number: "",
     implementation_mode: "", location: "", location_other: "",
     staff_1_id: "", staff_2_id: "", staff_3_id: "", staff_4_id: "",
@@ -320,7 +324,7 @@ const EMPTY: FormData = {
     other_information: "", consultation_result: "",
 };
 
-export default function CreateBeritaAcara({ staffList, konsultasi }: Props) {
+export default function CreateBeritaAcara({ staffList, konsultasi, record }: Props) {
     const { errors } = usePage<any>().props;
     const [step, setStep] = useState(1);
     const [form, setForm] = useState<FormData>(EMPTY);
@@ -353,7 +357,7 @@ export default function CreateBeritaAcara({ staffList, konsultasi }: Props) {
             !form.legal_entity_name || !form.contact_email || !form.permit_type ||
             !form.activity_type || !form.activity_detail || !form.province || !form.regency || !form.water_name
         ) {
-            alert("Harap lengkapi semua field wajib di Langkah 1 terlebih dahulu.");
+            alertError("Harap lengkapi semua field wajib di Langkah 1 terlebih dahulu.");
             return;
         }
         setStep(2);
@@ -382,15 +386,33 @@ export default function CreateBeritaAcara({ staffList, konsultasi }: Props) {
             }
         });
 
-        router.post("/berita-acara", fd, {
+        if (record?.id) {
+            fd.append("_method", "PUT");
+        }
+
+        const endpoint = record?.id ? `/berita-acara/${record.id}` : "/berita-acara";
+        router.post(endpoint, fd, {
             forceFormData: true,
             onFinish: () => setSubmitting(false),
         });
     };
 
     useEffect(() => {
-        if (konsultasi) {
+        if (record) {
+            setForm({ ...EMPTY,
+                ...Object.fromEntries(Object.keys(EMPTY).map((key) => [key, record[key] ?? EMPTY[key as keyof FormData]])),
+                consultation_date: record.consultation_date
+                    ? String(record.consultation_date).slice(0, 10)
+                    : "",
+                staff_1_id: record.staff_1_id ? String(record.staff_1_id) : "",
+                staff_2_id: record.staff_2_id ? String(record.staff_2_id) : "",
+                staff_3_id: record.staff_3_id ? String(record.staff_3_id) : "",
+                staff_4_id: record.staff_4_id ? String(record.staff_4_id) : "",
+                owned_documents: Array.isArray(record.owned_documents) ? record.owned_documents : [],
+            });
+        } else if (konsultasi) {
             setForm({ ...form,
+                request_form_id: konsultasi?.id,
                 requester_name: konsultasi?.nama_pemohon,
                 requester_position: konsultasi?.jabatan_pemohon,
                 legal_entity_name: konsultasi?.instansi,
@@ -402,7 +424,7 @@ export default function CreateBeritaAcara({ staffList, konsultasi }: Props) {
     }, [konsultasi]);
 
     return (
-        <MainLayout pageTitle="Buat Berita Acara Konsultasi">
+        <MainLayout pageTitle={record ? "Edit Berita Acara Konsultasi" : "Buat Berita Acara Konsultasi"}>
             <div className="max-w-4xl mx-auto space-y-6">
 
                 {/* Header */}
@@ -878,7 +900,7 @@ export default function CreateBeritaAcara({ staffList, konsultasi }: Props) {
                             <button type="button" onClick={handleSubmit} disabled={submitting}
                                 className="flex items-center gap-2 rounded-xl bg-emerald-600 px-6 py-2.5 text-sm font-bold text-white hover:bg-emerald-700 transition-all shadow-md shadow-emerald-600/25 disabled:opacity-60">
                                 {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <BadgeCheck className="w-4 h-4" />}
-                                Simpan Berita Acara
+                                {record ? "Perbarui Berita Acara" : "Simpan Berita Acara"}
                             </button>
                         </div>
                     </div>

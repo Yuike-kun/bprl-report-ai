@@ -104,4 +104,5 @@ export interface BeritaAcaraFormProps {
     staffList: StaffOption[];
     konsultasi?: any;
     berita_acara?: any;
+    adminMode?: boolean;
 }

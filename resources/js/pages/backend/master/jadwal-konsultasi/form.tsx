@@ -1,3 +1,4 @@
+import { alertError } from '@/lib/alert';
 import MainLayout from "../../layout";
 import { Link, useForm } from "@inertiajs/react";
 import { ArrowLeft, CalendarDays, MapPin, Save } from "lucide-react";
@@ -125,11 +126,11 @@ export default function JadwalKonsultasiForm({
     const generateJadwal = () => {
         const { waktu_awal, waktu_akhir } = data;
         if (!waktu_awal || !waktu_akhir) {
-            alert("Isi waktu awal dan waktu akhir terlebih dahulu.");
+            alertError("Isi waktu awal dan waktu akhir terlebih dahulu.");
             return;
         }
         if (!durasiSlot || durasiSlot <= 0) {
-            alert("Durasi slot tidak valid.");
+            alertError("Durasi slot tidak valid.");
             return;
         }
 
@@ -139,7 +140,7 @@ export default function JadwalKonsultasiForm({
         const endMinutes = endH * 60 + endM;
 
         if (endMinutes <= startMinutes) {
-            alert("Waktu akhir harus lebih besar dari waktu awal.");
+            alertError("Waktu akhir harus lebih besar dari waktu awal.");
             return;
         }
 
@@ -164,7 +165,7 @@ export default function JadwalKonsultasiForm({
 
     const applyKuotaToAll = () => {
         if (data.jadwal.length === 0) {
-            alert("Belum ada slot jadwal. Generate jadwal terlebih dahulu.");
+            alertError("Belum ada slot jadwal. Generate jadwal terlebih dahulu.");
             return;
         }
         setJadwalAndRecalculate(

@@ -55,6 +55,7 @@ class HandleInertiaRequests extends Middleware
                 ->values(),
             'flash' => [
                 'success'      => fn () => $request->session()->get('success'),
+                'error'        => fn () => $request->session()->get('error'),
                 'document_url' => fn () => $request->session()->get('document_url'),
             ],
         ];
