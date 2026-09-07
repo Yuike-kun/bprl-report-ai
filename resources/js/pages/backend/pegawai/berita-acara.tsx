@@ -386,20 +386,24 @@ export default function BeritaAcara({
                             </div>
 
                             <div className="mt-5 border-t border-slate-100 pt-5">
-                                <FormLabel required>Petugas Pendamping</FormLabel>
-                                <div className="grid gap-2 sm:grid-cols-2">
-                                    {staffOptions.map((option) => (
-                                        <label key={option.value} className="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 p-2 text-sm">
-                                            <input
-                                                type="checkbox"
-                                                checked={selectedStaffIds.includes(option.value)}
-                                                onChange={() => toggleStaff(option.value)}
-                                            />
-                                            {option.label}
-                                        </label>
+                                <FormLabel required>Petugas Pembuat Berita Acara</FormLabel>
+                                <select
+                                    value={form.staff_1_id || (selectedStaffIds[0] ?? '')}
+                                    onChange={(e) => {
+                                        const val = e.target.value;
+                                        set('staff_1_id', val);
+                                        set('staff_ids', val ? [val] : []);
+                                    }}
+                                    className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-700 outline-none focus-visible:ring-2 focus-visible:ring-emerald-200"
+                                >
+                                    <option value="">Pilih Petugas Pembuat Berita Acara</option>
+                                    {staffList.map((s) => (
+                                        <option key={s.id} value={s.id}>
+                                            {s.name} — {s.position}
+                                        </option>
                                     ))}
-                                </div>
-                                <FieldError message={errors?.staff_ids} />
+                                </select>
+                                <FieldError message={errors?.staff_1_id || errors?.staff_ids} />
                             </div>
 
                             <div className="grid gap-5 sm:grid-cols-2">

@@ -31,9 +31,18 @@ export function useBeritaAcaraForm(
 
     const getInitialForm = (): FormData => {
         if (isEdit) {
+            const staffIds = berita_acara?.staff_ids ?? (
+                Array.isArray(berita_acara?.staff)
+                    ? berita_acara.staff.map((s: any) => String(s.id))
+                    : [berita_acara?.staff_1_id, berita_acara?.staff_2_id, berita_acara?.staff_3_id, berita_acara?.staff_4_id]
+                          .filter(Boolean)
+                          .map(String)
+            );
+
             return {
                 ...EMPTY_FORM,
                 ...berita_acara,
+                staff_ids: Array.isArray(staffIds) ? staffIds : [],
                 owned_documents: berita_acara.owned_documents ?? [],
             };
         }
@@ -66,14 +75,21 @@ export function useBeritaAcaraForm(
         localStorage.setItem(storageKey, JSON.stringify(form));
     }, [form, storageKey, isEdit]);
 
-    // Pre-fill requester/site fields from the source konsultasi record,
+    // Pre-fill requester/site and assigned staff fields from the source konsultasi record,
     // but never clobber values already present (e.g. from a saved draft).
     // Only relevant when creating a new Berita Acara — in edit mode the
     // record already carries the correct values.
     useEffect(() => {
         if (isEdit || !konsultasi) return;
+
+        const defaultStaffId = Array.isArray(konsultasi.assign_to_staff) && konsultasi.assign_to_staff[0]
+            ? String(konsultasi.assign_to_staff[0].staff ?? konsultasi.assign_to_staff[0].Staff?.id ?? '')
+            : '';
+
         setForm((prev) => ({
             ...prev,
+            staff_1_id: prev.staff_1_id || defaultStaffId,
+            staff_ids: prev.staff_ids.length ? prev.staff_ids : (defaultStaffId ? [defaultStaffId] : []),
             requester_name: prev.requester_name || konsultasi?.nama_pemohon || '',
             requester_position:
                 prev.requester_position || konsultasi?.jabatan_pemohon || '',

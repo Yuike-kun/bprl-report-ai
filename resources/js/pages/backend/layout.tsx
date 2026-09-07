@@ -602,7 +602,7 @@ function SidebarTopBar({
                     </kbd>
                 </button>
 
-                <Button className="hidden gap-1.5 rounded-full bg-blue-600 px-4 text-white shadow-sm shadow-blue-600/20 hover:bg-blue-700 sm:flex">
+                {/* <Button className="hidden gap-1.5 rounded-full bg-blue-600 px-4 text-white shadow-sm shadow-blue-600/20 hover:bg-blue-700 sm:flex">
                     <Plus className="h-4 w-4" />
                     Buat
                 </Button>
@@ -612,7 +612,7 @@ function SidebarTopBar({
                     aria-label="Buat"
                 >
                     <Plus className="h-4 w-4" />
-                </Button>
+                </Button> */}
 
                 <NotificationMenu />
 

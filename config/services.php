@@ -39,4 +39,9 @@ return [
         'key'   => env('GEMINI_API_KEY'),
         'model' => env('GEMINI_MODEL', 'gemini-3.6-flash'),
     ],
+
+    'mailtrap' => [
+        'api_key'  => env('MAILTRAP_API_KEY'),
+        'inbox_id' => env('MAILTRAP_INBOX_ID'),
+    ],
 ];
