@@ -46,7 +46,36 @@ class PermohonanKonsultasiController extends Controller
 
     public function show(PermohonanKonsultasi $permohonanKonsultasi): Response
     {
-        $permohonanKonsultasi->load(['jadwal.lokasi', 'kabupaten', 'provinsi', 'dokumen', 'assign_to_staff.Staff']);
+        $permohonanKonsultasi->load([
+            'jadwal.lokasi',
+            'kabupaten',
+            'provinsi',
+            'dokumen',
+            'assign_to_staff.Staff.user',
+        ]);
+
+        $assignedStaff = $permohonanKonsultasi->assign_to_staff
+            ->map(function ($assignment) {
+                $staff = $assignment->Staff;
+                if (!$staff && is_numeric($assignment->staff)) {
+                    $staff = \App\Models\Staff::with('user:id,name')->find($assignment->staff);
+                }
+
+                if (!$staff instanceof \App\Models\Staff) {
+                    return null;
+                }
+
+                return [
+                    'id' => $staff->id,
+                    'name' => $staff->user?->name ?? "Staff #{$staff->id}",
+                    'position' => $staff->position ?? '',
+                    'department' => $staff->department ?? '',
+                ];
+            })
+            ->filter()
+            ->values();
+
+        $permohonanKonsultasi->setAttribute('staff', $assignedStaff);
 
         return Inertia::render('backend/master/permohonan-konsultasi/show', [
             'submission' => $permohonanKonsultasi,
@@ -150,7 +179,7 @@ class PermohonanKonsultasiController extends Controller
     public function assign_request(Request $request, PermohonanKonsultasi $permohonanKonsultasi): RedirectResponse
     {
         $validated = $request->validate([
-            'staff' => ['required', 'array', 'min:1', 'max:3'],
+            'staff' => ['required', 'array', 'min:1'],
             'staff.*' => ['integer', 'exists:staff,id'],
             'requester' => ['nullable'],
         ]);

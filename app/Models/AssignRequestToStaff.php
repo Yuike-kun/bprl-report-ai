@@ -13,11 +13,15 @@ class AssignRequestToStaff extends Model
     ];
 
     public function RequestForm() {
-        return $this->belongsTo(PermohonanKonsultasi::class);
+        return $this->belongsTo(PermohonanKonsultasi::class, 'request_form_id');
     }
 
     public function Staff() {
-        return $this->belongsTo(Staff::class);
+        return $this->belongsTo(Staff::class, 'staff', 'id');
+    }
+
+    public function StaffModel() {
+        return $this->belongsTo(Staff::class, 'staff', 'id');
     }
 
     public function Requester() {

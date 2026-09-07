@@ -365,12 +365,47 @@
             ->filter()
             ->implode(', ');
 
-        $provinceName = optional($beritaAcara->province)->name ?? $beritaAcara->province;
-        $regencyName = optional($beritaAcara->regency)->name ?? $beritaAcara->regency;
-        $districtName = optional($beritaAcara->district)->name ?? $beritaAcara->district;
+        $locationName = static function ($value, string $modelClass) {
+            if ($value === null || $value === '') {
+                return $value;
+            }
+
+            if (is_numeric($value)) {
+                return $modelClass::find($value)?->name ?? $value;
+            }
+
+            return $value;
+        };
+
+        $provinceName = $locationName($beritaAcara->province, \App\Models\Province::class);
+        $regencyName = $locationName($beritaAcara->regency, \App\Models\Regency::class);
+        $districtName = $locationName($beritaAcara->district, \App\Models\District::class);
 
         $docsByType = $beritaAcara->documents->groupBy('document_type');
         $sigDoc = optional($docsByType->get('tanda_tangan_perwakilan'))->first();
+        $staffSignature = $beritaAcara->permohonanKonsultasi?->staff_tanda_tangan
+            ?? $beritaAcara->request_form?->staff_tanda_tangan;
+
+        $staffMembers = $beritaAcara->staff;
+
+        if ($staffMembers->isEmpty()) {
+            $staffMembers = collect([
+                $beritaAcara->staff1,
+                $beritaAcara->staff2,
+                $beritaAcara->staff3,
+                $beritaAcara->staff4,
+            ])->filter();
+        }
+
+        $documentPath = static function ($document) {
+            if (!$document || !\Illuminate\Support\Facades\Storage::disk('public')->exists($document->file_path)) {
+                return null;
+            }
+
+            return \Illuminate\Support\Facades\Storage::disk('public')->path($document->file_path);
+        };
+
+        $signaturePath = $documentPath($sigDoc);
     @endphp
 
     <h1 class="doc-title">Berita Acara Pendampingan Permohonan</h1>
@@ -389,10 +424,8 @@
     </p>
 
     <ol class="attendees">
-        @foreach ([$beritaAcara->staff1, $beritaAcara->staff2, $beritaAcara->staff3, $beritaAcara->staff4] as $staff)
-            @if ($staff)
-                <li>{{ $staff->user->name }} ({{ $staff->position }})</li>
-            @endif
+        @foreach ($staffMembers as $staff)
+            <li>{{ $staff->user->name }} ({{ $staff->position }})</li>
         @endforeach
         <li>{{ $beritaAcara->requester_name }} ({{ $beritaAcara->requester_position }})</li>
     </ol>
@@ -480,23 +513,25 @@
             </tr>
         </thead>
         <tbody>
-            @foreach ([$beritaAcara->staff1, $beritaAcara->staff2, $beritaAcara->staff3, $beritaAcara->staff4] as $i => $staff)
-                @if ($staff)
-                    <tr>
-                        <td class="no">{{ $i + 1 }}</td>
-                        <td>{{ $staff->user->name }}</td>
-                        <td>{{ $staff->position }}</td>
-                        <td class="ttd"></td>
-                    </tr>
-                @endif
+            @foreach ($staffMembers as $i => $staff)
+                <tr>
+                    <td class="no">{{ $i + 1 }}</td>
+                    <td>{{ $staff->user->name }}</td>
+                    <td>{{ $staff->position }}</td>
+                    <td class="ttd">
+                        @if ($i === 0 && $staffSignature)
+                            <img src="{{ $staffSignature }}">
+                        @endif
+                    </td>
+                </tr>
             @endforeach
             <tr>
-                <td class="no">5</td>
+                <td class="no">{{ $staffMembers->count() + 1 }}</td>
                 <td>{{ $beritaAcara->requester_name }}</td>
                 <td>{{ $beritaAcara->requester_position }}</td>
                 <td class="ttd">
-                    @if ($sigDoc && ($sigPath = public_path('storage/' . $sigDoc->file_path)) && file_exists($sigPath))
-                        <img src="{{ $sigPath }}">
+                    @if ($signaturePath)
+                        <img src="{{ $signaturePath }}">
                     @endif
                 </td>
             </tr>
@@ -517,7 +552,7 @@
             <tr>
                 @foreach ($row as $doc)
                     <td>
-                        @if (($p = public_path('storage/' . $doc->file_path)) && file_exists($p))
+                        @if (($p = $documentPath($doc)))
                             <img src="{{ $p }}">
                         @else
                             {{ $doc->file_name }}
@@ -531,8 +566,7 @@
     <div class="lampiran-title">Lampiran II: Peta Hasil Plotting</div>
     @foreach ($docsByType->get('peta_hasil_plotting', collect()) as $doc)
         @if (
-            ($p = public_path('storage/' . $doc->file_path)) &&
-                file_exists($p) &&
+            ($p = $documentPath($doc)) &&
                 in_array(strtolower(pathinfo($p, PATHINFO_EXTENSION)), ['jpg', 'jpeg', 'png']))
             <img src="{{ $p }}" style="max-width: 100%; max-height: 320px;">
         @else
@@ -543,8 +577,7 @@
     <div class="lampiran-title">Lampiran III: Absensi</div>
     @foreach ($docsByType->get('absensi_pendampingan', collect()) as $doc)
         @if (
-            ($p = public_path('storage/' . $doc->file_path)) &&
-                file_exists($p) &&
+            ($p = $documentPath($doc)) &&
                 in_array(strtolower(pathinfo($p, PATHINFO_EXTENSION)), ['jpg', 'jpeg', 'png']))
             <img src="{{ $p }}" style="max-width: 100%; max-height: 320px;">
         @else

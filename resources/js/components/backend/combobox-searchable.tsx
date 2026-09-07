@@ -7,7 +7,6 @@ import {
 } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-import { router } from '@inertiajs/react';
 
 interface ComboboxSearchProps {
   value: string | number;
@@ -18,6 +17,7 @@ interface ComboboxSearchProps {
   valueKey?: string;
   placeholder?: string;
   staticOptions?: any[];
+  selectedLabel?: string;
   disabled?: boolean;
   className?: string;
 }
@@ -62,6 +62,7 @@ export function ComboboxSearch({
   valueKey = 'id',
   placeholder = 'Cari...',
   staticOptions = [],
+  selectedLabel,
   disabled = false,
   className,
 }: ComboboxSearchProps) {
@@ -80,7 +81,8 @@ export function ComboboxSearch({
 
   const allAvailableOptions = [...(staticOptions || []), ...options];
   const selected = allAvailableOptions.find((o) => getValue(o, valueKey) === String(value));
-  const selectedLabel = selected ? getLabel(selected, labelKey) : '';
+  const displayedLabel = selected ? getLabel(selected, labelKey) : selectedLabel;
+  const selectedLabelText = displayedLabel ?? '';
 
   const fetchOptions = useCallback(async (q: string, signal: AbortSignal): Promise<any[]> => {
     // If no fetchUrl, only static options are available
@@ -190,7 +192,7 @@ export function ComboboxSearch({
           className
         )}
       >
-        <span className="truncate">{selected ? selectedLabel : placeholder}</span>
+        <span className="truncate">{selected ? selectedLabelText : (selectedLabelText || placeholder)}</span>
         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
       </PopoverTrigger>
 

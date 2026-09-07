@@ -23,6 +23,7 @@ export interface FormData {
     staff_2_id: string;
     staff_3_id: string;
     staff_4_id: string;
+    staff_ids: string[];
 
     // Step 1 – Requester & Site
     requester_name: string;
@@ -70,6 +71,7 @@ export const EMPTY_FORM: FormData = {
     staff_2_id: '',
     staff_3_id: '',
     staff_4_id: '',
+    staff_ids: [],
     requester_name: '',
     requester_position: '',
     legal_entity_name: '',

@@ -13,8 +13,6 @@ class PermohonanKonsultasi extends Model
         'jabatan_pemohon',
         'instansi',
         'rencana_kegiatan',
-        'kabupaten',
-        'provinsi',
         'nomor_telepon',
         'email',
         'permintaan_khusus',
@@ -46,16 +44,6 @@ class PermohonanKonsultasi extends Model
         return $this->belongsTo(ChildSchedule::class, 'child_schedule_id');
     }
 
-    public function kabupaten()
-    {
-        return $this->belongsTo(District::class, 'kabupaten_id');
-    }
-
-    public function provinsi()
-    {
-        return $this->belongsTo(Province::class, 'provinsi_id');
-    }
-
     public function assign_to_staff()
     {
         return $this->hasMany(AssignRequestToStaff::class, 'request_form_id');
@@ -69,5 +57,15 @@ class PermohonanKonsultasi extends Model
     public function beritaAcara()
     {
         return $this->hasOne(BeritaAcaraKonsultasi::class, 'request_form_id');
+    }
+
+    public function kabupaten()
+    {
+        return $this->belongsTo(District::class, 'kabupaten', 'id');
+    }
+
+    public function provinsi()
+    {
+        return $this->belongsTo(Province::class, 'provinsi', 'id');
     }
 }

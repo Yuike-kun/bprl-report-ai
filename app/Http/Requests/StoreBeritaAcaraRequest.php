@@ -27,6 +27,8 @@ class StoreBeritaAcaraRequest extends FormRequest
             'staff_2_id' => ['nullable', 'exists:staff,id'],
             'staff_3_id' => ['nullable', 'exists:staff,id'],
             'staff_4_id' => ['nullable', 'exists:staff,id'],
+            'staff_ids' => ['nullable', 'array'],
+            'staff_ids.*' => ['integer', 'distinct', 'exists:staff,id'],
             // ── Step 1 : Requester & Site ──────────────────────────────────
             'requester_name' => ['required', 'string', 'max:255'],
             'requester_position' => ['required', 'string', 'max:255'],

@@ -30,8 +30,8 @@ type Submission = {
     pelaksanaan: 'Luring' | 'Daring' | 'Hybrid';
     lokasi_konsultasi_id: number | null;
     rencana_kegiatan: string;
-    kabupaten: string;
-    provinsi: string;
+    kabupaten: string | { id?: number; name?: string } | null;
+    provinsi: string | { id?: number; name?: string } | null;
     nomor_telepon: string;
     email: string;
     permintaan_khusus: string | null;
@@ -41,19 +41,32 @@ type Submission = {
     created_at: string;
     lokasi?: { id: number; nama_lokasi: string } | null;
     jadwal?: any;
-    staff: any[];
+    staff?: any[];
+    assign_to_staff?: any[];
     dokumen?: { id: number; file_name: string; file_url: string }[];
 };
 
 type Props = { submission: Submission };
 
-function DetailItem({ label, value }: { label: string; value: string }) {
+const getLocationName = (loc: string | { id?: number; name?: string } | null | undefined): string => {
+    if (!loc) return '-';
+    if (typeof loc === 'object') {
+        return loc.name ?? '-';
+    }
+    return String(loc);
+};
+
+function DetailItem({ label, value }: { label: string; value: React.ReactNode }) {
+    const displayValue = typeof value === 'object' && value !== null && 'name' in (value as any)
+        ? (value as any).name
+        : value;
+
     return (
         <div className="space-y-1">
             <p className="text-xs font-semibold tracking-wide text-slate-400 uppercase">
                 {label}
             </p>
-            <p className="text-sm text-slate-700">{value || '-'}</p>
+            <p className="text-sm text-slate-700">{displayValue || '-'}</p>
         </div>
     );
 }
@@ -427,11 +440,11 @@ export default function PermohonanKonsultasiShow({ submission }: Props) {
                                 />
                                 <DetailItem
                                     label="Kabupaten/Kota"
-                                    value={submission.kabupaten}
+                                    value={getLocationName(submission.kabupaten)}
                                 />
                                 <DetailItem
                                     label="Provinsi"
-                                    value={submission.provinsi}
+                                    value={getLocationName(submission.provinsi)}
                                 />
                                 <DetailItem
                                     label="Persetujuan S&amp;K"

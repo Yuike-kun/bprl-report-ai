@@ -2,6 +2,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -68,68 +69,93 @@ class BeritaAcaraKonsultasi extends Model
 
     // ── Relations ─────────────────────────────────────────────────────
 
+    /**
+     * @return BelongsTo<PermohonanKonsultasi, $this>
+     */
     public function request_form(): BelongsTo
-    {
-        return $this->belongsTo(PermohonanKonsultasi::class);
-    }
-
-    public function permohonanKonsultasi()
     {
         return $this->belongsTo(PermohonanKonsultasi::class, 'request_form_id');
     }
 
+    /**
+     * @return BelongsTo<PermohonanKonsultasi, $this>
+     */
+    public function permohonanKonsultasi(): BelongsTo
+    {
+        return $this->belongsTo(PermohonanKonsultasi::class, 'request_form_id');
+    }
+
+    /**
+     * @return BelongsTo<Requester, $this>
+     */
     public function requester(): BelongsTo
     {
         return $this->belongsTo(Requester::class);
     }
 
+    /**
+     * @return BelongsTo<Staff, $this>
+     */
     public function staff1(): BelongsTo
     {
         return $this->belongsTo(Staff::class, 'staff_1_id');
     }
 
+    /**
+     * @return BelongsTo<Staff, $this>
+     */
     public function staff2(): BelongsTo
     {
         return $this->belongsTo(Staff::class, 'staff_2_id');
     }
 
+    /**
+     * @return BelongsTo<Staff, $this>
+     */
     public function staff3(): BelongsTo
     {
         return $this->belongsTo(Staff::class, 'staff_3_id');
     }
 
+    /**
+     * @return BelongsTo<Staff, $this>
+     */
     public function staff4(): BelongsTo
     {
         return $this->belongsTo(Staff::class, 'staff_4_id');
     }
 
+    /**
+     * @return BelongsToMany<Staff, $this>
+     */
+    public function staff(): BelongsToMany
+    {
+        return $this->belongsToMany(Staff::class, 'berita_acara_konsultasi_staff')
+            ->withPivot('sort_order')
+            ->orderByPivot('sort_order');
+    }
+
+    /**
+     * @return HasMany<BeritaAcaraDocument, $this>
+     */
     public function documents(): HasMany
     {
         return $this->hasMany(BeritaAcaraDocument::class);
     }
 
+    /**
+     * @return HasMany<KkprlProposal, $this>
+     */
     public function kkprlProposals(): HasMany
     {
         return $this->hasMany(KkprlProposal::class, 'berita_acara_id');
     }
 
+    /**
+     * @return HasMany<BeritaAcaraDocument, $this>
+     */
     public function documentsByType(string $type): HasMany
     {
         return $this->documents()->where('document_type', $type);
-    }
-
-    public function province(): BelongsTo
-    {
-        return $this->belongsTo(\App\Models\Province::class, 'province');
-    }
-
-    public function regency(): BelongsTo
-    {
-        return $this->belongsTo(\App\Models\Regency::class, 'regency');
-    }
-
-    public function district(): BelongsTo
-    {
-        return $this->belongsTo(\App\Models\District::class, 'district');
     }
 }

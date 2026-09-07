@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { usePage } from '@inertiajs/react';
 import MainLayout from '@/pages/backend/layout';
 import {
@@ -45,6 +46,12 @@ export default function BeritaAcara({
     berita_acara,
     adminMode = false,
 }: BeritaAcaraFormProps) {
+    const [locationIds, setLocationIds] = useState({
+        province: '',
+        regency: '',
+        district: '',
+    });
+
     const { errors } = usePage<any>().props;
 
     const {
@@ -63,6 +70,36 @@ export default function BeritaAcara({
         handleSubmit,
     } = useBeritaAcaraForm(konsultasi, berita_acara, adminMode);
 
+    useEffect(() => {
+        if (!form.province || locationIds.province) return;
+        fetch(`/api/geolocation/provinces?search=${encodeURIComponent(form.province)}`)
+            .then((response) => response.json())
+            .then((json) => {
+                const item = (json.data ?? []).find((entry: any) => entry.name === form.province);
+                if (item) setLocationIds((prev) => ({ ...prev, province: String(item.id) }));
+            });
+    }, [form.province, locationIds.province]);
+
+    useEffect(() => {
+        if (!form.regency || locationIds.regency || !locationIds.province) return;
+        fetch(`/api/geolocation/regencies?province_id=${locationIds.province}&search=${encodeURIComponent(form.regency)}`)
+            .then((response) => response.json())
+            .then((json) => {
+                const item = (json.data ?? []).find((entry: any) => entry.name === form.regency);
+                if (item) setLocationIds((prev) => ({ ...prev, regency: String(item.id) }));
+            });
+    }, [form.regency, locationIds.province, locationIds.regency]);
+
+    useEffect(() => {
+        if (!form.district || locationIds.district || !locationIds.regency) return;
+        fetch(`/api/geolocation/districts?regency_id=${locationIds.regency}&search=${encodeURIComponent(form.district)}`)
+            .then((response) => response.json())
+            .then((json) => {
+                const item = (json.data ?? []).find((entry: any) => entry.name === form.district);
+                if (item) setLocationIds((prev) => ({ ...prev, district: String(item.id) }));
+            });
+    }, [form.district, locationIds.regency, locationIds.district]);
+
     // staffOptions is currently unused in the markup below (kept from the
     // original component) — wire it into a staff-assignment field if/when
     // that UI is added.
@@ -70,6 +107,19 @@ export default function BeritaAcara({
         value: String(s.id),
         label: `${s.name} — ${s.position}`,
     }));
+
+    const selectedStaffIds = form.staff_ids.length
+        ? form.staff_ids
+        : [form.staff_1_id, form.staff_2_id, form.staff_3_id, form.staff_4_id].filter(Boolean);
+
+    const toggleStaff = (staffId: string) => {
+        set(
+            'staff_ids',
+            selectedStaffIds.includes(staffId)
+                ? selectedStaffIds.filter((id) => id !== staffId)
+                : [...selectedStaffIds, staffId],
+        );
+    };
 
     const handleGoToStep2 = () => {
         if (goToStep2()) {
@@ -335,6 +385,23 @@ export default function BeritaAcara({
                                 </div>
                             </div>
 
+                            <div className="mt-5 border-t border-slate-100 pt-5">
+                                <FormLabel required>Petugas Pendamping</FormLabel>
+                                <div className="grid gap-2 sm:grid-cols-2">
+                                    {staffOptions.map((option) => (
+                                        <label key={option.value} className="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 p-2 text-sm">
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedStaffIds.includes(option.value)}
+                                                onChange={() => toggleStaff(option.value)}
+                                            />
+                                            {option.label}
+                                        </label>
+                                    ))}
+                                </div>
+                                <FieldError message={errors?.staff_ids} />
+                            </div>
+
                             <div className="grid gap-5 sm:grid-cols-2">
                                 <div>
                                     <FormLabel required>
@@ -443,8 +510,18 @@ export default function BeritaAcara({
                                 <div>
                                     <FormLabel required>Provinsi</FormLabel>
                                     <ComboboxSearch
-                                        value={form.province}
-                                        onChange={(val) => set('province', val)}
+                                        value={locationIds.province}
+                                        selectedLabel={form.province}
+                                        onChange={(value, item) => {
+                                            setLocationIds({
+                                                province: String(value),
+                                                regency: '',
+                                                district: '',
+                                            });
+                                            set('province', item?.name ?? '');
+                                            set('regency', '');
+                                            set('district', '');
+                                        }}
                                         fetchUrl="/api/geolocation/provinces"
                                         labelKey="name"
                                         valueKey="id"
@@ -456,9 +533,18 @@ export default function BeritaAcara({
                                         Kabupaten / Kota
                                     </FormLabel>
                                     <ComboboxSearch
-                                        value={form.regency}
-                                        onChange={(val) => set('regency', val)}
-                                        fetchUrl={`/api/geolocation/regencies?province_id=${form.province}`}
+                                        value={locationIds.regency}
+                                        selectedLabel={form.regency}
+                                        onChange={(value, item) => {
+                                            setLocationIds((prev) => ({
+                                                ...prev,
+                                                regency: String(value),
+                                                district: '',
+                                            }));
+                                            set('regency', item?.name ?? '');
+                                            set('district', '');
+                                        }}
+                                        fetchUrl={`/api/geolocation/regencies?province_id=${locationIds.province}`}
                                         labelKey="name"
                                         valueKey="id"
                                         placeholder="Pilih kabupaten"
@@ -467,11 +553,18 @@ export default function BeritaAcara({
                                 <div>
                                     <FormLabel>Kecamatan</FormLabel>
                                     <ComboboxSearch
-                                        value={form.district}
-                                        onChange={(val) => set('district', val)}
+                                        value={locationIds.district}
+                                        selectedLabel={form.district}
+                                        onChange={(value, item) => {
+                                            setLocationIds((prev) => ({
+                                                ...prev,
+                                                district: String(value),
+                                            }));
+                                            set('district', item?.name ?? '');
+                                        }}
                                         fetchUrl={
-                                            form.regency
-                                                ? `/api/geolocation/districts?regency_id=${form.regency}`
+                                            locationIds.regency
+                                                ? `/api/geolocation/districts?regency_id=${locationIds.regency}`
                                                 : ''
                                         }
                                         labelKey="name"

@@ -22,8 +22,8 @@ type Submission = {
     pelaksanaan: "Luring" | "Daring" | "Hybrid";
     lokasi_konsultasi_id: number | null;
     rencana_kegiatan: string;
-    kabupaten: string;
-    provinsi: string;
+    kabupaten: string | { id?: number; name?: string } | null;
+    provinsi: string | { id?: number; name?: string } | null;
     nomor_telepon: string;
     email: string;
     permintaan_khusus: string | null;
@@ -36,6 +36,14 @@ type Props = {
     locations: Location[];
 };
 
+const getLocationName = (loc: string | { id?: number; name?: string } | null | undefined): string => {
+    if (!loc) return '';
+    if (typeof loc === 'object') {
+        return loc.name ?? '';
+    }
+    return String(loc);
+};
+
 export default function PermohonanKonsultasiEdit({ submission, locations }: Props) {
     const { data, setData, put, processing, errors } = useForm({
         nama_pemohon: submission.nama_pemohon,
@@ -46,8 +54,8 @@ export default function PermohonanKonsultasiEdit({ submission, locations }: Prop
         pelaksanaan: submission.pelaksanaan,
         lokasi_konsultasi_id: submission.lokasi_konsultasi_id ? String(submission.lokasi_konsultasi_id) : "",
         rencana_kegiatan: submission.rencana_kegiatan,
-        kabupaten: submission.kabupaten,
-        provinsi: submission.provinsi,
+        kabupaten: getLocationName(submission.kabupaten),
+        provinsi: getLocationName(submission.provinsi),
         nomor_telepon: submission.nomor_telepon,
         email: submission.email,
         permintaan_khusus: submission.permintaan_khusus ?? "",

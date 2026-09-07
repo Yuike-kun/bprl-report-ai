@@ -18,6 +18,47 @@ class BeritaAcaraController extends Controller
 {
     // ── Helpers ───────────────────────────────────────────────────────
 
+    private function staffIds(Request $request, ?int $currentStaffId = null, ?BeritaAcaraKonsultasi $record = null): array
+    {
+        $submittedIds = collect($request->input('staff_ids', []))
+            ->filter()
+            ->map(fn($id) => (int) $id)
+            ->unique();
+
+        if ($submittedIds->isNotEmpty()) {
+            return $submittedIds
+                ->merge($currentStaffId)
+                ->filter()
+                ->unique()
+                ->values()
+                ->all();
+        }
+
+        $existingIds = $record?->staff()->pluck('staff.id')->all() ?? [];
+        if ($record && empty($existingIds)) {
+            $existingIds = collect([
+                $record->staff_1_id,
+                $record->staff_2_id,
+                $record->staff_3_id,
+                $record->staff_4_id,
+            ])->filter()->all();
+        }
+
+        return collect($existingIds)
+            ->merge([
+                $request->input('staff_1_id'),
+                $request->input('staff_2_id'),
+                $request->input('staff_3_id'),
+                $request->input('staff_4_id'),
+                $currentStaffId,
+            ])
+            ->filter()
+            ->map(fn($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
     private function staffList(): \Illuminate\Support\Collection
     {
         return Staff::with('user:id,name')
@@ -46,7 +87,7 @@ class BeritaAcaraController extends Controller
     public function index(Request $request): Response
     {
         $rows = BeritaAcaraKonsultasi::query()
-            ->with(['staff1.user:id,name', 'documents'])
+            ->with(['staff.user:id,name', 'documents'])
             ->when($request->search, fn($q, $s) =>
                 $q
                     ->where('requester_name', 'like', "%{$s}%")
@@ -62,7 +103,7 @@ class BeritaAcaraController extends Controller
                 'consultation_date' => $r->consultation_date?->format('d M Y'),
                 'berita_acara_number' => $r->berita_acara_number,
                 'requester_name' => $r->requester_name,
-                'staff_1_name' => $r->staff1?->user?->name,
+                'staff_1_name' => $r->staff->first()?->user?->name,
             ]);
 
         return Inertia::render('backend/berita-acara/index', [
@@ -119,8 +160,14 @@ class BeritaAcaraController extends Controller
                 $data['request_form_id'] = $request->request_form_id;
                 $data['status'] = 'draft';
                 $data['requester'] = '-';
-                $data['staff_1_id'] = $data['staff_1_id'] ?: auth()->user()->staff?->id;
+                $staffIds = $this->staffIds($request, auth()->user()->staff?->id);
+                unset($data['staff_ids']);
+                $data['staff_1_id'] = $staffIds[0] ?? null;
+                $data['staff_2_id'] = $staffIds[1] ?? null;
+                $data['staff_3_id'] = $staffIds[2] ?? null;
+                $data['staff_4_id'] = $staffIds[3] ?? null;
                 $record = BeritaAcaraKonsultasi::create($data);
+                $record->staff()->sync($staffIds);
                 $this->handleUploads($request, $record);
 
                 $konsultasi = PermohonanKonsultasi::find($request->request_form_id);
@@ -140,14 +187,12 @@ class BeritaAcaraController extends Controller
     {
         $beritaAcara->load([
             'requester.user:id,name,email',
-            'staff1.user:id,name',
-            'staff2.user:id,name',
-            'staff3.user:id,name',
-            'staff4.user:id,name',
+            'staff.user:id,name',
             'documents',
         ]);
 
-        $beritaAcara->load(['documents', 'permohonanKonsultasi']);
+        $beritaAcara->load(['documents', 'permohonanKonsultasi', 'staff.user:id,name']);
+        $beritaAcara->setAttribute('staff_ids', $beritaAcara->staff->pluck('id')->map(fn($id) => (string) $id)->values()->all());
 
         return Inertia::render('backend/pegawai/berita-acara', [
             'berita_acara' => $beritaAcara,
@@ -159,7 +204,8 @@ class BeritaAcaraController extends Controller
 
     public function edit(BeritaAcaraKonsultasi $beritaAcara): Response
     {
-        $beritaAcara->load(['documents', 'permohonanKonsultasi']);
+        $beritaAcara->load(['documents', 'permohonanKonsultasi', 'staff.user:id,name']);
+        $beritaAcara->setAttribute('staff_ids', $beritaAcara->staff->pluck('id')->map(fn($id) => (string) $id)->values()->all());
 
         return Inertia::render('backend/pegawai/berita-acara', [
             'berita_acara' => $beritaAcara,
@@ -178,7 +224,14 @@ class BeritaAcaraController extends Controller
         );
 
         DB::transaction(function () use ($request, $beritaAcara, $data) {
+            $staffIds = $this->staffIds($request, auth()->user()->staff?->id);
+            unset($data['staff_ids']);
+            $data['staff_1_id'] = $staffIds[0] ?? null;
+            $data['staff_2_id'] = $staffIds[1] ?? null;
+            $data['staff_3_id'] = $staffIds[2] ?? null;
+            $data['staff_4_id'] = $staffIds[3] ?? null;
             $beritaAcara->update($data);
+            $beritaAcara->staff()->sync($staffIds);
             $this->handleUploads($request, $beritaAcara);
             $konsultasi = PermohonanKonsultasi::find($request->request_form_id);
             $this->syncPermohonanKonsultasi($konsultasi, $data);
@@ -201,26 +254,19 @@ class BeritaAcaraController extends Controller
             DB::beginTransaction();
 
             $staffId = auth()->user()->staff->id;
-            $slots = ['staff_1_id', 'staff_2_id', 'staff_3_id', 'staff_4_id'];
-
-            $alreadyAssigned = collect($slots)
-                ->map(fn($slot) => $beritaAcara->{$slot})
-                ->contains($staffId);
-
-            if (!$alreadyAssigned) {
-                foreach ($slots as $slot) {
-                    if (!$beritaAcara->{$slot}) {
-                        $data[$slot] = $staffId;
-                        break;
-                    }
-                }
-            }
+            $staffIds = $this->staffIds($request, $staffId, $beritaAcara);
+            unset($data['staff_ids']);
+            $data['staff_1_id'] = $staffIds[0] ?? null;
+            $data['staff_2_id'] = $staffIds[1] ?? null;
+            $data['staff_3_id'] = $staffIds[2] ?? null;
+            $data['staff_4_id'] = $staffIds[3] ?? null;
 
             if (!$beritaAcara) {
                 $beritaAcara = BeritaAcaraKonsultasi::create($data);
             } else {
                 $beritaAcara->update($data);
             }
+            $beritaAcara->staff()->sync($staffIds);
 
             $this->handleUploads($request, $beritaAcara);
 
@@ -330,26 +376,21 @@ class BeritaAcaraController extends Controller
             $staffId = auth()->user()->staff->id ?? null;
 
             abort_unless(
-                $staffId && in_array($staffId, [
+                $staffId && ($beritaAcara->staff->contains('id', $staffId) || in_array($staffId, [
                     $beritaAcara->staff_1_id,
                     $beritaAcara->staff_2_id,
                     $beritaAcara->staff_3_id,
                     $beritaAcara->staff_4_id,
-                ]),
+                ])),
                 403
             );
         }
 
         $beritaAcara->load([
-            'staff1.user',
-            'staff2.user',
-            'staff3.user',
-            'staff4.user',
-            'province',
-            'regency',
-            'district',  // drop these three if not local relations
+            'staff.user',
             'documents',
-            'request_form'
+            'request_form',
+            'permohonanKonsultasi',
         ]);
 
         $pdf = Pdf::loadView('pdf.berita-acara', [
