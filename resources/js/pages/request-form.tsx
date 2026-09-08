@@ -6,35 +6,27 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
-    Combobox,
-    ComboboxContent,
-    ComboboxEmpty,
-    ComboboxInput,
-    ComboboxItem,
-    ComboboxList,
-} from '@/components/ui/combobox';
-import {
     ArrowLeft,
     BookOpen,
     Check,
     ChevronLeft,
     ChevronRight,
     UserRound,
-    Building2,
     FileText,
     CalendarDays,
-    Video,
-    Layers,
-    Users,
+    Clock,
+    MapPin,
     Send,
     Loader2,
     CircleAlert,
     CheckCircle2,
+    Sparkles,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { Link, useForm, usePage } from '@inertiajs/react';
 import swal from 'sweetalert';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
     Dialog,
     DialogContent,
@@ -46,7 +38,6 @@ import {
 
 import SignaturePad from '@/components/signature-pad';
 import { ComboboxSearch } from '@/components/backend/combobox-searchable';
-import DocumentUpload from '@/components/document-upload';
 import { FileUpload } from '@/components/berita_acara_components/FileUpload';
 
 /* ------------------------------------------------------------------ */
@@ -81,32 +72,6 @@ type PageProps = {
     adminMode?: boolean;
 };
 
-const METODE_OPTIONS: Array<{
-    value: Schedule['pelaksanaan'];
-    title: string;
-    desc: string;
-    icon: LucideIcon;
-}> = [
-        {
-            value: 'Daring',
-            title: 'Konsultasi Daring',
-            desc: 'Melalui video conference (Zoom / Google Meet)',
-            icon: Video,
-        },
-        {
-            value: 'Luring',
-            title: 'Konsultasi Tatap Muka',
-            desc: 'Datang langsung ke kantor BPRL Makassar',
-            icon: Users,
-        },
-        {
-            value: 'Hybrid',
-            title: 'Hybrid',
-            desc: 'Kombinasi daring dan tatap muka',
-            icon: Layers,
-        },
-    ];
-
 const GUIDE_ITEMS = [
     {
         title: 'Data Pemohon',
@@ -118,7 +83,7 @@ const GUIDE_ITEMS = [
     },
     {
         title: 'Jadwal Konsultasi',
-        desc: 'Pilih metode, tanggal, dan waktu sesuai ketersediaan kuota.',
+        desc: 'Pilih lokasi, tanggal, dan slot waktu sesuai ketersediaan.',
     },
 ];
 
@@ -130,17 +95,59 @@ const formatTanggal = (tanggal: string) =>
         year: 'numeric',
     });
 
+/* ------------------------------------------------------------------ */
+/*  Framer Motion Variants                                              */
+/* ------------------------------------------------------------------ */
+const sectionVariants = {
+    hidden: { opacity: 0, y: 16 },
+    visible: (custom: number) => ({
+        opacity: 1,
+        y: 0,
+        transition: {
+            duration: 0.4,
+            delay: custom * 0.1,
+            ease: [0.25, 0.1, 0.25, 1] as const,
+        },
+    }),
+};
+
+const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: { staggerChildren: 0.04 },
+    },
+};
+
+const itemVariants = {
+    hidden: { opacity: 0, scale: 0.94, y: 6 },
+    visible: {
+        opacity: 1,
+        scale: 1,
+        y: 0,
+        transition: { type: 'spring' as const, stiffness: 350, damping: 25 },
+    },
+};
+
+/* ------------------------------------------------------------------ */
+/*  Small helper components                                             */
+/* ------------------------------------------------------------------ */
 function FieldError({ message }: { message?: string }) {
     if (!message) return null;
     return (
-        <p className="flex items-center gap-1.5 text-xs font-medium text-red-500">
+        <motion.p
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="mt-1 flex items-center gap-1.5 text-xs font-medium text-red-500"
+        >
             <CircleAlert className="h-3.5 w-3.5 shrink-0" />
             {message}
-        </p>
+        </motion.p>
     );
 }
 
-function SectionHeader({
+function MinimalSectionHeader({
     icon: Icon,
     title,
     subtitle,
@@ -151,26 +158,22 @@ function SectionHeader({
 }) {
     return (
         <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-blue-100 bg-blue-50">
-                <Icon className="h-4 w-4 text-blue-600" />
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-md shadow-blue-500/20">
+                <Icon className="h-4.5 w-4.5" />
             </div>
             <div>
-                <h2 className="text-sm leading-none font-bold text-slate-900">
-                    {title}
-                </h2>
-                <p className="mt-1 text-xs text-slate-400">{subtitle}</p>
+                <h2 className="text-sm font-bold text-slate-900 leading-tight">{title}</h2>
+                <p className="text-xs text-slate-400">{subtitle}</p>
             </div>
         </div>
     );
 }
 
 /* ------------------------------------------------------------------ */
-/*  Halaman                                                             */
+/*  Main component                                                      */
 /* ------------------------------------------------------------------ */
 export default function RequestForm() {
-    const [kabupaten, setKabupaten] = useState<any[]>([]);
-    const { locations, schedules, provinsi, flash, adminMode = false } =
-        usePage<PageProps>().props;
+    const { locations, schedules, flash, adminMode = false } = usePage<PageProps>().props;
     const Layout: React.ComponentType<any> = adminMode ? MainLayout : HomeLayout;
 
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -179,11 +182,11 @@ export default function RequestForm() {
         instansi: '',
         tanggal_konsultasi: '',
         child_schedule_id: '',
-        pelaksanaan: 'Daring' as Schedule['pelaksanaan'],
+        pelaksanaan: 'Luring' as const,
         lokasi_konsultasi_id: '',
         rencana_kegiatan: '',
         kabupaten: '',
-        provinsi: '',
+        provinsi: 73,
         nomor_telepon: '',
         email: '',
         permintaan_khusus: '',
@@ -195,67 +198,44 @@ export default function RequestForm() {
     const [attempted, setAttempted] = useState(false);
     const dateScrollerRef = useRef<HTMLDivElement>(null);
 
-    /* ---------- logika jadwal ---------- */
-    const activeSchedules = schedules.filter((item) =>
-        item.child_schedules.some((slot) => slot.sisa_kuota > 0),
+    /* ---------- Schedule logic (Luring only) ---------- */
+    const activeSchedules = schedules.filter((s) =>
+        s.pelaksanaan === 'Luring' && s.child_schedules.some((slot) => slot.sisa_kuota > 0),
     );
-    const needsLocation =
-        data.pelaksanaan === 'Luring' || data.pelaksanaan === 'Hybrid';
 
-    const matchingSchedules = activeSchedules.filter((item) => {
-        if (item.pelaksanaan !== data.pelaksanaan) return false;
-        if (data.pelaksanaan === 'Daring')
-            return item.lokasi_konsultasi_id === null;
-        return (
-            String(item.lokasi_konsultasi_id ?? '') ===
-            data.lokasi_konsultasi_id
-        );
-    });
+    const matchingSchedules = activeSchedules.filter(
+        (s) => String(s.lokasi_konsultasi_id ?? '') === data.lokasi_konsultasi_id,
+    );
 
-    const dateCards = Array.from(
-        new Set(matchingSchedules.map((item) => item.tanggal)),
-    ).map((tanggal) => {
+    const dateCards = Array.from(new Set(matchingSchedules.map((s) => s.tanggal))).map((tanggal) => {
         const sisa = matchingSchedules
-            .filter((item) => item.tanggal === tanggal)
-            .reduce(
-                (sum, item) =>
-                    sum +
-                    item.child_schedules.reduce(
-                        (a, slot) => a + slot.sisa_kuota,
-                        0,
-                    ),
-                0,
-            );
+            .filter((s) => s.tanggal === tanggal)
+            .reduce((sum, s) => sum + s.child_schedules.reduce((a, slot) => a + slot.sisa_kuota, 0), 0);
         return { tanggal, sisa };
     });
 
     const matchedSchedule = matchingSchedules.find(
-        (item) => item.tanggal.slice(0, 10) === data.tanggal_konsultasi,
+        (s) => s.tanggal.slice(0, 10) === data.tanggal_konsultasi,
     );
     const timeSlots = matchedSchedule?.child_schedules ?? [];
 
-    /* ---------- validasi ---------- */
-    const required = (value: string | boolean | null) =>
+    /* ---------- Validation ---------- */
+    const required = (value: string | number | boolean | null | undefined) =>
         typeof value === 'boolean'
-            ? value
+            ? value ? undefined : 'Wajib disetujui.'
+            : typeof value === 'number'
                 ? undefined
-                : 'Wajib disetujui.'
-            : value?.trim()
-                ? undefined
-                : 'Wajib diisi.';
+                : value?.trim() ? undefined : 'Wajib diisi.';
 
     const requiredFields: Array<keyof typeof data> = [
         'nama_pemohon',
         'instansi',
         'kabupaten',
-        'provinsi',
         'nomor_telepon',
         'email',
         'tanda_tangan',
         'rencana_kegiatan',
-        ...(needsLocation
-            ? (['lokasi_konsultasi_id'] as Array<keyof typeof data>)
-            : []),
+        'lokasi_konsultasi_id',
         'tanggal_konsultasi',
         'child_schedule_id',
         'setuju_syarat_ketentuan',
@@ -264,26 +244,13 @@ export default function RequestForm() {
     const fieldError = (field: keyof typeof data) =>
         errors[field] || (attempted ? required(data[field]) : undefined);
 
-    const selectPelaksanaan = (mode: Schedule['pelaksanaan']) => {
-        setData('pelaksanaan', mode);
-        setData('tanggal_konsultasi', '');
-        setData('child_schedule_id', '');
-        if (mode === 'Daring') setData('lokasi_konsultasi_id', '');
-    };
-
     const scrollDates = (dir: number) =>
-        dateScrollerRef.current?.scrollBy({
-            left: dir * 260,
-            behavior: 'smooth',
-        });
+        dateScrollerRef.current?.scrollBy({ left: dir * 260, behavior: 'smooth' });
 
     const submit = (event: React.FormEvent) => {
         event.preventDefault();
         const hasMissing = requiredFields.some((f) => required(data[f]));
-        if (hasMissing) {
-            setAttempted(true);
-            return;
-        }
+        if (hasMissing) { setAttempted(true); return; }
         post('/request-form', {
             preserveScroll: true,
             forceFormData: true,
@@ -291,74 +258,49 @@ export default function RequestForm() {
                 reset();
                 setAttempted(false);
                 if (adminMode) return;
-                const documentUrl = (page.props.flash as PageProps['flash'])
-                    ?.document_url;
-
+                const documentUrl = (page.props.flash as PageProps['flash'])?.document_url;
                 if (documentUrl) {
                     swal({
                         title: 'Berhasil',
                         text: 'Permohonan konsultasi berhasil dikirim dan Surat Konfirmasi KKPRL berhasil dibuat dalam format PDF.',
                         icon: 'success',
-                        buttons: {
-                            cancel: 'Tutup',
-                            download: {
-                                text: 'Download PDF',
-                                value: 'download',
-                            },
-                        } as any,
-                    }).then((value) => {
-                        if (value === 'download') {
-                            window.location.href = documentUrl;
-                        }
-                    });
+                        buttons: { cancel: 'Tutup', download: { text: 'Download PDF', value: 'download' } } as any,
+                    }).then((value) => { if (value === 'download') window.location.href = documentUrl; });
                 } else {
-                    swal(
-                        'Berhasil',
-                        'Permohonan berhasil dikirim, tetapi link PDF belum tersedia.',
-                        'success',
-                    );
+                    swal('Berhasil', 'Permohonan berhasil dikirim, tetapi link PDF belum tersedia.', 'success');
                 }
             },
         });
     };
 
-    const quotaBadge = (sisa: number) => {
-        if (sisa === 0) return 'bg-red-50 text-red-600 border-red-200';
-        if (sisa <= 2) return 'bg-amber-50 text-amber-600 border-amber-200';
-        return 'bg-emerald-50 text-emerald-600 border-emerald-200';
-    };
-
-    const inputClass =
-        'h-11 rounded-lg border-slate-200 bg-white text-sm focus-visible:ring-blue-500/20';
-    const selectClass =
-        'h-11 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-700 outline-none transition-all focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400';
-
-    useEffect(() => {
-        fetch('/api/geolocation/districts')
-            .then((res) => res.json())
-            .then((data) => {
-                setKabupaten(data);
-            });
-    }, []);
+    const inputClass = 'h-10 rounded-xl border-slate-200 bg-slate-50/50 text-sm focus-visible:bg-white focus-visible:ring-2 focus-visible:ring-blue-500/20 focus-visible:border-blue-400 transition-all';
+    const textareaClass = 'min-h-28 resize-none rounded-xl border-slate-200 bg-slate-50/50 p-3 text-sm focus-visible:bg-white focus-visible:ring-2 focus-visible:ring-blue-500/20 focus-visible:border-blue-400 transition-all';
 
     return (
         <Layout pageTitle={adminMode ? 'Tambah Permohonan Konsultasi' : undefined}>
-            <div className="mx-auto w-full px-4 py-8">
-                {/* Header */}
-                <div className="mb-6 flex items-start justify-between gap-4">
-                    <div className="flex items-start gap-3">
+            <div className="mx-auto w-full max-w-4xl px-4 py-8">
+
+                {/* ===== Page header ===== */}
+                <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.35 }}
+                    className="mb-8 flex items-center justify-between gap-4 border-b border-slate-100 pb-6"
+                >
+                    <div className="flex items-center gap-3">
                         <Link
                             href={adminMode ? '/master/permohonan-konsultasi' : '/'}
-                            className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-colors hover:border-blue-200 hover:text-blue-700"
-                            aria-label="Kembali ke beranda"
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-500 shadow-xs transition-colors hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300"
+                            aria-label="Kembali"
                         >
                             <ArrowLeft className="h-4 w-4" />
                         </Link>
                         <div>
-                            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-                                {adminMode ? 'Tambah Permohonan Konsultasi' : 'Mulai Konsultasi'}
+                            <h1 className="text-xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
+                                {adminMode ? 'Tambah Permohonan' : 'Ajukan Konsultasi'}
+                                <Sparkles className="h-4 w-4 text-blue-500" />
                             </h1>
-                            <p className="mt-0.5 text-sm text-slate-500">
+                            <p className="text-xs text-slate-500">
                                 {adminMode
                                     ? 'Input permohonan langsung dari panel administrasi'
                                     : 'Konsultasikan rencana kegiatan pemanfaatan ruang laut Anda'}
@@ -371,12 +313,11 @@ export default function RequestForm() {
                             render={
                                 <Button
                                     variant="outline"
-                                    className="shrink-0 rounded-lg border-slate-200 text-slate-600 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                                    size="sm"
+                                    className="rounded-xl border-slate-200 text-xs text-slate-600 shadow-xs hover:border-blue-200 hover:bg-blue-50/50 hover:text-blue-600"
                                 >
-                                    <BookOpen className="h-4 w-4" />
-                                    <span className="hidden sm:inline">
-                                        Panduan Konsultasi
-                                    </span>
+                                    <BookOpen className="mr-1.5 h-3.5 w-3.5 text-blue-500" />
+                                    Panduan
                                 </Button>
                             }
                         />
@@ -384,590 +325,457 @@ export default function RequestForm() {
                             <DialogHeader>
                                 <DialogTitle>Panduan Konsultasi</DialogTitle>
                                 <DialogDescription>
-                                    Ikuti langkah berikut untuk mengajukan
-                                    permohonan konsultasi.
+                                    Ikuti langkah berikut untuk mengajukan permohonan konsultasi.
                                 </DialogDescription>
                             </DialogHeader>
                             <ol className="list-none space-y-3 text-sm text-slate-600">
                                 {GUIDE_ITEMS.map((item, index) => (
                                     <li key={item.title} className="flex gap-3">
-                                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-blue-100 bg-blue-50 text-xs font-bold text-blue-700">
+                                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-[10px] font-bold text-white shadow-xs">
                                             {index + 1}
                                         </span>
                                         <div>
-                                            <p className="font-semibold text-slate-800">
-                                                {item.title}
-                                            </p>
-                                            <p className="text-xs text-slate-500">
-                                                {item.desc}
-                                            </p>
+                                            <p className="font-medium text-slate-900">{item.title}</p>
+                                            <p className="text-xs text-slate-500">{item.desc}</p>
                                         </div>
                                     </li>
                                 ))}
                             </ol>
                         </DialogContent>
                     </Dialog>
-                </div>
+                </motion.div>
 
+                {/* Flash success */}
                 {flash?.success && (
-                    <div className="mb-6 flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="mb-6 flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50/50 px-4 py-3 text-sm text-emerald-800"
+                    >
                         <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
                         <span>{flash.success}</span>
-                    </div>
+                    </motion.div>
                 )}
 
-                {/* Kartu form */}
-                <form
-                    onSubmit={submit}
-                    className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"
-                >
-                    <div className="space-y-9 p-6 sm:p-8">
-                        {/* ============ 1. Data Pemohon ============ */}
-                        <section className="space-y-5">
-                            <SectionHeader
-                                icon={UserRound}
-                                title="Data Pemohon"
-                                subtitle="Identitas dan kontak yang dapat dihubungi"
-                            />
-                            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                                <div className="space-y-2">
-                                    <Label className="text-sm font-medium text-slate-700">
-                                        Nama Pemohon{' '}
-                                        <span className="text-red-500">*</span>
-                                    </Label>
-                                    <Input
-                                        id="nama_pemohon"
-                                        value={data.nama_pemohon}
-                                        onChange={(e) =>
-                                            setData(
-                                                'nama_pemohon',
-                                                e.target.value,
-                                            )
-                                        }
-                                        placeholder="Masukkan nama lengkap"
-                                        className={inputClass}
-                                    />
-                                    <FieldError
-                                        message={fieldError('nama_pemohon')}
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label className="text-sm font-medium text-slate-700">
-                                        Jabatan Pemohon
-                                    </Label>
-                                    <Input
-                                        id="jabatan_pemohon"
-                                        value={data.jabatan_pemohon}
-                                        onChange={(e) =>
-                                            setData(
-                                                'jabatan_pemohon',
-                                                e.target.value,
-                                            )
-                                        }
-                                        placeholder="Contoh: Manajer Operasional"
-                                        className={inputClass}
-                                    />
-                                </div>
-                                <div className="space-y-2 sm:col-span-2">
-                                    <Label className="text-sm font-medium text-slate-700">
-                                        Instansi / Perusahaan{' '}
-                                        <span className="text-red-500">*</span>
-                                    </Label>
-                                    <Input
-                                        id="instansi"
-                                        value={data.instansi}
-                                        onChange={(e) =>
-                                            setData('instansi', e.target.value)
-                                        }
-                                        placeholder="Nama instansi atau perusahaan"
-                                        className={inputClass}
-                                    />
-                                    <FieldError
-                                        message={fieldError('instansi')}
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label className="text-sm font-medium text-slate-700">
-                                        Provinsi{' '}
-                                        <span className="text-red-500">*</span>
-                                    </Label>
-                                    <ComboboxSearch
-                                        value={data.provinsi}
-                                        onChange={(val) =>
-                                            setData('provinsi', val)
-                                        }
-                                        fetchUrl="/api/geolocation/provinces"
-                                        labelKey="name"
-                                        valueKey="id"
-                                        placeholder="Pilih provinsi"
-                                    />
-                                    <FieldError
-                                        message={fieldError('provinsi')}
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label className="text-sm font-medium text-slate-700">
-                                        Kabupaten / Kota{' '}
-                                        <span className="text-red-500">*</span>
-                                    </Label>
-                                    <ComboboxSearch
-                                        value={data.kabupaten}
-                                        onChange={(val) =>
-                                            setData('kabupaten', val)
-                                        }
-                                        fetchUrl={`/api/geolocation/regencies?province_id=${data.provinsi}`}
-                                        labelKey="name"
-                                        valueKey="id"
-                                        placeholder="Pilih kabupaten/kota"
-                                    />
-                                    <FieldError
-                                        message={fieldError('kabupaten')}
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label className="text-sm font-medium text-slate-700">
-                                        No. WhatsApp{' '}
-                                        <span className="text-red-500">*</span>
-                                    </Label>
-                                    <Input
-                                        id="nomor_telepon"
-                                        value={data.nomor_telepon}
-                                        onChange={(e) =>
-                                            setData(
-                                                'nomor_telepon',
-                                                e.target.value,
-                                            )
-                                        }
-                                        placeholder="Contoh: 081234567890"
-                                        className={inputClass}
-                                    />
-                                    <FieldError
-                                        message={fieldError('nomor_telepon')}
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label className="text-sm font-medium text-slate-700">
-                                        Alamat Email{' '}
-                                        <span className="text-red-500">*</span>
-                                    </Label>
-                                    <Input
-                                        id="email"
-                                        type="email"
-                                        value={data.email}
-                                        onChange={(e) =>
-                                            setData('email', e.target.value)
-                                        }
-                                        placeholder="email@perusahaan.com"
-                                        className={inputClass}
-                                    />
-                                    <FieldError message={fieldError('email')} />
-                                </div>
-                                <div className="pt-2 sm:col-span-2">
-                                    <SignaturePad
-                                        value={data.tanda_tangan}
-                                        onChange={(val) =>
-                                            setData('tanda_tangan', val)
-                                        }
-                                        error={fieldError('tanda_tangan')}
-                                    />
-                                </div>
-                            </div>
-                        </section>
+                {/* ===== Form ===== */}
+                <form onSubmit={submit} className="space-y-8">
 
-                        {/* ============ 2. Detail Kegiatan ============ */}
-                        <section className="space-y-5 border-t border-slate-100 pt-8">
-                            <SectionHeader
-                                icon={FileText}
-                                title="Detail Kegiatan"
-                                subtitle="Rencana kegiatan yang akan dikonsultasikan"
-                            />
-                            <div className="space-y-2">
-                                <Label className="text-sm font-medium text-slate-700">
-                                    Rencana Kegiatan{' '}
-                                    <span className="text-red-500">*</span>
+                    {/* ============ 1. Data Pemohon ============ */}
+                    <motion.div
+                        custom={0}
+                        variants={sectionVariants}
+                        initial="hidden"
+                        animate="visible"
+                        className="space-y-4"
+                    >
+                        <div className="border-b border-slate-100 pb-3">
+                            <MinimalSectionHeader icon={UserRound} title="1. Data Pemohon" subtitle="Identitas dan kontak pemohon" />
+                        </div>
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                            <div className="space-y-1.5">
+                                <Label className="text-xs font-medium text-slate-700">
+                                    Nama Pemohon <span className="text-red-500">*</span>
+                                </Label>
+                                <Input
+                                    value={data.nama_pemohon}
+                                    onChange={(e) => setData('nama_pemohon', e.target.value)}
+                                    placeholder="Nama lengkap"
+                                    className={inputClass}
+                                />
+                                <FieldError message={fieldError('nama_pemohon')} />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-xs font-medium text-slate-700">Jabatan Pemohon</Label>
+                                <Input
+                                    value={data.jabatan_pemohon}
+                                    onChange={(e) => setData('jabatan_pemohon', e.target.value)}
+                                    placeholder="Contoh: Manajer Operasional"
+                                    className={inputClass}
+                                />
+                            </div>
+                            <div className="space-y-1.5 sm:col-span-2">
+                                <Label className="text-xs font-medium text-slate-700">
+                                    Instansi / Perusahaan <span className="text-red-500">*</span>
+                                </Label>
+                                <Input
+                                    value={data.instansi}
+                                    onChange={(e) => setData('instansi', e.target.value)}
+                                    placeholder="Nama instansi atau perusahaan"
+                                    className={inputClass}
+                                />
+                                <FieldError message={fieldError('instansi')} />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-xs font-medium text-slate-700">
+                                    Kabupaten / Kota <span className="text-red-500">*</span>
+                                </Label>
+                                <ComboboxSearch
+                                    value={data.kabupaten}
+                                    onChange={(val) => setData('kabupaten', val)}
+                                    fetchUrl="/api/geolocation/regencies?province_id=73"
+                                    labelKey="name"
+                                    valueKey="id"
+                                    placeholder="Pilih kabupaten/kota"
+                                    className="h-10 rounded-xl border-slate-200 bg-slate-50/50 text-sm focus-visible:bg-white focus-visible:ring-2 focus-visible:ring-blue-500/20 focus-visible:border-blue-400"
+                                />
+                                <FieldError message={fieldError('kabupaten')} />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-xs font-medium text-slate-700">
+                                    No. WhatsApp <span className="text-red-500">*</span>
+                                </Label>
+                                <Input
+                                    value={data.nomor_telepon}
+                                    onChange={(e) => setData('nomor_telepon', e.target.value)}
+                                    placeholder="081234567890"
+                                    className={inputClass}
+                                />
+                                <FieldError message={fieldError('nomor_telepon')} />
+                            </div>
+                            <div className="space-y-1.5 sm:col-span-2">
+                                <Label className="text-xs font-medium text-slate-700">
+                                    Alamat Email <span className="text-red-500">*</span>
+                                </Label>
+                                <Input
+                                    type="email"
+                                    value={data.email}
+                                    onChange={(e) => setData('email', e.target.value)}
+                                    placeholder="email@perusahaan.com"
+                                    className={inputClass}
+                                />
+                                <FieldError message={fieldError('email')} />
+                            </div>
+                            <div className="sm:col-span-2">
+                                <SignaturePad
+                                    value={data.tanda_tangan}
+                                    onChange={(val) => setData('tanda_tangan', val)}
+                                    error={fieldError('tanda_tangan')}
+                                />
+                            </div>
+                        </div>
+                    </motion.div>
+
+                    {/* ============ 2. Detail Kegiatan ============ */}
+                    <motion.div
+                        custom={1}
+                        variants={sectionVariants}
+                        initial="hidden"
+                        animate="visible"
+                        className="space-y-4"
+                    >
+                        <div className="border-b border-slate-100 pb-3">
+                            <MinimalSectionHeader icon={FileText} title="2. Detail Kegiatan" subtitle="Rencana kegiatan yang dikonsultasikan" />
+                        </div>
+                        <div className="space-y-4">
+                            <div className="space-y-1.5">
+                                <Label className="text-xs font-medium text-slate-700">
+                                    Rencana Kegiatan <span className="text-red-500">*</span>
                                 </Label>
                                 <Textarea
-                                    id="rencana_kegiatan"
                                     value={data.rencana_kegiatan}
-                                    onChange={(e) =>
-                                        setData(
-                                            'rencana_kegiatan',
-                                            e.target.value,
-                                        )
-                                    }
+                                    onChange={(e) => setData('rencana_kegiatan', e.target.value)}
                                     placeholder="Jelaskan rencana kegiatan yang akan dikonsultasikan"
-                                    className="min-h-36 resize-none rounded-lg border-slate-200 bg-white p-3.5 text-sm focus-visible:ring-blue-500/20"
+                                    className={textareaClass}
                                 />
-                                <FieldError
-                                    message={fieldError('rencana_kegiatan')}
-                                />
+                                <FieldError message={fieldError('rencana_kegiatan')} />
                             </div>
-                            <div className="space-y-2">
-                                <Label className="text-sm font-medium text-slate-700">
-                                    Permintaan Khusus{' '}
-                                    <span className="font-normal text-slate-400">
-                                        (opsional)
-                                    </span>
+                            <div className="space-y-1.5">
+                                <Label className="text-xs font-medium text-slate-700">
+                                    Permintaan Khusus <span className="font-normal text-slate-400">(opsional)</span>
                                 </Label>
                                 <Textarea
-                                    id="permintaan_khusus"
                                     value={data.permintaan_khusus}
-                                    onChange={(e) =>
-                                        setData(
-                                            'permintaan_khusus',
-                                            e.target.value,
-                                        )
-                                    }
+                                    onChange={(e) => setData('permintaan_khusus', e.target.value)}
                                     placeholder="Tambahkan kebutuhan atau catatan khusus"
-                                    className="min-h-24 resize-none rounded-lg border-slate-200 bg-white p-3.5 text-sm focus-visible:ring-blue-500/20"
+                                    className="min-h-20 resize-none rounded-xl border-slate-200 bg-slate-50/50 p-3 text-sm focus-visible:bg-white focus-visible:ring-2 focus-visible:ring-blue-500/20 focus-visible:border-blue-400 transition-all"
                                 />
                             </div>
-                        </section>
-
-                        {/* ============ 3. Jadwal Konsultasi ============ */}
-                        <section className="space-y-6 border-t border-slate-100 pt-8">
-                            <SectionHeader
-                                icon={CalendarDays}
-                                title="Jadwal Konsultasi"
-                                subtitle="Pilih metode, tanggal, dan waktu sesuai ketersediaan kuota"
-                            />
-
-                            {/* Metode */}
-                            <div className="space-y-2.5">
-                                <Label className="text-sm font-medium text-slate-700">
-                                    Pilih Metode Konsultasi
+                            <div className="space-y-1.5">
+                                <Label className="text-xs font-medium text-slate-700">
+                                    Unggah Bahan Konsultasi
                                 </Label>
-                                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                                    {METODE_OPTIONS.map((mode) => {
-                                        const ModeIcon = mode.icon;
-                                        const active =
-                                            data.pelaksanaan === mode.value;
-                                        return (
-                                            <button
-                                                key={mode.value}
-                                                type="button"
-                                                onClick={() =>
-                                                    selectPelaksanaan(
-                                                        mode.value,
-                                                    )
-                                                }
-                                                className={`relative cursor-pointer rounded-xl border p-4 text-left transition-all ${active
-                                                    ? 'border-blue-600 bg-blue-50/50 ring-1 ring-blue-600/30'
-                                                    : 'border-slate-200 bg-white hover:border-blue-300 hover:bg-blue-50/30'
-                                                    }`}
-                                            >
-                                                {active && (
-                                                    <span className="absolute top-3 right-3 flex h-5 w-5 items-center justify-center rounded-full bg-blue-600">
-                                                        <Check className="h-3 w-3 text-white" />
-                                                    </span>
-                                                )}
-                                                <ModeIcon
-                                                    className={`h-5 w-5 ${active ? 'text-blue-600' : 'text-slate-400'}`}
-                                                />
-                                                <p className="mt-2.5 text-sm font-semibold text-slate-800">
-                                                    {mode.title}
-                                                </p>
-                                                <p className="mt-1 text-xs leading-relaxed text-slate-500">
-                                                    {mode.desc}
-                                                </p>
-                                            </button>
-                                        );
-                                    })}
-                                </div>
+                                <FileUpload
+                                    label="Bahan Konsultasi"
+                                    name="bahan_konsultasi"
+                                    multiple
+                                    max={5}
+                                    files={(data.bahan_konsultasi as unknown as File[]) ?? []}
+                                    onChange={(files: File[]) => setData('bahan_konsultasi', files as any)}
+                                />
+                            </div>
+                        </div>
+                    </motion.div>
+
+                    {/* ============ 3. Jadwal Konsultasi ============ */}
+                    <motion.div
+                        custom={2}
+                        variants={sectionVariants}
+                        initial="hidden"
+                        animate="visible"
+                        className="space-y-4"
+                    >
+                        <div className="border-b border-slate-100 pb-3">
+                            <MinimalSectionHeader icon={CalendarDays} title="3. Jadwal Konsultasi" subtitle="Lokasi, tanggal, dan waktu" />
+                        </div>
+                        <div className="space-y-4">
+
+                            {/* --- Lokasi --- */}
+                            <div className="space-y-1.5">
+                                <Label className="text-xs font-medium text-slate-700 flex items-center gap-1.5">
+                                    <MapPin className="h-3.5 w-3.5 text-blue-500" />
+                                    Lokasi Konsultasi <span className="text-red-500">*</span>
+                                </Label>
+                                <ComboboxSearch
+                                    value={data.lokasi_konsultasi_id}
+                                    onChange={(val) => {
+                                        setData('lokasi_konsultasi_id', val);
+                                        setData('tanggal_konsultasi', '');
+                                        setData('child_schedule_id', '');
+                                    }}
+                                    staticOptions={locations}
+                                    labelKey="nama_lokasi"
+                                    valueKey="id"
+                                    placeholder="Pilih lokasi konsultasi..."
+                                    className="h-10 rounded-xl border-slate-200 bg-slate-50/50 text-sm focus-visible:bg-white focus-visible:ring-2 focus-visible:ring-blue-500/20 focus-visible:border-blue-400"
+                                />
+                                <FieldError message={fieldError('lokasi_konsultasi_id')} />
                             </div>
 
-                            {/* Lokasi */}
-                            {needsLocation && (
-                                <div className="space-y-2">
-                                    <Label className="text-sm font-medium text-slate-700">
-                                        Lokasi Konsultasi{' '}
-                                        <span className="text-red-500">*</span>
-                                    </Label>
-                                    <select
-                                        value={data.lokasi_konsultasi_id}
-                                        onChange={(e) => {
-                                            setData(
-                                                'lokasi_konsultasi_id',
-                                                e.target.value,
-                                            );
-                                            setData('tanggal_konsultasi', '');
-                                            setData('child_schedule_id', '');
-                                        }}
-                                        className={selectClass}
-                                    >
-                                        <option value="">
-                                            Pilih lokasi konsultasi
-                                        </option>
-                                        {locations.map((location) => (
-                                            <option
-                                                key={location.id}
-                                                value={location.id}
-                                            >
-                                                {location.nama_lokasi}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    <FieldError
-                                        message={fieldError(
-                                            'lokasi_konsultasi_id',
-                                        )}
-                                    />
-                                </div>
-                            )}
-
-                            {/* Tanggal */}
-                            <div className="space-y-2.5">
-                                <Label className="text-sm font-medium text-slate-700">
-                                    Pilih Tanggal{' '}
-                                    <span className="text-red-500">*</span>
+                            {/* --- Tanggal --- */}
+                            <div className="space-y-1.5">
+                                <Label className="text-xs font-medium text-slate-700 flex items-center gap-1.5">
+                                    <CalendarDays className="h-3.5 w-3.5 text-blue-500" />
+                                    Pilih Tanggal <span className="text-red-500">*</span>
                                 </Label>
-                                <div className="flex items-center gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => scrollDates(-1)}
-                                        className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-800"
-                                        aria-label="Geser kiri"
+
+                                {!data.lokasi_konsultasi_id ? (
+                                    <motion.p
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        className="text-xs text-slate-400 py-2"
                                     >
-                                        <ChevronLeft className="h-4 w-4" />
-                                    </button>
-                                    <div
-                                        ref={dateScrollerRef}
-                                        className="flex flex-1 gap-3 overflow-x-auto py-1"
+                                        Pilih lokasi terlebih dahulu.
+                                    </motion.p>
+                                ) : dateCards.length === 0 ? (
+                                    <motion.p
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        className="text-xs text-slate-400 py-2"
                                     >
-                                        {dateCards.length > 0 ? (
-                                            dateCards.map((card) => {
-                                                const active =
-                                                    data.tanggal_konsultasi ===
-                                                    card.tanggal;
-                                                const dateObj = new Date(
-                                                    card.tanggal,
-                                                );
-                                                return (
-                                                    <button
-                                                        key={card.tanggal}
-                                                        type="button"
-                                                        onClick={() => {
-                                                            setData(
-                                                                'tanggal_konsultasi',
-                                                                card.tanggal,
-                                                            );
-                                                            setData(
-                                                                'child_schedule_id',
-                                                                '',
-                                                            );
-                                                        }}
-                                                        className={`min-w-28 cursor-pointer rounded-xl border px-3 py-3 text-center transition-all ${active
-                                                            ? 'border-blue-600 bg-blue-50/50 ring-1 ring-blue-600/30'
-                                                            : 'border-slate-200 bg-white hover:border-blue-300'
+                                        Tidak ada jadwal tersedia untuk lokasi ini.
+                                    </motion.p>
+                                ) : (
+                                    <div className="flex items-center gap-2">
+                                        <motion.button
+                                            whileHover={{ scale: 1.05 }}
+                                            whileTap={{ scale: 0.9 }}
+                                            type="button"
+                                            onClick={() => scrollDates(-1)}
+                                            className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-xs transition-colors hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300"
+                                            aria-label="Geser kiri"
+                                        >
+                                            <ChevronLeft className="h-4 w-4" />
+                                        </motion.button>
+
+                                        <motion.div
+                                            ref={dateScrollerRef}
+                                            className="flex flex-1 overflow-hidden py-1.5 scrollbar-hide cursor-grab active:cursor-grabbing"
+                                        >
+                                            <motion.div
+                                                drag="x"
+                                                dragConstraints={dateScrollerRef}
+                                                dragElastic={0.1}
+                                                dragTransition={{ bounceStiffness: 600, bounceDamping: 30 }}
+                                                variants={containerVariants}
+                                                initial="hidden"
+                                                animate="visible"
+                                                className="flex gap-2.5"
+                                            >
+                                                {dateCards.map((card) => {
+                                                    const active = data.tanggal_konsultasi === card.tanggal;
+                                                    const dateObj = new Date(card.tanggal);
+                                                    return (
+                                                        <motion.button
+                                                            key={card.tanggal}
+                                                            variants={itemVariants}
+                                                            type="button"
+                                                            whileHover={{ y: -2, scale: 1.02 }}
+                                                            whileTap={{ scale: 0.96 }}
+                                                            onClick={() => {
+                                                                setData('tanggal_konsultasi', card.tanggal);
+                                                                setData('child_schedule_id', '');
+                                                            }}
+                                                            className={`relative min-w-[5.25rem] cursor-pointer rounded-xl border px-2.5 py-2.5 text-center transition-colors duration-200 ${
+                                                                active
+                                                                    ? 'border-transparent text-white'
+                                                                    : 'border-slate-200/80 bg-slate-50/50 hover:border-blue-300/80 hover:bg-blue-50/20'
                                                             }`}
-                                                    >
-                                                        <p className="text-[11px] text-slate-400 capitalize">
-                                                            {dateObj.toLocaleDateString(
-                                                                'id-ID',
-                                                                {
-                                                                    weekday:
-                                                                        'long',
-                                                                },
-                                                            )}
-                                                        </p>
-                                                        <p className="mt-0.5 text-sm font-bold text-slate-900">
-                                                            {dateObj.toLocaleDateString(
-                                                                'id-ID',
-                                                                {
-                                                                    day: '2-digit',
-                                                                    month: 'short',
-                                                                },
-                                                            )}
-                                                        </p>
-                                                        <p className="text-[11px] text-slate-400">
-                                                            {dateObj.toLocaleDateString(
-                                                                'id-ID',
-                                                                {
-                                                                    year: 'numeric',
-                                                                },
-                                                            )}
-                                                        </p>
-                                                        <span
-                                                            className={`mt-2 inline-block rounded-full border px-2 py-0.5 text-[10px] font-semibold ${quotaBadge(card.sisa)}`}
                                                         >
-                                                            {card.sisa === 0
-                                                                ? 'Penuh'
-                                                                : `Sisa ${card.sisa}`}
-                                                        </span>
-                                                    </button>
-                                                );
-                                            })
-                                        ) : (
-                                            <p className="py-2 text-sm text-slate-500">
-                                                Tidak ada jadwal tersedia untuk
-                                                pilihan ini.
-                                            </p>
-                                        )}
+                                                            {/* Smooth active background pill animation */}
+                                                            {active && (
+                                                                <motion.div
+                                                                    layoutId="activeDatePill"
+                                                                    transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                                                                    className="absolute inset-0 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 shadow-md shadow-blue-500/25"
+                                                                />
+                                                            )}
+
+                                                            <div className="relative z-10">
+                                                                <p className={`text-[10px] font-medium capitalize transition-colors ${active ? 'text-blue-100' : 'text-slate-400'}`}>
+                                                                    {dateObj.toLocaleDateString('id-ID', { weekday: 'short' })}
+                                                                </p>
+                                                                <p className={`text-base font-bold leading-none my-1 transition-colors ${active ? 'text-white' : 'text-slate-900'}`}>
+                                                                    {dateObj.toLocaleDateString('id-ID', { day: '2-digit' })}
+                                                                </p>
+                                                                <p className={`text-[10px] font-medium transition-colors ${active ? 'text-blue-100' : 'text-slate-400'}`}>
+                                                                    {dateObj.toLocaleDateString('id-ID', { month: 'short' })}
+                                                                </p>
+                                                            </div>
+                                                        </motion.button>
+                                                    );
+                                                })}
+                                            </motion.div>
+                                        </motion.div>
+
+                                        <motion.button
+                                            whileHover={{ scale: 1.05 }}
+                                            whileTap={{ scale: 0.9 }}
+                                            type="button"
+                                            onClick={() => scrollDates(1)}
+                                            className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-xs transition-colors hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300"
+                                            aria-label="Geser kanan"
+                                        >
+                                            <ChevronRight className="h-4 w-4" />
+                                        </motion.button>
                                     </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => scrollDates(1)}
-                                        className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-800"
-                                        aria-label="Geser kanan"
-                                    >
-                                        <ChevronRight className="h-4 w-4" />
-                                    </button>
-                                </div>
-                                <FieldError
-                                    message={fieldError('tanggal_konsultasi')}
-                                />
+                                )}
+                                <FieldError message={fieldError('tanggal_konsultasi')} />
                             </div>
 
-                            {/* Waktu */}
-                            <div className="space-y-2.5">
-                                <Label className="text-sm font-medium text-slate-700">
-                                    Pilih Waktu Konsultasi{' '}
-                                    <span className="text-red-500">*</span>
+                            {/* --- Waktu --- */}
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <Label className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
+                                        <Clock className="h-3.5 w-3.5 text-blue-500" />
+                                        Pilih Waktu <span className="text-red-500">*</span>
+                                    </Label>
                                     {data.tanggal_konsultasi && (
-                                        <span className="font-normal text-slate-400">
-                                            {' '}
-                                            —{' '}
-                                            {formatTanggal(
-                                                data.tanggal_konsultasi,
-                                            )}
+                                        <span className="text-[11px] font-medium text-slate-500 bg-slate-100/80 px-2 py-0.5 rounded-md">
+                                            {formatTanggal(data.tanggal_konsultasi)}
                                         </span>
                                     )}
-                                </Label>
-                                {data.tanggal_konsultasi ? (
-                                    <>
-                                        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                                </div>
+
+                                <AnimatePresence mode="wait">
+                                    {!data.tanggal_konsultasi ? (
+                                        <motion.div
+                                            key="no-date"
+                                            initial={{ opacity: 0 }}
+                                            animate={{ opacity: 1 }}
+                                            exit={{ opacity: 0 }}
+                                            className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-3.5 text-center"
+                                        >
+                                            <p className="text-xs text-slate-400">Pilih tanggal terlebih dahulu untuk melihat jam konsultasi.</p>
+                                        </motion.div>
+                                    ) : (
+                                        <motion.div
+                                            key={data.tanggal_konsultasi}
+                                            variants={containerVariants}
+                                            initial="hidden"
+                                            animate="visible"
+                                            className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4"
+                                        >
                                             {timeSlots.map((slot) => {
-                                                const active =
-                                                    data.child_schedule_id ===
-                                                    String(slot.id);
-                                                const full =
-                                                    slot.sisa_kuota === 0;
+                                                const active = data.child_schedule_id === String(slot.id);
+                                                const full = slot.sisa_kuota === 0;
                                                 return (
-                                                    <button
+                                                    <motion.button
                                                         key={slot.id}
+                                                        variants={itemVariants}
                                                         type="button"
                                                         disabled={full}
-                                                        onClick={() =>
-                                                            setData(
-                                                                'child_schedule_id',
-                                                                String(slot.id),
-                                                            )
-                                                        }
-                                                        className={`relative rounded-xl border px-3 py-3 text-center transition-all ${full
-                                                            ? 'cursor-not-allowed border-slate-100 bg-slate-50 opacity-70'
-                                                            : active
-                                                                ? 'cursor-pointer border-blue-600 bg-blue-50/50 ring-1 ring-blue-600/30'
-                                                                : 'cursor-pointer border-slate-200 bg-white hover:border-blue-300'
-                                                            }`}
+                                                        whileHover={full ? {} : { scale: 1.02 }}
+                                                        whileTap={full ? {} : { scale: 0.98 }}
+                                                        onClick={() => setData('child_schedule_id', String(slot.id))}
+                                                        className={`group relative rounded-xl border px-3.5 py-3 text-center transition-colors duration-200 ${
+                                                            full
+                                                                ? 'cursor-not-allowed border-slate-100 bg-slate-50 opacity-40'
+                                                                : active
+                                                                    ? 'border-blue-600/20 bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20'
+                                                                    : 'cursor-pointer border-slate-200/80 bg-white hover:border-blue-400/60 hover:bg-blue-50/30 hover:shadow-xs'
+                                                        }`}
                                                     >
-                                                        {active && (
-                                                            <span className="absolute top-2 right-2 flex h-5 w-5 items-center justify-center rounded-full bg-blue-600">
-                                                                <Check className="h-3 w-3 text-white" />
-                                                            </span>
-                                                        )}
-                                                        <p className="text-sm font-semibold text-slate-800">
+                                                        <p className={`text-sm font-bold tracking-tight ${active ? 'text-white' : full ? 'text-slate-400' : 'text-slate-800'}`}>
                                                             {slot.waktu}
                                                         </p>
-                                                        <p
-                                                            className={`mt-1 text-xs font-medium ${full ? 'text-red-500' : slot.sisa_kuota <= 2 ? 'text-amber-600' : 'text-emerald-600'}`}
-                                                        >
-                                                            {full
-                                                                ? 'Penuh'
-                                                                : `Sisa Kuota: ${slot.sisa_kuota}`}
-                                                        </p>
-                                                    </button>
+                                                        <div className="mt-1 flex items-center justify-center gap-1.5">
+                                                            <span className={`h-1.5 w-1.5 rounded-full ${
+                                                                full ? 'bg-red-400' : active ? 'bg-emerald-300' : 'bg-emerald-500'
+                                                            }`} />
+                                                            <span className={`text-[11px] font-medium ${
+                                                                active
+                                                                    ? 'text-blue-100'
+                                                                    : full ? 'text-red-500' : 'text-slate-500'
+                                                            }`}>
+                                                                {full ? 'Penuh' : `Sisa ${slot.sisa_kuota}`}
+                                                            </span>
+                                                        </div>
+                                                    </motion.button>
                                                 );
                                             })}
-                                        </div>
-                                        <div className="flex flex-wrap items-center gap-4 rounded-lg border border-slate-100 bg-slate-50 px-3.5 py-2.5">
-                                            <span className="flex items-center gap-1.5 text-[11px] text-slate-500">
-                                                <span className="h-2 w-2 rounded-full bg-emerald-500" />{' '}
-                                                Banyak tersedia (≥3)
-                                            </span>
-                                            <span className="flex items-center gap-1.5 text-[11px] text-slate-500">
-                                                <span className="h-2 w-2 rounded-full bg-amber-500" />{' '}
-                                                Sisa sedikit (1–2)
-                                            </span>
-                                            <span className="flex items-center gap-1.5 text-[11px] text-slate-500">
-                                                <span className="h-2 w-2 rounded-full bg-red-500" />{' '}
-                                                Penuh (0)
-                                            </span>
-                                        </div>
-                                    </>
-                                ) : (
-                                    <p className="text-sm text-slate-500">
-                                        Pilih tanggal terlebih dahulu.
-                                    </p>
-                                )}
-                                <FieldError
-                                    message={fieldError('child_schedule_id')}
-                                />
-                            </div>
-                        </section>
-
-                        <section className="space-y-5 border-t border-slate-100 pt-8">
-                            <Label className="text-sm font-medium text-slate-700">
-                                Unggah Bahan Konsultasi{' '}
-                                <span className="text-red-500">*</span>
-                            </Label>
-                            <FileUpload label="Bahan Konsultasi"
-                                name="bahan_konsultasi"
-                                multiple
-                                max={5}
-                                files={(data.bahan_konsultasi as unknown as File[]) ?? []}
-                                onChange={(files: File[]) => setData('bahan_konsultasi', files as any)} />
-                        </section>
-
-                        {/* ============ Persetujuan ============ */}
-                        <section className="space-y-5 border-t border-slate-100 pt-8">
-                            <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4">
-                                <div className="flex items-start gap-3">
-                                    <Checkbox
-                                        id="setuju_syarat_ketentuan"
-                                        checked={data.setuju_syarat_ketentuan}
-                                        onCheckedChange={(checked) =>
-                                            setData(
-                                                'setuju_syarat_ketentuan',
-                                                checked === true,
-                                            )
-                                        }
-                                        className="mt-0.5 border-slate-300 data-[state=checked]:border-blue-600 data-[state=checked]:bg-blue-600"
-                                    />
-                                    <Label
-                                        htmlFor="setuju_syarat_ketentuan"
-                                        className="cursor-pointer text-sm leading-relaxed font-normal text-slate-600"
-                                    >
-                                        Saya menyetujui syarat dan ketentuan
-                                        pengajuan konsultasi yang berlaku di
-                                        BPRL Makassar.
-                                    </Label>
-                                </div>
-                                <FieldError
-                                    message={fieldError(
-                                        'setuju_syarat_ketentuan',
+                                        </motion.div>
                                     )}
-                                />
+                                </AnimatePresence>
+                                <FieldError message={fieldError('child_schedule_id')} />
                             </div>
+                        </div>
+                    </motion.div>
 
+                    {/* ============ Persetujuan + Submit ============ */}
+                    <motion.div
+                        custom={3}
+                        variants={sectionVariants}
+                        initial="hidden"
+                        animate="visible"
+                        className="space-y-4 border-t border-slate-100 pt-6"
+                    >
+                        <div className="flex items-start gap-2.5">
+                            <Checkbox
+                                id="setuju_syarat_ketentuan"
+                                checked={data.setuju_syarat_ketentuan}
+                                onCheckedChange={(checked) => setData('setuju_syarat_ketentuan', checked === true)}
+                                className="mt-0.5 border-slate-300 data-[state=checked]:border-blue-600 data-[state=checked]:bg-blue-600"
+                            />
+                            <Label
+                                htmlFor="setuju_syarat_ketentuan"
+                                className="cursor-pointer text-xs font-normal leading-relaxed text-slate-600"
+                            >
+                                Saya menyetujui syarat dan ketentuan pengajuan konsultasi yang berlaku di BPRL Makassar.
+                            </Label>
+                        </div>
+                        <FieldError message={fieldError('setuju_syarat_ketentuan')} />
+
+                        <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
                             <Button
                                 type="submit"
                                 disabled={processing}
-                                className="group h-12 w-full rounded-xl bg-linear-to-r from-blue-600 to-indigo-600 font-semibold text-white shadow-lg shadow-blue-600/25 transition-all hover:from-blue-700 hover:to-indigo-700 hover:shadow-blue-600/35 disabled:opacity-70"
+                                className="h-11 w-full rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-xs font-semibold text-white shadow-lg shadow-blue-500/25 transition-all hover:shadow-blue-500/35 hover:brightness-105 disabled:opacity-50"
                             >
                                 {processing ? (
                                     <span className="flex items-center gap-2">
-                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
                                         Mengirim...
                                     </span>
                                 ) : (
-                                    <>
+                                    <span className="flex items-center gap-2">
                                         Kirim Permohonan
-                                        <Send className="h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-                                    </>
+                                        <Send className="h-3.5 w-3.5" />
+                                    </span>
                                 )}
                             </Button>
-                        </section>
-                    </div>
+                        </motion.div>
+                    </motion.div>
+
                 </form>
             </div>
         </Layout>

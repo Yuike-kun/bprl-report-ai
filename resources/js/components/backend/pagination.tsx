@@ -24,31 +24,22 @@ export function Pagination({ links, currentPage, lastPage, onNavigate, className
             </p>
             <div className="flex items-center gap-1">
                 {links.map((link, index) => {
-                    if (link.label.includes("Previous")) {
+                    const isFirst = index === 0;
+                    const isLast = index === links.length - 1;
+
+                    if (isFirst) {
                         return (
-                            <Button
-                                key={index}
-                                variant="outline"
-                                size="icon"
-                                className="h-8 w-8 rounded-lg"
-                                disabled={!link.url}
-                                onClick={() => link.url && onNavigate(link.url)}
-                            >
+                            <Button key={index} variant="outline" size="icon" className="h-8 w-8 rounded-lg"
+                                disabled={!link.url} onClick={() => link.url && onNavigate(link.url)}>
                                 <ChevronLeft className="w-4 h-4" />
                             </Button>
                         );
                     }
 
-                    if (link.label.includes("Next")) {
+                    if (isLast) {
                         return (
-                            <Button
-                                key={index}
-                                variant="outline"
-                                size="icon"
-                                className="h-8 w-8 rounded-lg"
-                                disabled={!link.url}
-                                onClick={() => link.url && onNavigate(link.url)}
-                            >
+                            <Button key={index} variant="outline" size="icon" className="h-8 w-8 rounded-lg"
+                                disabled={!link.url} onClick={() => link.url && onNavigate(link.url)}>
                                 <ChevronRight className="w-4 h-4" />
                             </Button>
                         );

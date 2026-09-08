@@ -1,7 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef } from 'react';
 import {
     ArrowRight,
-    ShieldCheck,
     Zap,
     UserRound,
     ClipboardCheck,
@@ -11,6 +10,7 @@ import {
     MapPin,
 } from 'lucide-react';
 import { Link } from '@inertiajs/react';
+import { motion, useScroll, useTransform } from 'framer-motion';
 import logo from '/public/egerai-logo.png';
 import heroIllustration from '/public/hero-illustration.png';
 import HomeLayout from './layout';
@@ -69,54 +69,81 @@ const services = [
     },
 ];
 
-function Reveal({
-    children,
-    className = '',
-}: {
-    children: React.ReactNode;
-    className?: string;
-}) {
-    const ref = useRef<HTMLDivElement>(null);
-    const [visible, setVisible] = useState(false);
+/* ------------------------------------------------------------------ */
+/*  Animation Variants                                                  */
+/* ------------------------------------------------------------------ */
+const heroContainerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: {
+            staggerChildren: 0.12,
+            delayChildren: 0.1,
+        },
+    },
+};
 
-    useEffect(() => {
-        const el = ref.current;
-        if (!el) return;
-        const obs = new IntersectionObserver(
-            ([entry]) => {
-                if (entry.isIntersecting) {
-                    setVisible(true);
-                    obs.disconnect();
-                }
-            },
-            { threshold: 0.1 },
-        );
-        obs.observe(el);
-        return () => obs.disconnect();
-    }, []);
+const heroChildVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+        opacity: 1,
+        y: 0,
+        transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] as const },
+    },
+};
 
-    return (
-        <div
-            ref={ref}
-            className={`mx-6 transition-all duration-700 ease-out motion-reduce:transition-none sm:mx-10 lg:mx-24 ${
-                visible
-                    ? 'translate-y-0 opacity-100'
-                    : 'translate-y-6 opacity-0 motion-reduce:translate-y-0 motion-reduce:opacity-100'
-            } ${className}`}
-        >
-            {children}
-        </div>
-    );
-}
+const sectionScrollVariants = {
+    hidden: { opacity: 0, y: 30 },
+    visible: {
+        opacity: 1,
+        y: 0,
+        transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] as const },
+    },
+};
+
+const cardStaggerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: { staggerChildren: 0.1 },
+    },
+};
+
+const cardItemVariants = {
+    hidden: { opacity: 0, y: 20, scale: 0.98 },
+    visible: {
+        opacity: 1,
+        y: 0,
+        scale: 1,
+        transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] as const },
+    },
+};
 
 export default function Welcome() {
+    const targetRef = useRef<HTMLDivElement>(null);
+    const { scrollYProgress } = useScroll({
+        target: targetRef,
+        offset: ['start end', 'end start'],
+    });
+
+    const horizontalX = useTransform(scrollYProgress, [0.1, 0.8], ['0%', '-65%']);
     return (
         <HomeLayout>
             <div className="relative w-full text-slate-800">
                 <div className="px-6 pt-10 pb-24 lg:px-14">
-                    <section className="relative isolate min-h-[34rem] overflow-hidden rounded-2xl">
-                        {/* Full screen image */}
-                        <div className="absolute inset-0 -z-10">
+                    <motion.section
+                        initial={{ opacity: 0, scale: 0.98 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+                        className="relative isolate min-h-[34rem] overflow-hidden rounded-2xl"
+                    >
+                        {/* Full screen image with subtle zoom reveal */}
+                        <motion.div
+                            initial={{ scale: 1.08 }}
+                            animate={{ scale: 1 }}
+                            transition={{ duration: 1.2, ease: 'easeOut' }}
+                            className="absolute inset-0 -z-10"
+                        >
                             <img
                                 src={heroIllustration}
                                 alt="Petugas BPRL Makassar melayani konsultasi KKPRL"
@@ -124,7 +151,7 @@ export default function Welcome() {
                             />
 
                             {/* Chart-style overlay so text is readable and ties to the coordinate theme */}
-                            <div className="absolute inset-0 bg-linear-to-r from-blue-500/60 to-blue-200/50" />
+                            <div className="absolute inset-0 bg-gradient-to-r from-blue-600/70 via-blue-500/50 to-blue-200/40" />
                             <div
                                 className="absolute inset-0 opacity-[0.15] mix-blend-overlay"
                                 style={{
@@ -134,184 +161,243 @@ export default function Welcome() {
                                 }}
                             />
                             <div className="pointer-events-none absolute inset-0 shadow-[inset_0_0_80px_rgba(11,37,69,0.35)]" />
-                        </div>
+                        </motion.div>
 
-                        {/* Content */}
-                        <div className="relative z-10 flex w-full items-center px-6 py-16 sm:px-10">
+                        {/* Hero Content Stagger */}
+                        <motion.div
+                            variants={heroContainerVariants}
+                            initial="hidden"
+                            animate="visible"
+                            className="relative z-10 flex w-full items-center px-6 py-16 sm:px-10"
+                        >
                             <div className="max-w-xl space-y-6">
-                                <div className="w-32">
+                                <motion.div variants={heroChildVariants} className="w-32">
                                     <img
                                         src={logo}
                                         alt="e-GeRAI – Generate, Asistensi, Informasi"
                                         className="h-auto w-full object-contain object-left"
                                     />
-                                </div>
+                                </motion.div>
 
-                                <p className="font-mono text-[11px] tracking-[0.25em] text-[#7FD8D4] uppercase">
+                                <motion.p
+                                    variants={heroChildVariants}
+                                    className="font-mono text-[11px] tracking-[0.25em] text-[#7FD8D4] uppercase"
+                                >
                                     05°08&apos;S · 119°25&apos;E — BPRL Makassar
-                                </p>
+                                </motion.p>
 
-                                <h1 className="text-5xl leading-[1.02] font-black tracking-tight text-white sm:text-6xl lg:text-[3.75rem]">
+                                <motion.h1
+                                    variants={heroChildVariants}
+                                    className="text-5xl leading-[1.02] font-black tracking-tight text-white sm:text-6xl lg:text-[3.75rem]"
+                                >
                                     Layanan Digital
                                     <br />
                                     Dokumen KKPRL
-                                </h1>
+                                </motion.h1>
 
-                                <p className="max-w-md text-base leading-relaxed text-slate-100/90 sm:text-lg">
+                                <motion.p
+                                    variants={heroChildVariants}
+                                    className="max-w-md text-base leading-relaxed text-slate-100/90 sm:text-lg"
+                                >
                                     Konsultasi, asistensi teknis, dan penyusunan
                                     dokumen Kesesuaian Kegiatan Pemanfaatan
                                     Ruang Laut — presisi dan resmi.
-                                </p>
+                                </motion.p>
 
-                                <div className="grid grid-cols-1 items-center gap-3 pt-1 lg:grid-cols-2">
-                                    <Link
-                                        href="/request-form"
-                                        className="group inline-flex w-full items-center justify-center gap-2 rounded-full bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-[#0B2545]/30 transition-all hover:-translate-y-0.5 hover:bg-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white active:scale-[0.98]"
-                                    >
-                                        Ajukan Konsultasi
-                                        <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-                                    </Link>
+                                <motion.div
+                                    variants={heroChildVariants}
+                                    className="grid grid-cols-1 items-center gap-3 pt-1 lg:grid-cols-2"
+                                >
+                                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                                        <Link
+                                            href="/request-form"
+                                            className="group inline-flex w-full items-center justify-center gap-2 rounded-full bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-[#0B2545]/30 transition-all hover:bg-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                                        >
+                                            Ajukan Konsultasi
+                                            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                                        </Link>
+                                    </motion.div>
 
-                                    <a
-                                        href="https://egeraibprlmakassar-production.up.railway.app"
-                                        className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/25 bg-white/10 px-5 py-3 text-sm font-semibold text-white backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-                                    >
-                                        <FileText className="h-4 w-4" />
-                                        Generate Dokumen
-                                    </a>
-                                </div>
+                                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                                        <a
+                                            href="https://egeraibprlmakassar-production.up.railway.app"
+                                            className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/25 bg-white/10 px-5 py-3 text-sm font-semibold text-white backdrop-blur-sm transition-all hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                                        >
+                                            <FileText className="h-4 w-4" />
+                                            Generate Dokumen
+                                        </a>
+                                    </motion.div>
+                                </motion.div>
                             </div>
-                        </div>
-                    </section>
+                        </motion.div>
+                    </motion.section>
                 </div>
 
-                {/* ═══════════ ALUR LAYANAN — rendered as a waypoint route ═══════════ */}
-                <Reveal className="pb-16 lg:pb-24">
-                    <div className="mb-12 max-w-xl space-y-3">
-                        <p className="font-mono text-[11px] tracking-[0.25em] text-[#0E7C86] uppercase">
+                {/* ═══════════ ALUR LAYANAN ═══════════ */}
+                <motion.div
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: true, margin: '-60px' }}
+                    variants={sectionScrollVariants}
+                    className="mx-4 pb-12 sm:mx-10 sm:pb-16 lg:mx-24 lg:pb-24"
+                >
+                    <div className="mb-8 max-w-xl space-y-2 sm:mb-12 sm:space-y-3">
+                        <p className="font-mono text-[10px] tracking-[0.25em] text-blue-600 uppercase sm:text-[11px]">
                             Rute Layanan
                         </p>
-                        <h2 className="text-2xl font-extrabold tracking-tight text-[#0B2545] sm:text-3xl">
+                        <h2 className="text-xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
                             Alur Layanan
                         </h2>
-                        <p className="text-sm text-slate-500 sm:text-base">
+                        <p className="text-xs text-slate-500 sm:text-base">
                             Empat titik singgah, dari pengajuan hingga
                             penerbitan dokumen.
                         </p>
                     </div>
 
-                    <div className="relative grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
-                        {/* dotted route line, desktop only */}
-                        <div
-                            className="pointer-events-none absolute top-5 right-[12.5%] left-[12.5%] hidden h-px lg:block"
-                            style={{
-                                backgroundImage:
-                                    'linear-gradient(90deg, #0E7C8666 0 6px, transparent 6px 14px)',
-                                backgroundSize: '14px 1px',
-                            }}
-                        />
-                        {steps.map((step) => {
+                    <motion.div
+                        variants={cardStaggerVariants}
+                        initial="hidden"
+                        whileInView="visible"
+                        viewport={{ once: true }}
+                        className="grid gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-4"
+                    >
+                        {steps.map((step, idx) => {
                             const StepIcon = step.icon;
                             return (
-                                <div
+                                <motion.div
                                     key={step.title}
-                                    className="relative space-y-3"
+                                    variants={cardItemVariants}
+                                    whileHover={{ y: -6, scale: 1.02 }}
+                                    className="group relative flex flex-col justify-between space-y-4 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs transition-all hover:border-blue-300 hover:shadow-lg hover:shadow-blue-500/10 sm:p-6"
                                 >
-                                    <div className="flex items-center gap-3">
-                                        <span className="relative z-10 flex h-10 w-10 items-center justify-center rounded-full border border-[#0E7C86]/30 bg-white text-[#0E7C86] shadow-sm">
-                                            <StepIcon className="h-4 w-4" />
-                                        </span>
-                                        <span className="font-mono text-xs font-semibold text-slate-400">
-                                            {step.code}
-                                        </span>
+                                    <div className="space-y-3 sm:space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-blue-200 bg-blue-50 text-blue-600 transition-colors group-hover:bg-blue-600 group-hover:text-white">
+                                                <StepIcon className="h-4.5 w-4.5" />
+                                            </span>
+                                            <span className="font-mono text-[11px] font-bold text-slate-400 bg-slate-50 border border-slate-200/60 px-2 py-0.5 rounded-md">
+                                                {step.code}
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <h3 className="text-base font-bold text-slate-900">
+                                                {step.title}
+                                            </h3>
+                                            <p className="mt-1 text-xs leading-relaxed text-slate-500 sm:mt-1.5">
+                                                {step.desc}
+                                            </p>
+                                        </div>
                                     </div>
-                                    <h3 className="text-base font-bold text-[#0B2545]">
-                                        {step.title}
-                                    </h3>
-                                    <p className="text-xs leading-relaxed text-slate-500">
-                                        {step.desc}
-                                    </p>
-                                </div>
+                                    <div className="pt-1 text-[10px] font-mono text-slate-400">
+                                        Langkah {idx + 1} dari 4
+                                    </div>
+                                </motion.div>
                             );
                         })}
-                    </div>
-                </Reveal>
+                    </motion.div>
+                </motion.div>
 
                 {/* ═══════════ LAYANAN ═══════════ */}
-                <Reveal className="pb-16 lg:pb-24">
-                    <div className="mb-10 max-w-xl space-y-3">
-                        <p className="font-mono text-[11px] tracking-[0.25em] text-[#0E7C86] uppercase">
+                <motion.div
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: true, margin: '-60px' }}
+                    variants={sectionScrollVariants}
+                    className="mx-4 pb-12 sm:mx-10 sm:pb-16 lg:mx-24 lg:pb-24"
+                >
+                    <div className="mb-8 max-w-xl space-y-2 sm:mb-10 sm:space-y-3">
+                        <p className="font-mono text-[10px] tracking-[0.25em] text-blue-600 uppercase sm:text-[11px]">
                             Pilih Jalur
                         </p>
-                        <h2 className="text-2xl font-extrabold tracking-tight text-[#0B2545] sm:text-3xl">
+                        <h2 className="text-xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
                             Layanan
                         </h2>
-                        <p className="text-sm text-slate-500 sm:text-base">
+                        <p className="text-xs text-slate-500 sm:text-base">
                             Pilih layanan sesuai kebutuhan Anda.
                         </p>
                     </div>
 
-                    <div className="grid gap-5 md:grid-cols-3">
+                    <motion.div
+                        variants={cardStaggerVariants}
+                        initial="hidden"
+                        whileInView="visible"
+                        viewport={{ once: true }}
+                        className="grid gap-4 sm:gap-5 md:grid-cols-3"
+                    >
                         {services.map((service) => {
                             const ServiceIcon = service.icon;
                             return (
-                                <Link
-                                    key={service.title}
-                                    href={service.href}
-                                    className="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#0E7C86]/40 hover:shadow-lg hover:shadow-[#0E7C86]/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0E7C86]"
-                                >
-                                    <div className="flex items-start justify-between">
-                                        <span className="flex h-10 w-10 items-center justify-center rounded-lg border border-[#0E7C86]/20 bg-[#0E7C86]/10 text-[#0E7C86]">
-                                            <ServiceIcon className="h-4 w-4" />
+                                <motion.div key={service.title} variants={cardItemVariants}>
+                                    <Link
+                                        href={service.href}
+                                        className="group block rounded-2xl border border-slate-200 bg-white p-5 shadow-xs transition-all duration-300 hover:-translate-y-1 hover:border-blue-300 hover:shadow-xl hover:shadow-blue-500/10 sm:p-6"
+                                    >
+                                        <div className="flex items-start justify-between">
+                                            <span className="flex h-10 w-10 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 text-blue-600 transition-transform duration-300 group-hover:scale-110">
+                                                <ServiceIcon className="h-4 w-4" />
+                                            </span>
+                                            <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 font-mono text-[10px] font-bold tracking-wider text-slate-500">
+                                                {service.tag}
+                                            </span>
+                                        </div>
+                                        <h3 className="mt-4 text-base font-bold text-slate-900">
+                                            {service.title}
+                                        </h3>
+                                        <p className="mt-1.5 text-xs leading-relaxed text-slate-500">
+                                            {service.desc}
+                                        </p>
+                                        <span className="mt-4 inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 transition-all group-hover:gap-2.5">
+                                            {service.cta}
+                                            <ArrowRight className="h-3.5 w-3.5" />
                                         </span>
-                                        <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 font-mono text-[10px] font-bold tracking-wider text-slate-500">
-                                            {service.tag}
-                                        </span>
-                                    </div>
-                                    <h3 className="mt-4 text-base font-bold text-[#0B2545]">
-                                        {service.title}
-                                    </h3>
-                                    <p className="mt-1.5 text-xs leading-relaxed text-slate-500">
-                                        {service.desc}
-                                    </p>
-                                    <span className="mt-4 inline-flex items-center gap-1.5 text-xs font-bold text-[#0E7C86] transition-all group-hover:gap-2.5">
-                                        {service.cta}
-                                        <ArrowRight className="h-3.5 w-3.5" />
-                                    </span>
-                                </Link>
+                                    </Link>
+                                </motion.div>
                             );
                         })}
-                    </div>
-                </Reveal>
+                    </motion.div>
+                </motion.div>
 
-                {/* ═══════════ PENUTUP — styled like an official seal panel ═══════════ */}
-                <Reveal className="pb-16 lg:pb-24">
-                    <div className="relative overflow-hidden rounded-2xl border border-[#0B2545]/15 bg-white px-7 py-10 text-center shadow-sm sm:px-12">
-                        <h2 className="text-xl font-extrabold tracking-tight text-[#0B2545] sm:text-2xl">
+                {/* ═══════════ PENUTUP ═══════════ */}
+                <motion.div
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: true, margin: '-60px' }}
+                    variants={sectionScrollVariants}
+                    className="mx-4 pb-12 sm:mx-10 sm:pb-16 lg:mx-24 lg:pb-24"
+                >
+                    <motion.div
+                        whileHover={{ scale: 1.005 }}
+                        className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white px-5 py-8 text-center shadow-xs sm:px-12 sm:py-10"
+                    >
+                        <h2 className="text-lg font-extrabold tracking-tight text-slate-900 sm:text-2xl">
                             Siap mengajukan permohonan?
                         </h2>
-                        <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-slate-500">
+                        <p className="mx-auto mt-2 max-w-md text-xs leading-relaxed text-slate-500 sm:text-sm">
                             Mulai konsultasi pemanfaatan ruang laut Anda hari
                             ini.
                         </p>
-                        <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-                            <Link
-                                href="/request-form"
-                                className="inline-flex items-center gap-2 rounded-xl bg-blue-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 transition-all hover:bg-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
-                            >
-                                Ajukan Permohonan
-                                <ArrowRight className="h-4 w-4" />
-                            </Link>
-                            <Link
-                                href="/login"
-                                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition-all hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0E7C86]"
-                            >
-                                <MapPin className="h-4 w-4" />
-                                Masuk Petugas
-                            </Link>
+                        <div className="mt-6 flex flex-col items-stretch gap-2.5 sm:flex-row sm:items-center sm:justify-center sm:gap-3">
+                            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                                <Link
+                                    href="/request-form"
+                                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 transition-all hover:bg-blue-700"
+                                >
+                                    Ajukan Permohonan
+                                    <ArrowRight className="h-4 w-4" />
+                                </Link>
+                            </motion.div>
+                            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                                <Link
+                                    href="/login"
+                                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition-all hover:bg-slate-50"
+                                >
+                                    <MapPin className="h-4 w-4" />
+                                    Masuk Petugas
+                                </Link>
+                            </motion.div>
                         </div>
-                    </div>
-                </Reveal>
+                    </motion.div>
+                </motion.div>
             </div>
         </HomeLayout>
     );
