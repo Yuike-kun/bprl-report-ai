@@ -16,5 +16,11 @@
         "label": "Ekstrak Proposal",
         "url": "/proposal-extractions/create",
         "icon": "FileSearch"
+    },
+    {
+        "type": "link",
+        "label": "Dokumen",
+        "url": "/documents",
+        "icon": "FolderArchive"
     }
 ]

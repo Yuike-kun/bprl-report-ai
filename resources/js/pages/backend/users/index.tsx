@@ -1,7 +1,7 @@
 import MainLayout from "../layout";
 import { Head, Link, router } from "@inertiajs/react";
 import { Pencil, Plus, Search, Trash2, UserRound } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { PaginatedTable } from "@/components/backend/paginated-table";
 import { Pagination } from "@/components/backend/pagination";
@@ -37,19 +37,24 @@ type Props = {
 export default function UsersIndex({ users, filters, success }: Props) {
     const [search, setSearch] = useState(filters?.search ?? "");
 
-    const filtered = useMemo(() => {
-        const query = search.trim().toLowerCase();
+    const isInitialMount = useRef(true);
 
-        if (!query) {
-            return users.data;
+    useEffect(() => {
+        if (isInitialMount.current) {
+            isInitialMount.current = false;
+            return;
         }
 
-        return users.data.filter(item =>
-            item.name.toLowerCase().includes(query) ||
-            item.email.toLowerCase().includes(query) ||
-            item.role.toLowerCase().includes(query)
-        );
-    }, [users.data, search]);
+        const timer = setTimeout(() => {
+            router.get(
+                '/users',
+                { search },
+                { preserveState: true, preserveScroll: true, replace: true }
+            );
+        }, 300);
+
+        return () => clearTimeout(timer);
+    }, [search]);
 
     const handleDelete = (item: User) => {
         if (!window.confirm(`Hapus user ${item.name}?`)) {
@@ -108,7 +113,7 @@ export default function UsersIndex({ users, filters, success }: Props) {
                         <th className="text-center px-5 py-3 font-semibold text-slate-500 text-xs uppercase tracking-wider whitespace-nowrap">Aksi</th>
                     </tr>
                 }
-                isEmpty={filtered.length === 0}
+                isEmpty={users.data.length === 0}
                 emptyState={
                     <tr>
                         <td colSpan={5} className="text-center py-16 text-slate-400">
@@ -124,12 +129,12 @@ export default function UsersIndex({ users, filters, success }: Props) {
                             links={users.links}
                             currentPage={users.current_page}
                             lastPage={users.last_page}
-                            onNavigate={url => router.get(url)}
+                            onNavigate={url => router.get(url, { search }, { preserveState: true })}
                         />
                     ) : null
                 }
             >
-                {filtered.map((item, index) => (
+                {users.data.map((item, index) => (
                     <tr key={item.id} className="hover:bg-slate-50/70 transition-colors group">
                         <td className="px-5 py-4 text-slate-400 font-mono text-xs">{baseNumber + index}</td>
                         <td className="px-5 py-4 text-slate-700 font-semibold">{item.name}</td>

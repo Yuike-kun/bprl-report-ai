@@ -120,9 +120,74 @@ class BeritaAcaraController extends Controller
                 'staff_1_name' => $r->staff->first()?->user?->name,
             ]);
 
+        // Prepare chart data for Berita Acara creation volume (Line Chart)
+        $selectedYear = (int) $request->query('chart_year', date('Y'));
+
+        // Monthly data (12 months for selected year)
+        $monthlyCategories = [];
+        $monthlyCounts = [];
+        for ($m = 1; $m <= 12; $m++) {
+            $date = \Carbon\Carbon::createFromDate($selectedYear, $m, 1);
+            $monthlyCategories[] = $date->translatedFormat('M');
+            $monthlyCounts[] = BeritaAcaraKonsultasi::query()
+                ->whereYear('created_at', $selectedYear)
+                ->whereMonth('created_at', $m)
+                ->count();
+        }
+
+        // Yearly data (last 5 years)
+        $yearlyCategories = [];
+        $yearlyCounts = [];
+        $currentY = (int) date('Y');
+        for ($y = $currentY - 4; $y <= $currentY; $y++) {
+            $yearlyCategories[] = (string) $y;
+            $yearlyCounts[] = BeritaAcaraKonsultasi::query()
+                ->whereYear('created_at', $y)
+                ->count();
+        }
+
+        $availableYears = BeritaAcaraKonsultasi::query()
+            ->selectRaw('YEAR(created_at) as year')
+            ->distinct()
+            ->pluck('year')
+            ->filter()
+            ->map(fn($y) => (int) $y)
+            ->toArray();
+
+        if (empty($availableYears)) {
+            $availableYears = [$currentY];
+        } else {
+            if (!in_array($currentY, $availableYears, true)) {
+                $availableYears[] = $currentY;
+            }
+            rsort($availableYears);
+        }
+
         return Inertia::render('backend/berita-acara/index', [
             'rows' => $rows,
             'filters' => $request->only(['search', 'status']),
+            'chartData' => [
+                'monthly' => [
+                    'categories' => $monthlyCategories,
+                    'series' => [
+                        [
+                            'name' => 'Jumlah Berita Acara',
+                            'data' => $monthlyCounts,
+                        ],
+                    ],
+                ],
+                'yearly' => [
+                    'categories' => $yearlyCategories,
+                    'series' => [
+                        [
+                            'name' => 'Jumlah Berita Acara',
+                            'data' => $yearlyCounts,
+                        ],
+                    ],
+                ],
+                'availableYears' => array_values(array_unique($availableYears)),
+                'selectedYear' => $selectedYear,
+            ],
         ]);
     }
 

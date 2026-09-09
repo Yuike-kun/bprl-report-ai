@@ -6,7 +6,8 @@ import { cn } from "@/lib/utils";
 type PaginatedTableProps = {
     searchValue: string;
     onSearchChange: (value: string) => void;
-    searchPlaceholder: string;
+    onSearchSubmit?: () => void;
+    searchPlaceholder?: string;
     summary: ReactNode;
     tableHead: ReactNode;
     children: ReactNode;
@@ -15,12 +16,14 @@ type PaginatedTableProps = {
     pagination?: ReactNode;
     className?: string;
     toolbarClassName?: string;
+    hideSearchInput?: boolean;
 };
 
 export function PaginatedTable({
     searchValue,
     onSearchChange,
-    searchPlaceholder,
+    onSearchSubmit,
+    searchPlaceholder = "Cari...",
     summary,
     tableHead,
     children,
@@ -29,6 +32,7 @@ export function PaginatedTable({
     pagination,
     className,
     toolbarClassName,
+    hideSearchInput = false,
 }: PaginatedTableProps) {
     return (
         <div className={cn("bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden", className)}>
@@ -38,16 +42,23 @@ export function PaginatedTable({
                     toolbarClassName
                 )}
             >
-                <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 w-full sm:w-72 focus-within:ring-2 focus-within:ring-indigo-200 focus-within:border-indigo-300 transition-all">
-                    <Search className="w-4 h-4 text-slate-400 shrink-0" />
-                    <input
-                        type="text"
-                        placeholder={searchPlaceholder}
-                        value={searchValue}
-                        onChange={event => onSearchChange(event.target.value)}
-                        className="bg-transparent text-sm text-slate-700 w-full outline-none placeholder:text-slate-400"
-                    />
-                </div>
+                {!hideSearchInput ? (
+                    <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 w-full sm:w-72 focus-within:ring-2 focus-within:ring-indigo-200 focus-within:border-indigo-300 transition-all">
+                        <Search className="w-4 h-4 text-slate-400 shrink-0" />
+                        <input
+                            type="text"
+                            placeholder={searchPlaceholder}
+                            value={searchValue}
+                            onChange={event => onSearchChange(event.target.value)}
+                            onKeyDown={event => {
+                                if (event.key === "Enter" && onSearchSubmit) {
+                                    onSearchSubmit();
+                                }
+                            }}
+                            className="bg-transparent text-sm text-slate-700 w-full outline-none placeholder:text-slate-400"
+                        />
+                    </div>
+                ) : <div />}
                 <p className="text-xs text-slate-400 shrink-0">{summary}</p>
             </div>
 

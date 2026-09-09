@@ -23,6 +23,7 @@ use App\Http\Controllers\StaffController;
 use App\Http\Controllers\UsersController;
 use App\Http\Controllers\LogHistoryController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\DocumentController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('api')->prefix('api/geolocation')->group(function () {
@@ -85,6 +86,8 @@ Route::middleware('auth')->group(function () {
 
         Route::prefix('master/changelog')->as('master.changelog.')->middleware('role:admin,pegawai')->group(function () {
             Route::get('/', [ChangelogController::class, 'index'])->name('index');
+            Route::get('/download-template', [ChangelogController::class, 'downloadTemplate'])->name('download-template');
+            Route::post('/import', [ChangelogController::class, 'importMd'])->name('import');
             Route::get('/create', [ChangelogController::class, 'create'])->name('create');
             Route::post('/', [ChangelogController::class, 'store'])->name('store');
             Route::get('/{changelog}/edit', [ChangelogController::class, 'edit'])->name('edit');
@@ -176,6 +179,12 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:admin')->group(function () {
         Route::get('/log-histories', [LogHistoryController::class, 'index'])->name('log-histories.index');
         Route::delete('/log-histories/clear', [LogHistoryController::class, 'destroyAll'])->name('log-histories.clear');
+    });
+
+    Route::middleware('role:admin,pegawai')->prefix('documents')->as('documents.')->group(function () {
+        Route::get('/', [DocumentController::class, 'index'])->name('index');
+        Route::get('/download/{source}/{id}', [DocumentController::class, 'download'])->name('download');
+        Route::delete('/{source}/{id}', [DocumentController::class, 'destroy'])->name('destroy');
     });
 
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');

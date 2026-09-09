@@ -1,11 +1,19 @@
 import MainLayout from "../../layout";
-import { Head, Link, router } from "@inertiajs/react";
-import { History, Pencil, Plus, Search, Trash2, Tag, Sparkles, Bug, Wrench } from "lucide-react";
-import { useMemo, useState } from "react";
+import { Head, Link, router, useForm } from "@inertiajs/react";
+import { History, Pencil, Plus, Search, Trash2, Sparkles, Bug, Wrench, Download, Upload, FileText, AlertCircle } from "lucide-react";
+import { useEffect, useState } from "react";
 
 import { PaginatedTable } from "@/components/backend/paginated-table";
 import { Pagination } from "@/components/backend/pagination";
 import { Button } from "@/components/ui/button";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
 
 type ChangelogItem = {
     id: number;
@@ -35,24 +43,51 @@ type Props = {
         type?: string;
     };
     success?: string;
+    errors?: Record<string, string>;
 };
 
-export default function ChangelogIndex({ changelogs, filters, success }: Props) {
+export default function ChangelogIndex({ changelogs, filters, success, errors }: Props) {
     const [search, setSearch] = useState(filters?.search ?? "");
     const [selectedType, setSelectedType] = useState(filters?.type ?? "");
+    const [isImportOpen, setIsImportOpen] = useState(false);
 
-    const filtered = useMemo(() => {
-        return changelogs.data.filter((item) => {
-            const matchesSearch = !search.trim() || 
-                item.version.toLowerCase().includes(search.toLowerCase()) ||
-                item.title.toLowerCase().includes(search.toLowerCase()) ||
-                item.description.toLowerCase().includes(search.toLowerCase());
-            
-            const matchesType = !selectedType || item.type === selectedType;
+    const { data, setData, post, processing, errors: formErrors, reset } = useForm<{
+        file: File | null;
+    }>({
+        file: null,
+    });
 
-            return matchesSearch && matchesType;
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (search !== (filters?.search ?? "") || selectedType !== (filters?.type ?? "")) {
+                router.get(
+                    "/master/changelog",
+                    {
+                        search: search || undefined,
+                        type: selectedType || undefined,
+                    },
+                    {
+                        preserveState: true,
+                        replace: true,
+                    }
+                );
+            }
+        }, 300);
+
+        return () => clearTimeout(timer);
+    }, [search, selectedType]);
+
+    const handleImportSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!data.file) return;
+
+        post("/master/changelog/import", {
+            onSuccess: () => {
+                setIsImportOpen(false);
+                reset();
+            },
         });
-    }, [changelogs.data, search, selectedType]);
+    };
 
     const handleDelete = (item: ChangelogItem) => {
         if (!window.confirm(`Hapus changelog v${item.version} - "${item.title}"?`)) {
@@ -101,12 +136,22 @@ export default function ChangelogIndex({ changelogs, filters, success }: Props) 
                         <p className="text-sm text-slate-500 mt-0.5">Kelola riwayat perubahan & pembaruan versi sistem.</p>
                     </div>
                 </div>
-                <Link href="/master/changelog/create">
-                    <Button className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-md shadow-indigo-500/20 gap-2">
-                        <Plus className="w-4 h-4" />
-                        Tambah Changelog
+                <div className="flex items-center gap-2">
+                    <Button
+                        variant="outline"
+                        onClick={() => setIsImportOpen(true)}
+                        className="rounded-xl border-slate-200 gap-2 hover:bg-slate-50"
+                    >
+                        <Upload className="w-4 h-4 text-slate-600" />
+                        Import MD
                     </Button>
-                </Link>
+                    <Link href="/master/changelog/create">
+                        <Button className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-md shadow-indigo-500/20 gap-2">
+                            <Plus className="w-4 h-4" />
+                            Tambah Changelog
+                        </Button>
+                    </Link>
+                </div>
             </div>
 
             {success && (
@@ -135,13 +180,13 @@ export default function ChangelogIndex({ changelogs, filters, success }: Props) 
                         <th className="text-center px-5 py-3 font-semibold text-slate-500 text-xs uppercase tracking-wider whitespace-nowrap">Aksi</th>
                     </tr>
                 }
-                isEmpty={filtered.length === 0}
+                isEmpty={changelogs.data.length === 0}
                 emptyState={
                     <tr>
                         <td colSpan={6} className="text-center py-16 text-slate-400">
                             <Search className="w-10 h-10 mx-auto mb-3 text-slate-200" />
                             <p className="font-medium">Belum ada data changelog.</p>
-                            <p className="text-xs mt-1">Klik "Tambah Changelog" untuk menambahkan versi baru.</p>
+                            <p className="text-xs mt-1">Klik "Tambah Changelog" atau "Import MD" untuk menambahkan versi baru.</p>
                         </td>
                     </tr>
                 }
@@ -156,7 +201,7 @@ export default function ChangelogIndex({ changelogs, filters, success }: Props) 
                     ) : null
                 }
             >
-                {filtered.map((item, index) => (
+                {changelogs.data.map((item, index) => (
                     <tr key={item.id} className="hover:bg-slate-50/70 transition-colors group">
                         <td className="px-5 py-4 text-slate-400 font-mono text-xs">{baseNumber + index}</td>
                         <td className="px-5 py-4">
@@ -202,6 +247,79 @@ export default function ChangelogIndex({ changelogs, filters, success }: Props) 
                     </tr>
                 ))}
             </PaginatedTable>
+
+            {/* Import Dialog Modal */}
+            <Dialog open={isImportOpen} onOpenChange={setIsImportOpen}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2 text-slate-900">
+                            <FileText className="w-5 h-5 text-indigo-600" />
+                            Import Changelog (.md)
+                        </DialogTitle>
+                        <DialogDescription className="text-slate-500">
+                            Unggah file Markdown (.md) untuk mengimpor catatan riwayat perubahan secara otomatis.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <form onSubmit={handleImportSubmit} className="space-y-4">
+                        <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between text-xs text-slate-600">
+                            <div>
+                                <p className="font-semibold text-slate-800">Format Template Markdown</p>
+                                <p className="text-slate-500">Unduh contoh format file .md yang didukung</p>
+                            </div>
+                            <a
+                                href="/master/changelog/download-template"
+                                download
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-slate-700 font-medium hover:bg-slate-100 transition-colors shadow-xs"
+                            >
+                                <Download className="w-3.5 h-3.5 text-indigo-600" />
+                                Unduh Template
+                            </a>
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                                Pilih File .md
+                            </label>
+                            <input
+                                type="file"
+                                accept=".md,.markdown,.txt"
+                                onChange={(e) => setData("file", e.target.files?.[0] ?? null)}
+                                className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 border border-slate-200 rounded-xl cursor-pointer"
+                            />
+                            {(formErrors.file || errors?.file) && (
+                                <p className="text-xs text-rose-600 mt-1 flex items-center gap-1">
+                                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                                    {formErrors.file || errors?.file}
+                                </p>
+                            )}
+                        </div>
+
+                        <DialogFooter className="gap-2 sm:gap-0">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => {
+                                    setIsImportOpen(false);
+                                    reset();
+                                }}
+                                className="rounded-xl border-slate-200"
+                            >
+                                Batal
+                            </Button>
+                            <Button
+                                type="submit"
+                                disabled={processing || !data.file}
+                                className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-md shadow-indigo-500/20 gap-2"
+                            >
+                                <Upload className="w-4 h-4" />
+                                {processing ? "Mengunggah..." : "Import Data"}
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
         </MainLayout>
     );
 }
+

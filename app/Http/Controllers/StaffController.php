@@ -38,9 +38,58 @@ class StaffController extends Controller
             ->paginate(10)
             ->withQueryString();
 
+        // Prepare chart data for staff assignments (Pie Chart)
+        $yearFilter = $request->input('chart_year', date('Y'));
+        $rangeFilter = $request->input('chart_range', 'year'); // 'year' or 'last_5_months'
+
+        $allStaff = Staff::with('user:id,name')->get();
+
+        $labels = [];
+        $series = [];
+
+        foreach ($allStaff as $st) {
+            $query = DB::table('assign_request_to_staff')
+                ->where('staff', $st->id);
+
+            if ($rangeFilter === 'last_5_months') {
+                $fiveMonthsAgo = \Carbon\Carbon::now()->subMonths(4)->startOfMonth();
+                $query->where('created_at', '>=', $fiveMonthsAgo);
+            } else {
+                $query->whereYear('created_at', $yearFilter);
+            }
+
+            $count = $query->count();
+
+            $labels[] = $st->user?->name ?? "Staff #{$st->id}";
+            $series[] = $count;
+        }
+
+        $availableYears = DB::table('assign_request_to_staff')
+            ->selectRaw('YEAR(created_at) as year')
+            ->distinct()
+            ->pluck('year')
+            ->filter()
+            ->toArray();
+
+        if (empty($availableYears)) {
+            $availableYears = [(int) date('Y')];
+        } else {
+            if (!in_array((int) date('Y'), $availableYears)) {
+                $availableYears[] = (int) date('Y');
+            }
+            rsort($availableYears);
+        }
+
         return Inertia::render('backend/staff/index', [
             'staff' => $staff,
             'filters' => ['search' => $search],
+            'chartData' => [
+                'labels' => $labels,
+                'series' => $series,
+                'availableYears' => array_values(array_unique($availableYears)),
+                'currentYear' => (int) $yearFilter,
+                'currentRange' => $rangeFilter,
+            ],
         ]);
     }
 

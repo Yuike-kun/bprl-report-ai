@@ -12,6 +12,12 @@
         "icon": "FileCheck"
     },
     {
+        "type": "link",
+        "label": "Dokumen",
+        "url": "/documents",
+        "icon": "FolderArchive"
+    },
+    {
         "type": "dropdown",
         "id": "master",
         "label": "Master",

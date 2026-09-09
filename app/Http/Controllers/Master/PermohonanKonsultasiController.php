@@ -35,10 +35,75 @@ class PermohonanKonsultasiController extends Controller
             ->paginate(10)
             ->withQueryString();
 
+        // Prepare chart data for consultation requests volume
+        $selectedYear = (int) $request->query('chart_year', date('Y'));
+
+        // Monthly data (12 months for selected year)
+        $monthlyCategories = [];
+        $monthlyCounts = [];
+        for ($m = 1; $m <= 12; $m++) {
+            $date = \Carbon\Carbon::createFromDate($selectedYear, $m, 1);
+            $monthlyCategories[] = $date->translatedFormat('M');
+            $monthlyCounts[] = PermohonanKonsultasi::query()
+                ->whereYear('created_at', $selectedYear)
+                ->whereMonth('created_at', $m)
+                ->count();
+        }
+
+        // Yearly data (last 5 years)
+        $yearlyCategories = [];
+        $yearlyCounts = [];
+        $currentY = (int) date('Y');
+        for ($y = $currentY - 4; $y <= $currentY; $y++) {
+            $yearlyCategories[] = (string) $y;
+            $yearlyCounts[] = PermohonanKonsultasi::query()
+                ->whereYear('created_at', $y)
+                ->count();
+        }
+
+        $availableYears = PermohonanKonsultasi::query()
+            ->selectRaw('YEAR(created_at) as year')
+            ->distinct()
+            ->pluck('year')
+            ->filter()
+            ->map(fn($y) => (int) $y)
+            ->toArray();
+
+        if (empty($availableYears)) {
+            $availableYears = [$currentY];
+        } else {
+            if (!in_array($currentY, $availableYears, true)) {
+                $availableYears[] = $currentY;
+            }
+            rsort($availableYears);
+        }
+
         return Inertia::render('backend/master/permohonan-konsultasi/index', [
             'submissions' => $submissions,
             'filters' => [
                 'search' => $search,
+            ],
+            'chartData' => [
+                'monthly' => [
+                    'categories' => $monthlyCategories,
+                    'series' => [
+                        [
+                            'name' => 'Permohonan Konsultasi',
+                            'data' => $monthlyCounts,
+                        ],
+                    ],
+                ],
+                'yearly' => [
+                    'categories' => $yearlyCategories,
+                    'series' => [
+                        [
+                            'name' => 'Permohonan Konsultasi',
+                            'data' => $yearlyCounts,
+                        ],
+                    ],
+                ],
+                'availableYears' => array_values(array_unique($availableYears)),
+                'selectedYear' => $selectedYear,
             ],
             'success' => session('success'),
         ]);

@@ -1,11 +1,13 @@
 import MainLayout from '../../layout';
 import { Head, Link, router } from '@inertiajs/react';
-import { ExternalLink, Eye, File, FileImage, FileSpreadsheet, FileText, Paperclip, Pencil, Plus, Search, Trash2, UserRound } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { ChevronDown, ChevronUp, ExternalLink, Eye, File, FileImage, FileSpreadsheet, FileText, Paperclip, Pencil, Plus, Search, TrendingUp, Trash2, UserRound } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import ApexCharts from 'apexcharts';
 
 import { PaginatedTable } from '@/components/backend/paginated-table';
 import { Pagination } from '@/components/backend/pagination';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
     Dialog,
     DialogClose,
@@ -39,11 +41,25 @@ type PaginatedSubmissions = {
     links: { url: string | null; label: string; active: boolean }[];
 };
 
+type ChartData = {
+    monthly: {
+        categories: string[];
+        series: { name: string; data: number[] }[];
+    };
+    yearly: {
+        categories: string[];
+        series: { name: string; data: number[] }[];
+    };
+    availableYears: number[];
+    selectedYear: number;
+};
+
 type Props = {
     submissions: PaginatedSubmissions;
     filters?: {
         search?: string;
     };
+    chartData?: ChartData;
     success?: string;
 };
 
@@ -56,25 +72,97 @@ const statusClass: Record<Submission['status'], string> = {
 export default function PermohonanKonsultasiIndex({
     submissions,
     filters,
+    chartData,
     success,
 }: Props) {
     const [search, setSearch] = useState(filters?.search ?? '');
+    const [showChart, setShowChart] = useState(true);
+    const [viewMode, setViewMode] = useState<'monthly' | 'yearly'>('monthly');
 
-    const filtered = useMemo(() => {
-        const query = search.trim().toLowerCase();
+    const chartRef = useRef<HTMLDivElement>(null);
+    const selectedYear = chartData?.selectedYear ?? new Date().getFullYear();
 
-        if (!query) {
-            return submissions.data;
+    useEffect(() => {
+        if (!showChart || !chartRef.current || !chartData) return;
+
+        const currentChart = viewMode === 'monthly' ? chartData.monthly : chartData.yearly;
+
+        const options = {
+            chart: {
+                type: 'area',
+                height: 320,
+                toolbar: { show: false },
+                fontFamily: 'inherit',
+            },
+            dataLabels: { enabled: false },
+            stroke: { curve: 'smooth', width: 3 },
+            fill: {
+                type: 'gradient',
+                gradient: {
+                    shadeIntensity: 1,
+                    opacityFrom: 0.45,
+                    opacityTo: 0.05,
+                    stops: [0, 90, 100],
+                },
+            },
+            colors: ['#0284c7'],
+            xaxis: {
+                categories: currentChart.categories,
+                labels: { style: { colors: '#64748b', fontSize: '12px', fontWeight: 600 } },
+            },
+            yaxis: {
+                title: { text: 'Jumlah Permohonan' },
+                labels: { style: { colors: '#64748b', fontSize: '12px' } },
+                allowDecimals: false,
+            },
+            tooltip: {
+                y: {
+                    formatter: (val: number) => `${val} Permohonan`,
+                },
+            },
+            series: currentChart.series,
+            grid: {
+                borderColor: '#f1f5f9',
+                strokeDashArray: 4,
+            },
+        };
+
+        const chart = new ApexCharts(chartRef.current, options);
+        chart.render();
+
+        return () => {
+            chart.destroy();
+        };
+    }, [showChart, viewMode, chartData]);
+
+    const handleYearChange = (newYear: number) => {
+        router.get('/master/permohonan-konsultasi', {
+            search,
+            chart_year: newYear,
+        }, { preserveState: true, preserveScroll: true });
+    };
+
+    const isInitialMount = useRef(true);
+
+    useEffect(() => {
+        if (isInitialMount.current) {
+            isInitialMount.current = false;
+            return;
         }
 
-        return submissions.data.filter(
-            (item) =>
-                item.nama_pemohon.toLowerCase().includes(query) ||
-                item.instansi.toLowerCase().includes(query) ||
-                item.email.toLowerCase().includes(query) ||
-                item.status.toLowerCase().includes(query),
-        );
-    }, [submissions.data, search]);
+        const timer = setTimeout(() => {
+            router.get(
+                '/master/permohonan-konsultasi',
+                {
+                    search,
+                    chart_year: selectedYear,
+                },
+                { preserveState: true, preserveScroll: true, replace: true }
+            );
+        }, 300);
+
+        return () => clearTimeout(timer);
+    }, [search]);
 
     const handleDelete = (item: Submission) => {
         if (!window.confirm(`Hapus permohonan dari ${item.nama_pemohon}?`)) {
@@ -116,6 +204,85 @@ export default function PermohonanKonsultasiIndex({
                     {success}
                 </div>
             )}
+
+            {/* Collapsible Graph Section */}
+            <Card className="mb-6 border-slate-200/80 shadow-xs">
+                <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 pb-3.5">
+                    <div className="flex items-center gap-2">
+                        <CardTitle className="flex items-center gap-2 text-base font-bold text-slate-800">
+                            <TrendingUp className="w-4 h-4 text-sky-600" />
+                            Grafik Volume Permohonan Konsultasi
+                        </CardTitle>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        {showChart && (
+                            <div className="flex items-center gap-2">
+                                <div className="flex items-center bg-slate-100 p-0.5 rounded-lg">
+                                    <button
+                                        type="button"
+                                        onClick={() => setViewMode('monthly')}
+                                        className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-all ${
+                                            viewMode === 'monthly'
+                                                ? 'bg-white text-sky-700 shadow-xs'
+                                                : 'text-slate-500 hover:text-slate-900'
+                                        }`}
+                                    >
+                                        Bulanan
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setViewMode('yearly')}
+                                        className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-all ${
+                                            viewMode === 'yearly'
+                                                ? 'bg-white text-sky-700 shadow-xs'
+                                                : 'text-slate-500 hover:text-slate-900'
+                                        }`}
+                                    >
+                                        Tahunan
+                                    </button>
+                                </div>
+
+                                {viewMode === 'monthly' && chartData?.availableYears && chartData.availableYears.length > 0 && (
+                                    <select
+                                        value={selectedYear}
+                                        onChange={(e) => handleYearChange(Number(e.target.value))}
+                                        className="h-8 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 shadow-xs focus:border-sky-500 focus:outline-hidden focus:ring-1 focus:ring-sky-500"
+                                    >
+                                        {chartData.availableYears.map((y) => (
+                                            <option key={y} value={y}>
+                                                {y}
+                                            </option>
+                                        ))}
+                                    </select>
+                                )}
+                            </div>
+                        )}
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setShowChart(!showChart)}
+                            className="h-8 gap-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 text-xs font-medium"
+                        >
+                            {showChart ? (
+                                <>
+                                    Sembunyikan Grafik
+                                    <ChevronUp className="w-3.5 h-3.5" />
+                                </>
+                            ) : (
+                                <>
+                                    Tampilkan Grafik
+                                    <ChevronDown className="w-3.5 h-3.5" />
+                                </>
+                            )}
+                        </Button>
+                    </div>
+                </CardHeader>
+                {showChart && (
+                    <CardContent className="pt-4">
+                        <div ref={chartRef} className="min-h-80 w-full" />
+                    </CardContent>
+                )}
+            </Card>
 
             <PaginatedTable
                 searchValue={search}
@@ -162,7 +329,7 @@ export default function PermohonanKonsultasiIndex({
                         </th>
                     </tr>
                 }
-                isEmpty={filtered.length === 0}
+                isEmpty={submissions.data.length === 0}
                 emptyState={
                     <tr>
                         <td
@@ -186,12 +353,12 @@ export default function PermohonanKonsultasiIndex({
                             links={submissions.links}
                             currentPage={submissions.current_page}
                             lastPage={submissions.last_page}
-                            onNavigate={(url) => router.get(url)}
+                            onNavigate={(url) => router.get(url, { search, chart_year: selectedYear }, { preserveState: true })}
                         />
                     ) : null
                 }
             >
-                {filtered.map((item, index) => (
+                {submissions.data.map((item, index) => (
                     <tr
                         key={item.id}
                         className="group transition-colors hover:bg-slate-50/70"

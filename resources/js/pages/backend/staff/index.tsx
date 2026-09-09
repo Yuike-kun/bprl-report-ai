@@ -1,11 +1,13 @@
 import MainLayout from "../layout";
 import { Head, Link, router } from "@inertiajs/react";
-import { ClipboardCheck, Pencil, Plus, Search, Trash2, UserRound } from "lucide-react";
-import { useMemo, useState } from "react";
+import { ChevronDown, ChevronUp, ClipboardCheck, Filter, Pencil, Plus, Search, Trash2, UserRound, Users } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import ApexCharts from "apexcharts";
 
 import { PaginatedTable } from "@/components/backend/paginated-table";
 import { Pagination } from "@/components/backend/pagination";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
     Item,
@@ -40,29 +42,117 @@ type PaginatedStaff = {
     links: { url: string | null; label: string; active: boolean }[];
 };
 
+type ChartData = {
+    labels: string[];
+    series: number[];
+    availableYears: number[];
+    currentYear: number;
+    currentRange: 'year' | 'last_5_months';
+};
+
 type Props = {
     staff: PaginatedStaff;
     filters?: { search?: string };
+    chartData?: ChartData;
     flash?: { success?: string };
 };
 
-export default function StaffIndex({ staff, filters, flash }: Props) {
+export default function StaffIndex({ staff, filters, chartData, flash }: Props) {
     const [search, setSearch] = useState(filters?.search ?? "");
     const [modalKonsultasiListOpen, setModalKonsultasiListOpen] = useState(false);
+    const [showChart, setShowChart] = useState(true);
 
-    const filtered = useMemo(() => {
-        const query = search.trim().toLowerCase();
-        if (!query) return staff.data;
+    const chartRef = useRef<HTMLDivElement>(null);
 
-        return staff.data.filter(
-            (item) =>
-                item.user?.name.toLowerCase().includes(query) ||
-                item.user?.email.toLowerCase().includes(query) ||
-                item.position.toLowerCase().includes(query) ||
-                item.department.toLowerCase().includes(query) ||
-                item.phone?.toLowerCase().includes(query)
-        );
-    }, [staff.data, search]);
+    const range = chartData?.currentRange ?? 'year';
+    const year = chartData?.currentYear ?? new Date().getFullYear();
+
+    useEffect(() => {
+        if (!showChart || !chartRef.current || !chartData) return;
+
+        const options = {
+            chart: {
+                type: 'pie',
+                height: 340,
+                toolbar: { show: false },
+                fontFamily: 'inherit',
+            },
+            labels: chartData.labels,
+            series: chartData.series,
+            colors: ['#10b981', '#06b6d4', '#3b82f6', '#8b5cf6', '#f59e0b', '#ec4899', '#6366f1', '#14b8a6', '#f97316'],
+            legend: {
+                position: 'bottom',
+                horizontalAlign: 'center',
+                labels: { colors: '#475569' },
+            },
+            tooltip: {
+                y: {
+                    formatter: (val: number) => `${val} Permohonan Konsultasi`,
+                },
+            },
+            responsive: [{
+                breakpoint: 480,
+                options: {
+                    chart: { width: '100%' },
+                    legend: { position: 'bottom' }
+                }
+            }],
+        };
+
+        const chart = new ApexCharts(chartRef.current, options);
+        chart.render();
+
+        return () => {
+            chart.destroy();
+        };
+    }, [showChart, chartData]);
+
+    const handleRangeChange = (newRange: 'year' | 'last_5_months') => {
+        router.get('/staff', {
+            search,
+            chart_range: newRange,
+            chart_year: year,
+        }, { preserveState: true, preserveScroll: true });
+    };
+
+    const handleYearChange = (newYear: number) => {
+        router.get('/staff', {
+            search,
+            chart_range: range,
+            chart_year: newYear,
+        }, { preserveState: true, preserveScroll: true });
+    };
+
+    const isInitialMount = useRef(true);
+
+    useEffect(() => {
+        if (isInitialMount.current) {
+            isInitialMount.current = false;
+            return;
+        }
+
+        const timer = setTimeout(() => {
+            router.get(
+                '/staff',
+                {
+                    search,
+                    chart_range: range,
+                    chart_year: year,
+                },
+                { preserveState: true, preserveScroll: true, replace: true }
+            );
+        }, 300);
+
+        return () => clearTimeout(timer);
+    }, [search]);
+
+    const handleSearchSubmit = () => {
+        router.get('/staff', {
+            search,
+            chart_range: range,
+            chart_year: year,
+        }, { preserveState: true, preserveScroll: true });
+    };
 
     const handleDelete = (item: StaffItem) => {
         if (!window.confirm(`Hapus staff ${item.user?.name ?? "ini"}?`)) return;
@@ -100,6 +190,85 @@ export default function StaffIndex({ staff, filters, flash }: Props) {
                 </div>
             )}
 
+            {/* Collapsible Graph Section */}
+            <Card className="mb-6 border-slate-200/80 shadow-xs">
+                <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 pb-3.5">
+                    <div className="flex items-center gap-2">
+                        <CardTitle className="flex items-center gap-2 text-base font-bold text-slate-800">
+                            <Users className="w-4 h-4 text-emerald-600" />
+                            Grafik Penugasan Konsultasi per Staff
+                        </CardTitle>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        {showChart && (
+                            <div className="flex items-center gap-2">
+                                <div className="flex items-center bg-slate-100 p-0.5 rounded-lg">
+                                    <button
+                                        type="button"
+                                        onClick={() => handleRangeChange('year')}
+                                        className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-all ${
+                                            range === 'year'
+                                                ? 'bg-white text-emerald-700 shadow-xs'
+                                                : 'text-slate-500 hover:text-slate-900'
+                                        }`}
+                                    >
+                                        Per Tahun
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleRangeChange('last_5_months')}
+                                        className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-all ${
+                                            range === 'last_5_months'
+                                                ? 'bg-white text-emerald-700 shadow-xs'
+                                                : 'text-slate-500 hover:text-slate-900'
+                                        }`}
+                                    >
+                                        5 Bulan Terakhir
+                                    </button>
+                                </div>
+
+                                {range === 'year' && chartData?.availableYears && chartData.availableYears.length > 0 && (
+                                    <select
+                                        value={year}
+                                        onChange={(e) => handleYearChange(Number(e.target.value))}
+                                        className="h-8 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 shadow-xs focus:border-emerald-500 focus:outline-hidden focus:ring-1 focus:ring-emerald-500"
+                                    >
+                                        {chartData.availableYears.map((y) => (
+                                            <option key={y} value={y}>
+                                                {y}
+                                            </option>
+                                        ))}
+                                    </select>
+                                )}
+                            </div>
+                        )}
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setShowChart(!showChart)}
+                            className="h-8 gap-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 text-xs font-medium"
+                        >
+                            {showChart ? (
+                                <>
+                                    Sembunyikan Grafik
+                                    <ChevronUp className="w-3.5 h-3.5" />
+                                </>
+                            ) : (
+                                <>
+                                    Tampilkan Grafik
+                                    <ChevronDown className="w-3.5 h-3.5" />
+                                </>
+                            )}
+                        </Button>
+                    </div>
+                </CardHeader>
+                {showChart && (
+                    <CardContent className="pt-4">
+                        <div ref={chartRef} className="min-h-80 w-full" />
+                    </CardContent>
+                )}
+            </Card>
+
             <PaginatedTable
                 searchValue={search}
                 onSearchChange={setSearch}
@@ -120,7 +289,7 @@ export default function StaffIndex({ staff, filters, flash }: Props) {
                         <th className="text-center px-5 py-3 font-semibold text-slate-500 text-xs uppercase tracking-wider whitespace-nowrap">Aksi</th>
                     </tr>
                 }
-                isEmpty={filtered.length === 0}
+                isEmpty={staff.data.length === 0}
                 emptyState={
                     <tr>
                         <td colSpan={6} className="text-center py-16 text-slate-400">
@@ -136,12 +305,12 @@ export default function StaffIndex({ staff, filters, flash }: Props) {
                             links={staff.links}
                             currentPage={staff.current_page}
                             lastPage={staff.last_page}
-                            onNavigate={(url) => router.get(url)}
+                            onNavigate={(url) => router.get(url, { search, chart_range: range, chart_year: year }, { preserveState: true })}
                         />
                     ) : null
                 }
             >
-                {filtered.map((item, index) => (
+                {staff.data.map((item, index) => (
                     <tr key={item.id} className="hover:bg-slate-50/70 transition-colors group">
                         <td className="px-5 py-4 text-slate-400 font-mono text-xs">{baseNumber + index}</td>
                         <td className="px-5 py-4">
@@ -202,7 +371,7 @@ export default function StaffIndex({ staff, filters, flash }: Props) {
                     <DialogHeader>
                         <DialogTitle>Daftar Konsultasi</DialogTitle>
                     </DialogHeader>
-                    {filtered.map((item) => (
+                    {staff.data.map((item) => (
                         <div key={item.id} className="mb-4">
                             <h3 className="font-semibold text-slate-700">{item.user?.name ?? "-"}</h3>
                             {item.permohonan_konsultasi.length > 0 ? item.permohonan_konsultasi.map((konsul) => (
