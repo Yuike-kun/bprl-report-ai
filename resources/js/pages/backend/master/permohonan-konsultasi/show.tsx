@@ -478,14 +478,25 @@ export default function PermohonanKonsultasiShow({ submission }: Props) {
                             </p>
                         </div>
 
-                        {submission.tanda_tangan && (
-                            <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm ring-1 ring-slate-100 sm:p-5">
-                                <div className="mb-4 flex items-center gap-2">
+                        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm ring-1 ring-slate-100 sm:p-5">
+                            <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                                <div className="flex items-center gap-2">
                                     <UserRound className="h-4 w-4 text-slate-500" />
                                     <h3 className="text-base font-bold text-slate-900">
                                         Tanda Tangan Pemohon
                                     </h3>
                                 </div>
+                                <a
+                                    href={`/signature-upload?id=${submission.id}&email=${encodeURIComponent(submission.email)}`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-blue-600 hover:bg-blue-50 transition-colors"
+                                >
+                                    <ExternalLink className="h-3.5 w-3.5" /> Link Upload Pemohon
+                                </a>
+                            </div>
+
+                            {submission.tanda_tangan ? (
                                 <div className="inline-block rounded-2xl border border-slate-200 bg-slate-50 p-3">
                                     <img
                                         src={submission.tanda_tangan}
@@ -493,8 +504,12 @@ export default function PermohonanKonsultasiShow({ submission }: Props) {
                                         className="max-h-36 object-contain"
                                     />
                                 </div>
-                            </div>
-                        )}
+                            ) : (
+                                <p className="text-xs text-slate-400 italic">
+                                    Belum ada tanda tangan. Pemohon dapat mengunggah tanda tangan melalui link di atas.
+                                </p>
+                            )}
+                        </div>
 
                         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm ring-1 ring-slate-100 sm:p-5">
                             <div className="mb-4 flex items-center gap-2">

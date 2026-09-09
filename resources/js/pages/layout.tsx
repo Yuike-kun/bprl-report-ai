@@ -18,6 +18,7 @@ import {
     ArrowUpRight,
     HelpCircle,
     Compass,
+    PenTool,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -28,6 +29,13 @@ const services = [
         title: 'Permohonan Konsultasi',
         desc: 'Ajukan permohonan & asistensi teknis pemanfaatan ruang laut secara daring.',
         badge: 'Publik',
+    },
+    {
+        href: '/signature-upload',
+        icon: PenTool,
+        title: 'Unggah Tanda Tangan',
+        desc: 'Unggah atau perbarui tanda tangan berkas permohonan tanpa akun login.',
+        badge: 'Pemohon',
     },
     {
         href: '/kkprl',

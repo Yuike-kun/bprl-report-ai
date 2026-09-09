@@ -1,6 +1,6 @@
 import { Link, router } from "@inertiajs/react";
 import MainLayout from "@/pages/backend/layout";
-import { Plus, Search, Eye, Pencil, Trash2, FileCheck2, ChevronLeft, ChevronRight, FileText, ChevronDown, ChevronUp, TrendingUp } from "lucide-react";
+import { Plus, Search, Eye, Pencil, Trash2, FileCheck2, ChevronLeft, ChevronRight, FileText, ChevronDown, ChevronUp, TrendingUp, CheckCircle, RotateCcw } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import ApexCharts from "apexcharts";
 
@@ -136,6 +136,13 @@ export default function BeritaAcaraIndex({ rows, filters, chartData }: Props) {
 
         return () => clearTimeout(timer);
     }, [search]);
+
+    const handleStatusToggle = (id: number, targetStatus: string) => {
+        const actionText = targetStatus === 'approved' ? 'memfinalkan (mengubah status ke Disetujui)' : 'mengembalikan status ke Draft';
+        if (!confirm(`Apakah Anda yakin ingin ${actionText} untuk berita acara ini?`)) return;
+
+        router.patch(`/berita-acara/${id}/status`, { status: targetStatus }, { preserveScroll: true });
+    };
 
     const handleDelete = (id: number) => {
         if (!confirm("Hapus data berita acara ini?")) return;
@@ -305,9 +312,22 @@ export default function BeritaAcaraIndex({ rows, filters, chartData }: Props) {
                                             <td className="px-5 py-3 text-xs text-slate-600">{row.staff_1_name ?? "—"}</td>
                                             <td className="px-5 py-3">
                                                 <div className="flex items-center justify-end gap-1">
+                                                    {row.status === 'draft' ? (
+                                                        <button onClick={() => handleStatusToggle(row.id, 'approved')}
+                                                            title="Ubah ke Final (Disetujui)"
+                                                            className="flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors">
+                                                            <CheckCircle className="w-3.5 h-3.5" /> Finalkan
+                                                        </button>
+                                                    ) : (
+                                                        <button onClick={() => handleStatusToggle(row.id, 'draft')}
+                                                            title="Ubah ke Draft"
+                                                            className="flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors">
+                                                            <RotateCcw className="w-3.5 h-3.5" /> Ke Draft
+                                                        </button>
+                                                    )}
                                                     <a href={`/berita-acara/${row.id}/pdf`} target="_blank" rel="noreferrer"
-                                                        className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 transition-all">
-                                                        <FileText className="w-4 h-4" /> Unduh PDF
+                                                        className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-all">
+                                                        <FileText className="w-3.5 h-3.5" /> PDF
                                                     </a>
                                                     <Link href={`/berita-acara/${row.id}`}
                                                         className="p-1.5 rounded-lg hover:bg-blue-50 text-slate-400 hover:text-blue-600 transition-colors">

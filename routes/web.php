@@ -24,6 +24,7 @@ use App\Http\Controllers\UsersController;
 use App\Http\Controllers\LogHistoryController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\DocumentController;
+use App\Http\Controllers\PublicUploadSignatureController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('api')->prefix('api/geolocation')->group(function () {
@@ -37,6 +38,10 @@ Route::inertia('/', 'welcome')->name('home');
 
 Route::get('/request-form', [RequestFormController::class, 'index'])->name('request-form');
 Route::post('/request-form', [RequestFormController::class, 'store'])->name('request-form.store');
+
+Route::get('/signature-upload', [PublicUploadSignatureController::class, 'index'])->name('signature-upload');
+Route::post('/signature-upload', [PublicUploadSignatureController::class, 'store'])->name('signature-upload.store');
+Route::get('/master/permohonan-konsultasi/{permohonanKonsultasi}/download-confirmation-pdf', [PermohonanKonsultasiController::class, 'downloadConfirmationPdf'])->name('master.permohonan-konsultasi.download-confirmation-pdf');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
@@ -118,7 +123,6 @@ Route::middleware('auth')->group(function () {
             Route::get('/', [PermohonanKonsultasiController::class, 'index'])->name('index');
             Route::get('/create', [RequestFormController::class, 'index'])->name('create');
             Route::get('/search', [KkprlProposalMasterController::class, 'searchPermohonanKonsultasi'])->name('search');
-            Route::get('/{permohonanKonsultasi}/download-confirmation-pdf', [PermohonanKonsultasiController::class, 'downloadConfirmationPdf'])->name('download-confirmation-pdf');
             Route::get('/{permohonanKonsultasi}', [PermohonanKonsultasiController::class, 'show'])->name('show');
             Route::get('/{permohonanKonsultasi}/edit', [PermohonanKonsultasiController::class, 'edit'])->name('edit');
             Route::put('/{permohonanKonsultasi}', [PermohonanKonsultasiController::class, 'update'])->name('update');
@@ -163,9 +167,10 @@ Route::middleware('auth')->group(function () {
             Route::delete('/documents/{document}', [BeritaAcaraController::class, 'destroyDocument'])->name('document.destroy');
         });
         Route::post('/', [BeritaAcaraController::class, 'store'])->name('store');
-        Route::get('/{beritaAcara}/pdf', [BeritaAcaraController::class, 'pdf'])
-            ->name('pdf');
     });
+
+    Route::get('/berita-acara/{beritaAcara}/pdf', [BeritaAcaraController::class, 'pdf'])
+        ->name('berita-acara.pdf');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');

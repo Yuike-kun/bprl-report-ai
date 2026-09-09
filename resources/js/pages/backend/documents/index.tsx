@@ -372,9 +372,6 @@ export default function DocumentManagementIndex({
                             Nama Dokumen & Subtipe
                         </th>
                         <th className="px-5 py-3.5 text-left text-xs font-semibold tracking-wider whitespace-nowrap text-slate-500 uppercase">
-                            Kategori
-                        </th>
-                        <th className="px-5 py-3.5 text-left text-xs font-semibold tracking-wider whitespace-nowrap text-slate-500 uppercase">
                             Pengirim / Pemilik
                         </th>
                         <th className="px-5 py-3.5 text-left text-xs font-semibold tracking-wider whitespace-nowrap text-slate-500 uppercase">
@@ -444,17 +441,14 @@ export default function DocumentManagementIndex({
                                     <span className="inline-block mt-0.5 rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
                                         {item.sub_type}
                                     </span>
+                                    <br />
+                                    <span
+                                        className={`inline-flex items-center rounded-lg border px-2.5 py-1 mt-1 text-xs font-bold ${categoryBadgeClass[item.category_type] ?? 'bg-slate-100 text-slate-600'}`}
+                                    >
+                                        {item.category_label}
+                                    </span>
                                 </div>
                             </div>
-                        </td>
-
-                        {/* Category */}
-                        <td className="px-5 py-4 whitespace-nowrap">
-                            <span
-                                className={`inline-flex items-center rounded-lg border px-2.5 py-1 text-xs font-bold ${categoryBadgeClass[item.category_type] ?? 'bg-slate-100 text-slate-600'}`}
-                            >
-                                {item.category_label}
-                            </span>
                         </td>
 
                         {/* Sender */}

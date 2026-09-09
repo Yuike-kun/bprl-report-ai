@@ -21,6 +21,7 @@ import {
     CircleAlert,
     CheckCircle2,
     Sparkles,
+    PenTool,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useRef, useState } from 'react';
@@ -308,41 +309,78 @@ export default function RequestForm() {
                         </div>
                     </div>
 
-                    <Dialog>
-                        <DialogTrigger
-                            render={
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="rounded-xl border-slate-200 text-xs text-slate-600 shadow-xs hover:border-blue-200 hover:bg-blue-50/50 hover:text-blue-600"
-                                >
-                                    <BookOpen className="mr-1.5 h-3.5 w-3.5 text-blue-500" />
-                                    Panduan
-                                </Button>
-                            }
-                        />
-                        <DialogContent className="rounded-2xl sm:max-w-md">
-                            <DialogHeader>
-                                <DialogTitle>Panduan Konsultasi</DialogTitle>
-                                <DialogDescription>
-                                    Ikuti langkah berikut untuk mengajukan permohonan konsultasi.
-                                </DialogDescription>
-                            </DialogHeader>
-                            <ol className="list-none space-y-3 text-sm text-slate-600">
-                                {GUIDE_ITEMS.map((item, index) => (
-                                    <li key={item.title} className="flex gap-3">
-                                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-[10px] font-bold text-white shadow-xs">
-                                            {index + 1}
-                                        </span>
-                                        <div>
-                                            <p className="font-medium text-slate-900">{item.title}</p>
-                                            <p className="text-xs text-slate-500">{item.desc}</p>
-                                        </div>
-                                    </li>
-                                ))}
-                            </ol>
-                        </DialogContent>
-                    </Dialog>
+                    <div className="flex items-center gap-2">
+                        <Link href="/signature-upload">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="rounded-xl border-blue-200 text-xs text-blue-600 bg-blue-50/50 shadow-xs hover:bg-blue-100 hover:border-blue-300 font-semibold gap-1.5"
+                            >
+                                <PenTool className="h-3.5 w-3.5 text-blue-600" />
+                                Upload TTD Pemohon
+                            </Button>
+                        </Link>
+
+                        <Dialog>
+                            <DialogTrigger
+                                render={
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="rounded-xl border-slate-200 text-xs text-slate-600 shadow-xs hover:border-blue-200 hover:bg-blue-50/50 hover:text-blue-600"
+                                    >
+                                        <BookOpen className="mr-1.5 h-3.5 w-3.5 text-blue-500" />
+                                        Panduan
+                                    </Button>
+                                }
+                            />
+                            <DialogContent className="rounded-2xl sm:max-w-md">
+                                <DialogHeader>
+                                    <DialogTitle>Panduan Konsultasi</DialogTitle>
+                                    <DialogDescription>
+                                        Ikuti langkah berikut untuk mengajukan permohonan konsultasi.
+                                    </DialogDescription>
+                                </DialogHeader>
+                                <ol className="list-none space-y-3 text-sm text-slate-600">
+                                    {GUIDE_ITEMS.map((item, index) => (
+                                        <li key={item.title} className="flex gap-3">
+                                            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-[10px] font-bold text-white shadow-xs">
+                                                {index + 1}
+                                            </span>
+                                            <div>
+                                                <p className="font-medium text-slate-900">{item.title}</p>
+                                                <p className="text-xs text-slate-500">{item.desc}</p>
+                                            </div>
+                                        </li>
+                                    ))}
+                                </ol>
+                            </DialogContent>
+                        </Dialog>
+                    </div>
+                </motion.div>
+
+                {/* Notification bar to quickly upload signature for existing requests */}
+                <motion.div
+                    initial={{ opacity: 0, y: -5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-blue-200/80 bg-blue-50/60 p-4 text-xs text-blue-900 shadow-xs"
+                >
+                    <div className="flex items-center gap-2.5">
+                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-white shrink-0">
+                            <PenTool className="h-3.5 w-3.5" />
+                        </div>
+                        <div>
+                            <p className="font-bold">Sudah Pernah Mengajukan Permohonan?</p>
+                            <p className="text-slate-500">Unggah atau perbarui tanda tangan untuk berkas Anda yang sudah ada.</p>
+                        </div>
+                    </div>
+                    <Link
+                        href="/signature-upload"
+                        className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-blue-700 transition-colors shrink-0"
+                    >
+                        Upload TTD Pemohon &rarr;
+                    </Link>
                 </motion.div>
 
                 {/* Flash success */}

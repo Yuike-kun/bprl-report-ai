@@ -8,6 +8,7 @@ import {
     BadgeCheck,
     FileText,
     MapPin,
+    PenTool,
 } from 'lucide-react';
 import { Link } from '@inertiajs/react';
 import { motion, useScroll, useTransform } from 'framer-motion';
@@ -50,6 +51,14 @@ const services = [
         desc: 'Ajukan permohonan konsultasi pemanfaatan ruang laut secara daring.',
         href: '/request-form',
         cta: 'Ajukan Sekarang',
+    },
+    {
+        icon: PenTool,
+        tag: 'PEMOHON',
+        title: 'Unggah Tanda Tangan',
+        desc: 'Unggah atau perbarui tanda tangan untuk berkas permohonan Anda tanpa perlu login.',
+        href: '/signature-upload',
+        cta: 'Upload Tanda Tangan',
     },
     {
         icon: FileText,
@@ -322,7 +331,7 @@ export default function Welcome() {
                         initial="hidden"
                         whileInView="visible"
                         viewport={{ once: true }}
-                        className="grid gap-4 sm:gap-5 md:grid-cols-3"
+                        className="grid gap-4 sm:gap-5 sm:grid-cols-2 lg:grid-cols-4"
                     >
                         {services.map((service) => {
                             const ServiceIcon = service.icon;
@@ -355,6 +364,42 @@ export default function Welcome() {
                             );
                         })}
                     </motion.div>
+                </motion.div>
+
+                {/* ═══════════ CTA UPLOAD TANDA TANGAN ═══════════ */}
+                <motion.div
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: true, margin: '-60px' }}
+                    variants={sectionScrollVariants}
+                    className="mx-4 pb-12 sm:mx-10 sm:pb-16 lg:mx-24"
+                >
+                    <div className="relative overflow-hidden rounded-3xl border border-blue-200/80 bg-gradient-to-br from-blue-600 via-indigo-600 to-slate-900 p-6 sm:p-10 text-white shadow-xl shadow-blue-500/10">
+                        <div className="absolute -right-12 -bottom-12 h-64 w-64 rounded-full bg-cyan-400/20 blur-3xl pointer-events-none" />
+                        <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+                            <div className="max-w-xl space-y-2">
+                                <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-cyan-200 backdrop-blur-md border border-white/15">
+                                    <PenTool className="h-3.5 w-3.5" /> Khusus Pemohon
+                                </span>
+                                <h2 className="text-2xl font-black tracking-tight sm:text-3xl">
+                                    Sudah mengajukan permohonan?
+                                </h2>
+                                <p className="text-xs text-blue-100 sm:text-sm leading-relaxed">
+                                    Lengkapi atau perbarui tanda tangan untuk berkas permohonan konsultasi Anda secara daring tanpa perlu membuat akun atau login.
+                                </p>
+                            </div>
+                            <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} className="w-full lg:w-auto shrink-0">
+                                <Link
+                                    href="/signature-upload"
+                                    className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-2xl bg-white px-6 py-3.5 text-sm font-bold text-blue-900 shadow-lg transition-all hover:bg-cyan-50 hover:shadow-cyan-500/20"
+                                >
+                                    <PenTool className="h-4 w-4 text-blue-600" />
+                                    Unggah Tanda Tangan Sekarang
+                                    <ArrowRight className="h-4 w-4" />
+                                </Link>
+                            </motion.div>
+                        </div>
+                    </div>
                 </motion.div>
 
                 {/* ═══════════ PENUTUP ═══════════ */}
