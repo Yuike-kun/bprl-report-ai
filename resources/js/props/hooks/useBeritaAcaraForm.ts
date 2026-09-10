@@ -39,11 +39,19 @@ export function useBeritaAcaraForm(
                           .map(String)
             );
 
+            // Ensure activity_detail is always an array (legacy data may be a string)
+            const activityDetail = Array.isArray(berita_acara.activity_detail)
+                ? berita_acara.activity_detail
+                : berita_acara.activity_detail
+                    ? [berita_acara.activity_detail]
+                    : [];
+
             return {
                 ...EMPTY_FORM,
                 ...berita_acara,
                 staff_ids: Array.isArray(staffIds) ? staffIds : [],
                 owned_documents: berita_acara.owned_documents ?? [],
+                activity_detail: activityDetail,
             };
         }
         if (typeof window === 'undefined') return { ...EMPTY_FORM };
@@ -82,14 +90,18 @@ export function useBeritaAcaraForm(
     useEffect(() => {
         if (isEdit || !konsultasi) return;
 
-        const defaultStaffId = Array.isArray(konsultasi.assign_to_staff) && konsultasi.assign_to_staff[0]
-            ? String(konsultasi.assign_to_staff[0].staff ?? konsultasi.assign_to_staff[0].Staff?.id ?? '')
-            : '';
+        const assignedStaffIds = Array.isArray(konsultasi.assign_to_staff)
+            ? konsultasi.assign_to_staff
+                  .map((a: any) => String(a.staff ?? a.Staff?.id ?? ''))
+                  .filter(Boolean)
+            : [];
+
+        const defaultStaffId = assignedStaffIds[0] || '';
 
         setForm((prev) => ({
             ...prev,
             staff_1_id: prev.staff_1_id || defaultStaffId,
-            staff_ids: prev.staff_ids.length ? prev.staff_ids : (defaultStaffId ? [defaultStaffId] : []),
+            staff_ids: prev.staff_ids.length ? prev.staff_ids : assignedStaffIds,
             requester_name: prev.requester_name || konsultasi?.nama_pemohon || '',
             requester_position:
                 prev.requester_position || konsultasi?.jabatan_pemohon || '',
@@ -175,7 +187,7 @@ export function useBeritaAcaraForm(
             !form.contact_email ||
             !form.permit_type ||
             !form.activity_type ||
-            !form.activity_detail ||
+            form.activity_detail.length === 0 ||
             !form.province ||
             !form.regency ||
             !form.water_name

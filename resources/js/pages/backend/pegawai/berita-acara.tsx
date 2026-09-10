@@ -70,8 +70,64 @@ export default function BeritaAcara({
         handleSubmit,
     } = useBeritaAcaraForm(konsultasi, berita_acara, adminMode);
 
+    // If stored values are numeric IDs (old data / admin-created), resolve them to
+    // display names once on mount so the ComboboxSearch shows the label correctly.
     useEffect(() => {
-        if (!form.province || locationIds.province) return;
+        const isNumericId = (v: string) => /^\d+$/.test(v);
+
+        const resolveProvince = async (id: string) => {
+            const res = await fetch(`/api/geolocation/provinces?search=`);
+            const json = await res.json();
+            const item = (json.data ?? []).find((e: any) => String(e.id) === id);
+            if (item) {
+                set('province', item.name);
+                setLocationIds((prev) => ({ ...prev, province: String(item.id) }));
+                return item;
+            }
+            return null;
+        };
+
+        const resolveRegency = async (provinceId: string, regencyId: string) => {
+            const res = await fetch(`/api/geolocation/regencies?province_id=${provinceId}&search=`);
+            const json = await res.json();
+            const item = (json.data ?? []).find((e: any) => String(e.id) === regencyId);
+            if (item) {
+                set('regency', item.name);
+                setLocationIds((prev) => ({ ...prev, regency: String(item.id) }));
+                return item;
+            }
+            return null;
+        };
+
+        const resolveDistrict = async (regencyId: string, districtId: string) => {
+            const res = await fetch(`/api/geolocation/districts?regency_id=${regencyId}&search=`);
+            const json = await res.json();
+            const item = (json.data ?? []).find((e: any) => String(e.id) === districtId);
+            if (item) {
+                set('district', item.name);
+                setLocationIds((prev) => ({ ...prev, district: String(item.id) }));
+            }
+        };
+
+        const run = async () => {
+            if (form.province && isNumericId(form.province)) {
+                const prov = await resolveProvince(form.province);
+                if (prov && form.regency && isNumericId(form.regency)) {
+                    const reg = await resolveRegency(String(prov.id), form.regency);
+                    if (reg && form.district && isNumericId(form.district)) {
+                        await resolveDistrict(String(reg.id), form.district);
+                    }
+                }
+            }
+        };
+
+        run();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // Name-to-ID resolution for newly typed / selected values (non-numeric names)
+    useEffect(() => {
+        if (!form.province || locationIds.province || /^\d+$/.test(form.province)) return;
         fetch(`/api/geolocation/provinces?search=${encodeURIComponent(form.province)}`)
             .then((response) => response.json())
             .then((json) => {
@@ -81,7 +137,7 @@ export default function BeritaAcara({
     }, [form.province, locationIds.province]);
 
     useEffect(() => {
-        if (!form.regency || locationIds.regency || !locationIds.province) return;
+        if (!form.regency || locationIds.regency || !locationIds.province || /^\d+$/.test(form.regency)) return;
         fetch(`/api/geolocation/regencies?province_id=${locationIds.province}&search=${encodeURIComponent(form.regency)}`)
             .then((response) => response.json())
             .then((json) => {
@@ -91,7 +147,7 @@ export default function BeritaAcara({
     }, [form.regency, locationIds.province, locationIds.regency]);
 
     useEffect(() => {
-        if (!form.district || locationIds.district || !locationIds.regency) return;
+        if (!form.district || locationIds.district || !locationIds.regency || /^\d+$/.test(form.district)) return;
         fetch(`/api/geolocation/districts?regency_id=${locationIds.regency}&search=${encodeURIComponent(form.district)}`)
             .then((response) => response.json())
             .then((json) => {
@@ -386,24 +442,45 @@ export default function BeritaAcara({
                             </div>
 
                             <div className="mt-5 border-t border-slate-100 pt-5">
-                                <FormLabel required>Petugas Pembuat Berita Acara</FormLabel>
-                                <select
-                                    value={form.staff_1_id || (selectedStaffIds[0] ?? '')}
-                                    onChange={(e) => {
-                                        const val = e.target.value;
-                                        set('staff_1_id', val);
-                                        set('staff_ids', val ? [val] : []);
-                                    }}
-                                    className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-700 outline-none focus-visible:ring-2 focus-visible:ring-emerald-200"
-                                >
-                                    <option value="">Pilih Petugas Pembuat Berita Acara</option>
-                                    {staffList.map((s) => (
-                                        <option key={s.id} value={s.id}>
-                                            {s.name} — {s.position}
-                                        </option>
-                                    ))}
-                                </select>
-                                <FieldError message={errors?.staff_1_id || errors?.staff_ids} />
+                                <FormLabel required>Petugas Pendamping</FormLabel>
+                                <p className="mb-2 text-xs text-slate-500">
+                                    Pilih seluruh staf yang terlibat dalam pendampingan permohonan.
+                                </p>
+                                <div className="grid gap-2 sm:grid-cols-2">
+                                    {staffOptions.map((option) => {
+                                        const isChecked = selectedStaffIds.includes(option.value);
+                                        return (
+                                            <label
+                                                key={option.value}
+                                                className={`flex cursor-pointer items-center gap-2.5 rounded-xl border p-2.5 text-xs font-semibold transition-all ${
+                                                    isChecked
+                                                        ? 'border-blue-500 bg-blue-50 text-blue-700'
+                                                        : 'border-slate-200 text-slate-700 hover:border-blue-300 hover:bg-blue-50/40'
+                                                }`}
+                                            >
+                                                <input
+                                                    type="checkbox"
+                                                    checked={isChecked}
+                                                    onChange={() => toggleStaff(option.value)}
+                                                    className="hidden"
+                                                />
+                                                <span
+                                                    className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border-2 transition-all ${
+                                                        isChecked
+                                                            ? 'border-blue-500 bg-blue-500'
+                                                            : 'border-slate-300'
+                                                    }`}
+                                                >
+                                                    {isChecked && (
+                                                        <Check className="h-2.5 w-2.5 text-white" />
+                                                    )}
+                                                </span>
+                                                <span className="truncate">{option.label}</span>
+                                            </label>
+                                        );
+                                    })}
+                                </div>
+                                <FieldError message={errors?.staff_ids || errors?.staff_1_id} />
                             </div>
 
                             <div className="grid gap-5 sm:grid-cols-2">
@@ -455,36 +532,42 @@ export default function BeritaAcara({
 
                             <div>
                                 <FormLabel required>Rincian Kegiatan</FormLabel>
+                                <p className="mb-2 text-xs text-slate-500">Dapat memilih lebih dari satu</p>
                                 <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                                    {ACTIVITY_DETAILS.map((a) => (
-                                        <label
-                                            key={a}
-                                            className={`flex cursor-pointer items-center gap-2 rounded-xl border p-2.5 text-xs font-medium transition-all ${form.activity_detail === a ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 text-slate-600 hover:border-blue-300'}`}
-                                        >
-                                            <input
-                                                type="radio"
-                                                name="activity_detail"
-                                                value={a}
-                                                checked={
-                                                    form.activity_detail === a
-                                                }
-                                                onChange={() =>
-                                                    set('activity_detail', a)
-                                                }
-                                                className="hidden"
-                                            />
-                                            <span
-                                                className={`flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full border-2 ${form.activity_detail === a ? 'border-blue-500' : 'border-slate-300'}`}
+                                    {ACTIVITY_DETAILS.map((a) => {
+                                        const isChecked = form.activity_detail.includes(a);
+                                        return (
+                                            <label
+                                                key={a}
+                                                className={`flex cursor-pointer items-center gap-2 rounded-xl border p-2.5 text-xs font-medium transition-all ${isChecked ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 text-slate-600 hover:border-blue-300'}`}
                                             >
-                                                {form.activity_detail === a && (
-                                                    <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
-                                                )}
-                                            </span>
-                                            {a}
-                                        </label>
-                                    ))}
+                                                <input
+                                                    type="checkbox"
+                                                    value={a}
+                                                    checked={isChecked}
+                                                    onChange={() => {
+                                                        const next = isChecked
+                                                            ? form.activity_detail.filter((v) => v !== a)
+                                                            : [...form.activity_detail, a];
+                                                        set('activity_detail', next);
+                                                    }}
+                                                    className="hidden"
+                                                />
+                                                <span
+                                                    className={`flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded border-2 ${isChecked ? 'border-blue-500 bg-blue-500' : 'border-slate-300'}`}
+                                                >
+                                                    {isChecked && (
+                                                        <svg className="h-2.5 w-2.5 text-white" viewBox="0 0 10 10" fill="none">
+                                                            <path d="M2 5l2.5 2.5L8 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                                        </svg>
+                                                    )}
+                                                </span>
+                                                {a}
+                                            </label>
+                                        );
+                                    })}
                                 </div>
-                                {form.activity_detail === 'Yang lain' && (
+                                {form.activity_detail.includes('Yang lain') && (
                                     <div className="mt-2">
                                         <TextInput
                                             value={form.activity_detail_other}

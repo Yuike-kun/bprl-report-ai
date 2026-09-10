@@ -64,6 +64,7 @@ class BeritaAcaraKonsultasi extends Model
     protected $casts = [
         'consultation_date' => 'date',
         'owned_documents' => 'array',
+        'activity_detail' => 'array',
         'planned_area' => 'decimal:4',
     ];
 

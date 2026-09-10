@@ -189,11 +189,11 @@
         }
 
         table.result-table td {
-            border: 1px solid #777;
-            padding: 6px 10px;
+            border: none;
+            padding: 4px 0;
             vertical-align: top;
             text-align: justify;
-            background-color: #fff;
+            background-color: transparent;
             font-size: 10.5pt;
             line-height: 1.4;
         }
@@ -228,12 +228,12 @@
             color: #0d47a1;
         }
 
-        .chk {
+        .chk-icon {
+            width: 13px;
+            height: 13px;
+            vertical-align: -1px;
+            margin-right: 6px;
             display: inline-block;
-            width: 14px;
-            font-size: 13pt;
-            vertical-align: middle;
-            margin-right: 4px;
         }
 
         .closing {
@@ -285,14 +285,6 @@
             page-break-before: always;
         }
 
-        .lampiran-header {
-            margin-bottom: 12px;
-        }
-
-        .lampiran-header p {
-            margin: 0 0 2px 0;
-            font-size: 10.5pt;
-        }
 
         .lampiran-title {
             font-weight: bold;
@@ -332,6 +324,39 @@
 
         .file-line:last-child {
             border-bottom: none;
+        }
+
+        /* ── Coordinate Table ───────────────────────────────── */
+        table.coord-table {
+            width: auto;
+            border-collapse: collapse;
+            margin: 8px 0 14px 0;
+            font-size: 10.5pt;
+        }
+
+        table.coord-table th {
+            border: 1px solid #555;
+            padding: 5px 12px;
+            background: #f0f0f0;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        table.coord-table td {
+            border: 1px solid #555;
+            padding: 5px 12px;
+            text-align: center;
+        }
+
+        /* ── Lampiran Header (right-aligned) ────────────────── */
+        .lampiran-header {
+            margin-bottom: 12px;
+            text-align: right;
+        }
+
+        .lampiran-header p {
+            margin: 0 0 2px 0;
+            font-size: 10.5pt;
         }
     </style>
 </head>
@@ -381,9 +406,17 @@
             'hybrid' => 'Hybrid',
         ][$beritaAcara->implementation_mode] ?? $beritaAcara->implementation_mode;
 
-        $activityDetail = $beritaAcara->activity_detail === 'Yang lain'
-            ? $beritaAcara->activity_detail_other
-            : $beritaAcara->activity_detail;
+        $activityDetailRaw = $beritaAcara->activity_detail;
+        if (is_array($activityDetailRaw)) {
+            $parts = array_map(function($item) use ($beritaAcara) {
+                return $item === 'Yang lain' ? ($beritaAcara->activity_detail_other ?: 'Yang lain') : $item;
+            }, $activityDetailRaw);
+            $activityDetail = implode(', ', $parts);
+        } else {
+            $activityDetail = $activityDetailRaw === 'Yang lain'
+                ? $beritaAcara->activity_detail_other
+                : $activityDetailRaw;
+        }
 
         $waterName = $beritaAcara->water_name === 'Lainnya'
             ? $beritaAcara->water_name_other
@@ -469,6 +502,23 @@
 
         $staffSignature = $getSignatureSrc($rawStaffSig);
 
+        // ── Build full staff list ────────────────────────────────────────
+        // Priority: BelongsToMany staff (ordered by sort_order), then fallback to staff1-4 columns
+        $allStaff = $beritaAcara->staff->isNotEmpty()
+            ? $beritaAcara->staff
+            : collect(array_filter([
+                $beritaAcara->staff1,
+                $beritaAcara->staff2,
+                $beritaAcara->staff3,
+                $beritaAcara->staff4,
+            ]));
+
+        // Deduplicate by ID in case both sources overlap
+        $allStaff = $allStaff->unique('id')->values();
+
+        $svgChecked = 'data:image/svg+xml;base64,' . base64_encode('<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18"><rect width="18" height="18" rx="3" fill="#0d47a1"/><path d="M4 9.5L7.5 13L14 5" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>');
+        $svgUnchecked = 'data:image/svg+xml;base64,' . base64_encode('<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18"><rect x="1" y="1" width="16" height="16" rx="3" fill="#ffffff" stroke="#666666" stroke-width="1.8"/></svg>');
+
         $isAsistensi = $beritaAcara->consultation_stage === 'asistensi';
     @endphp
 
@@ -488,11 +538,11 @@
     </p>
 
     <ol class="attendees">
-        @if ($staffMaker)
-            <li>{{ $staffMaker->user->name ?? 'Petugas Pendamping' }} ({{ $staffMaker->position ?? 'Petugas Pendamping' }})</li>
-        @else
+        @forelse ($allStaff as $s)
+            <li>{{ $s->user->name ?? 'Petugas Pendamping' }} ({{ $s->position ?? 'Petugas Pendamping' }})</li>
+        @empty
             <li>Petugas Pendamping (Petugas Pendamping)</li>
-        @endif
+        @endforelse
         <li>{{ $beritaAcara->requester_name }} ({{ $beritaAcara->requester_position }})</li>
     </ol>
 
@@ -556,11 +606,11 @@
         <table class="hasil-table">
             <tr>
                 <td class="{{ $beritaAcara->consultation_result === 'dokumen_sesuai' ? 'active' : '' }}">
-                    <span class="chk">{{ $beritaAcara->consultation_result === 'dokumen_sesuai' ? '☑' : '☐' }}</span>
+                    <img src="{{ $beritaAcara->consultation_result === 'dokumen_sesuai' ? $svgChecked : $svgUnchecked }}" class="chk-icon">
                     Dokumen Sudah Sesuai
                 </td>
                 <td class="{{ $beritaAcara->consultation_result === 'perlu_perbaikan' ? 'active' : '' }}">
-                    <span class="chk">{{ $beritaAcara->consultation_result === 'perlu_perbaikan' ? '☑' : '☐' }}</span>
+                    <img src="{{ $beritaAcara->consultation_result === 'perlu_perbaikan' ? $svgChecked : $svgUnchecked }}" class="chk-icon">
                     Dokumen Perlu Perbaikan
                 </td>
             </tr>
@@ -595,18 +645,25 @@
             </tr>
         </thead>
         <tbody>
+            @foreach ($allStaff as $i => $staff)
+                @php
+                    $rawSig = ($i === 0 && $staffSignature)
+                        ? $staffSignature
+                        : $getSignatureSrc($staff->user?->signature ?? null);
+                @endphp
+                <tr>
+                    <td class="no">{{ $i + 1 }}</td>
+                    <td>{{ $staff->user->name ?? '-' }}</td>
+                    <td>{{ $staff->position ?? 'Petugas Pendamping' }}</td>
+                    <td class="ttd">
+                        @if ($rawSig)
+                            <img src="{{ $rawSig }}">
+                        @endif
+                    </td>
+                </tr>
+            @endforeach
             <tr>
-                <td class="no">1</td>
-                <td>{{ $staffMaker->user->name ?? '-' }}</td>
-                <td>{{ $staffMaker->position ?? 'Petugas Pendamping' }}</td>
-                <td class="ttd">
-                    @if ($staffSignature)
-                        <img src="{{ $staffSignature }}">
-                    @endif
-                </td>
-            </tr>
-            <tr>
-                <td class="no">2</td>
+                <td class="no">{{ $allStaff->count() + 1 }}</td>
                 <td>{{ $beritaAcara->requester_name }}</td>
                 <td>{{ $beritaAcara->requester_position }}</td>
                 <td class="ttd">

@@ -32,7 +32,7 @@ export interface FormData {
     contact_email: string;
     permit_type: string;
     activity_type: string;
-    activity_detail: string;
+    activity_detail: string[];
     activity_detail_other: string;
     kbli: string;
     province: string;
@@ -78,7 +78,7 @@ export const EMPTY_FORM: FormData = {
     contact_email: '',
     permit_type: '',
     activity_type: '',
-    activity_detail: '',
+    activity_detail: [],
     activity_detail_other: '',
     kbli: '',
     province: '',

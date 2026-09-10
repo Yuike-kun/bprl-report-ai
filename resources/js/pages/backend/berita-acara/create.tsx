@@ -91,7 +91,7 @@ interface FormData {
     contact_email: string;
     permit_type: string;
     activity_type: string;
-    activity_detail: string;
+    activity_detail: string[];
     activity_detail_other: string;
     kbli: string;
     province: string;
@@ -314,7 +314,7 @@ const EMPTY: FormData = {
     implementation_mode: "", location: "", location_other: "",
     staff_1_id: "", staff_2_id: "", staff_3_id: "", staff_4_id: "",
     requester_name: "", requester_position: "", legal_entity_name: "",
-    contact_email: "", permit_type: "", activity_type: "", activity_detail: "",
+    contact_email: "", permit_type: "", activity_type: "", activity_detail: [] as string[],
     activity_detail_other: "", kbli: "", province: "", regency: "", district: "",
     water_name: "", water_name_other: "", consultation_instruments: "",
     activity_category: "", planned_area: "", planned_area_unit: "Ha",
@@ -355,7 +355,7 @@ export default function CreateBeritaAcara({ staffList, konsultasi, record }: Pro
         if (!form.consultation_stage || !form.consultation_date || !form.implementation_mode ||
             !form.location || !form.staff_1_id || !form.requester_name || !form.requester_position ||
             !form.legal_entity_name || !form.contact_email || !form.permit_type ||
-            !form.activity_type || !form.activity_detail || !form.province || !form.regency || !form.water_name
+            !form.activity_type || form.activity_detail.length === 0 || !form.province || !form.regency || !form.water_name
         ) {
             alertError("Harap lengkapi semua field wajib di Langkah 1 terlebih dahulu.");
             return;
@@ -409,6 +409,11 @@ export default function CreateBeritaAcara({ staffList, konsultasi, record }: Pro
                 staff_3_id: record.staff_3_id ? String(record.staff_3_id) : "",
                 staff_4_id: record.staff_4_id ? String(record.staff_4_id) : "",
                 owned_documents: Array.isArray(record.owned_documents) ? record.owned_documents : [],
+                activity_detail: Array.isArray(record.activity_detail)
+                    ? record.activity_detail
+                    : record.activity_detail
+                        ? [record.activity_detail]
+                        : [],
             });
         } else if (konsultasi) {
             setForm({ ...form,
@@ -600,23 +605,37 @@ export default function CreateBeritaAcara({ staffList, konsultasi, record }: Pro
 
                             <div>
                                 <FormLabel required>Rincian Kegiatan</FormLabel>
+                                <p className="mb-2 text-xs text-slate-500">Dapat memilih lebih dari satu</p>
                                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                                    {ACTIVITY_DETAILS.map((a) => (
-                                        <label key={a}
-                                            className={`flex items-center gap-2 p-2.5 rounded-xl border cursor-pointer transition-all text-xs font-medium
-                                                ${form.activity_detail === a ? "border-blue-500 bg-blue-50 text-blue-700" : "border-slate-200 hover:border-blue-300 text-slate-600"}`}
-                                        >
-                                            <input type="radio" name="activity_detail" value={a} checked={form.activity_detail === a}
-                                                onChange={() => set("activity_detail", a)} className="hidden" />
-                                            <span className={`w-3.5 h-3.5 rounded-full border-2 shrink-0 flex items-center justify-center
-                                                ${form.activity_detail === a ? "border-blue-500" : "border-slate-300"}`}>
-                                                {form.activity_detail === a && <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />}
-                                            </span>
-                                            {a}
-                                        </label>
-                                    ))}
+                                    {ACTIVITY_DETAILS.map((a) => {
+                                        const isChecked = form.activity_detail.includes(a);
+                                        return (
+                                            <label key={a}
+                                                className={`flex items-center gap-2 p-2.5 rounded-xl border cursor-pointer transition-all text-xs font-medium
+                                                    ${isChecked ? "border-blue-500 bg-blue-50 text-blue-700" : "border-slate-200 hover:border-blue-300 text-slate-600"}`}
+                                            >
+                                                <input type="checkbox" value={a} checked={isChecked}
+                                                    onChange={() => {
+                                                        const next = isChecked
+                                                            ? form.activity_detail.filter((v) => v !== a)
+                                                            : [...form.activity_detail, a];
+                                                        set("activity_detail", next);
+                                                    }}
+                                                    className="hidden" />
+                                                <span className={`w-3.5 h-3.5 rounded border-2 shrink-0 flex items-center justify-center
+                                                    ${isChecked ? "border-blue-500 bg-blue-500" : "border-slate-300"}`}>
+                                                    {isChecked && (
+                                                        <svg className="h-2.5 w-2.5 text-white" viewBox="0 0 10 10" fill="none">
+                                                            <path d="M2 5l2.5 2.5L8 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                                        </svg>
+                                                    )}
+                                                </span>
+                                                {a}
+                                            </label>
+                                        );
+                                    })}
                                 </div>
-                                {form.activity_detail === "Yang lain" && (
+                                {form.activity_detail.includes("Yang lain") && (
                                     <div className="mt-2">
                                         <TextInput value={form.activity_detail_other}
                                             onChange={(v) => set("activity_detail_other", v)}
@@ -637,7 +656,7 @@ export default function CreateBeritaAcara({ staffList, konsultasi, record }: Pro
                                     <FormLabel required>Provinsi</FormLabel>
                                     <ComboboxSearch
                                         value={form.province}
-                                        onChange={(val) => set("province", val)}
+                                        onChange={(val, item) => set("province", item?.name ?? val)}
                                         fetchUrl="/api/geolocation/provinces"
                                         labelKey="name"
                                         valueKey="id"
@@ -648,7 +667,7 @@ export default function CreateBeritaAcara({ staffList, konsultasi, record }: Pro
                                     <FormLabel required>Kabupaten / Kota</FormLabel>
                                     <ComboboxSearch
                                         value={form.regency}
-                                        onChange={(val) => set('regency', val)}
+                                        onChange={(val, item) => set('regency', item?.name ?? val)}
                                         fetchUrl="/api/geolocation/regencies"
                                         labelKey="name"
                                         valueKey="id"
@@ -659,7 +678,7 @@ export default function CreateBeritaAcara({ staffList, konsultasi, record }: Pro
                                     <FormLabel>Kecamatan</FormLabel>
                                     <ComboboxSearch
                                         value={form.district}
-                                        onChange={(val) => set('district', val)}
+                                        onChange={(val, item) => set('district', item?.name ?? val)}
                                         fetchUrl="/api/geolocation/districts"
                                         labelKey="name"
                                         valueKey="id"
