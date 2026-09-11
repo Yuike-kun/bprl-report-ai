@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\User;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -15,12 +16,25 @@ class CheckRole
      */
     public function handle(Request $request, Closure $next, string ...$roles): Response
     {
-        if (! $request->user() || ! in_array($request->user()->role, $roles, true)) {
-            if ($request->user()->role === 'pegawai') {
-                return redirect()->route('pegawai.dashboard');
-            }
-            if(in_array($request->user()->role, ['admin', 'pemohon'])) {
+        $user = $request->user();
+
+        if (! $user) {
+            return $request->expectsJson()
+                ? abort(401, 'Unauthenticated.')
+                : redirect()->route('login');
+        }
+
+        // Super admin has full access to all role-gated routes.
+        if ($user->isSuperAdmin()) {
+            return $next($request);
+        }
+
+        if (! in_array($user->role, $roles, true)) {
+            if ($user->hasRole([User::ROLE_ADMIN, User::ROLE_PEMOHON])) {
                 return redirect()->route('dashboard');
+            }
+            if ($user->hasRole(User::ROLE_PEGAWAI)) {
+                return redirect()->route('pegawai.dashboard');
             }
 
             abort(403);

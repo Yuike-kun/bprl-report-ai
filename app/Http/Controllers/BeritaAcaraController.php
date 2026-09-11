@@ -324,7 +324,7 @@ class BeritaAcaraController extends Controller
         });
 
         return redirect()
-            ->route('berita-acara.index')
+            ->route('berita-acara.edit', $beritaAcara)
             ->with('success', 'Berita Acara berhasil diperbarui.');
     }
 

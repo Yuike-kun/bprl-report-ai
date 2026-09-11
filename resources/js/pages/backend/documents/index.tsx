@@ -92,7 +92,7 @@ export default function DocumentManagementIndex({
     flash,
 }: Props) {
     const { auth } = usePage<any>().props;
-    const isAdmin = auth?.user?.role === 'admin';
+    const isAdmin = ['admin', 'super_admin'].includes(auth?.user?.role);
 
     const [search, setSearch] = useState(filters?.search ?? '');
     const [category, setCategory] = useState(filters?.category ?? 'all');

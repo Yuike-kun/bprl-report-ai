@@ -1,5 +1,5 @@
 import MainLayout from "../layout";
-import { Head, Link, useForm } from "@inertiajs/react";
+import { Head, Link, useForm, usePage } from "@inertiajs/react";
 import { ArrowLeft, UserRound } from "lucide-react";
 import { FormEvent } from "react";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,14 @@ export default function UsersCreate() {
         role: "",
         signature: "",
     });
+
+    const { auth } = usePage<{ auth?: { user?: { role?: string } } }>().props;
+    const isSuperAdmin = auth?.user?.role === "super_admin";
+    // Only super admins may assign the super admin role; regular admins
+    // keep the previous single-role (admin) behavior.
+    const roleOptions = isSuperAdmin
+        ? ROLES
+        : ROLES.filter((r) => r.value === "admin");
 
     function handleSubmit(e: FormEvent) {
         e.preventDefault();
@@ -87,14 +95,14 @@ export default function UsersCreate() {
                         <label htmlFor="role" className="block text-sm font-semibold text-slate-700 mb-1.5">
                             Role
                         </label>
-                        <Select items={ROLES} onValueChange={(e: any) => setData("role", e)}>
+                        <Select items={roleOptions} onValueChange={(e: any) => setData("role", e)}>
                             <SelectTrigger className="w-full max-w-48" value={data.role}>
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectGroup>
                                     <SelectLabel>Role</SelectLabel>
-                                    {ROLES.map((item) => (
+                                    {roleOptions.map((item) => (
                                         <SelectItem key={item.value} value={item.value}>
                                             {item.label}
                                         </SelectItem>

@@ -1,5 +1,5 @@
 import MainLayout from "../layout";
-import { Head, Link, useForm } from "@inertiajs/react";
+import { Head, Link, useForm, usePage } from "@inertiajs/react";
 import { ArrowLeft, UserRound } from "lucide-react";
 import { FormEvent } from "react";
 import { ROLES } from "./const";
@@ -36,6 +36,18 @@ export default function UsersEdit({ user }: Props) {
         role: user.role,
         signature: user.signature || "",
     });
+
+    const { auth } = usePage<{ auth?: { user?: { role?: string } } }>().props;
+    const isSuperAdmin = auth?.user?.role === "super_admin";
+    // Super admins manage any role. Regular admins may only assign the plain
+    // admin role, and super admin accounts are locked for them.
+    const roleOptions = isSuperAdmin
+        ? ROLES
+        : ROLES.filter((r) => r.value === "admin");
+    const roleLocked = user.role === "super_admin" && !isSuperAdmin;
+    const visibleRoleOptions = roleLocked
+        ? ROLES.filter((r) => r.value === user.role)
+        : roleOptions;
 
     function handleSubmit(e: FormEvent) {
         e.preventDefault();
@@ -99,14 +111,14 @@ export default function UsersEdit({ user }: Props) {
                         <label htmlFor="role" className="block text-sm font-semibold text-slate-700 mb-1.5">
                             Role
                         </label>
-                        <Select items={ROLES} onValueChange={(e: any) => setData("role", e)}>
-                            <SelectTrigger className="w-full max-w-48" value={data.role}>
+                        <Select items={visibleRoleOptions} onValueChange={(e: any) => setData("role", e)}>
+                            <SelectTrigger className="w-full max-w-48" value={data.role} disabled={roleLocked}>
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectGroup>
                                     <SelectLabel>Role</SelectLabel>
-                                    {ROLES.map((item) => (
+                                    {visibleRoleOptions.map((item) => (
                                         <SelectItem key={item.value} value={item.value}>
                                             {item.label}
                                         </SelectItem>
@@ -114,6 +126,11 @@ export default function UsersEdit({ user }: Props) {
                                 </SelectGroup>
                             </SelectContent>
                         </Select>
+                        {roleLocked && (
+                            <p className="text-xs text-slate-500 mt-1">
+                                Hanya Super Admin yang dapat mengelola akun Super Admin.
+                            </p>
+                        )}
                         {errors.role && <p className="text-xs text-red-600 mt-1">{errors.role}</p>}
                     </div>
 

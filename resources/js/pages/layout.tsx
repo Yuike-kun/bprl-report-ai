@@ -381,7 +381,7 @@ export default function HomeLayout({ children }: { children: ReactNode }) {
                             </p>
                             <div className="space-y-1.5 text-xs text-slate-500">
                                 <p className="font-bold text-slate-800">
-                                    Ditjen Pengelolaan Ruang Laut
+                                    Ditjen Penataan Ruang Laut
                                 </p>
                                 <p>Kementerian Kelautan dan Perikanan RI</p>
                                 <p className="flex items-center gap-1 pt-1 text-[11px] font-semibold text-blue-600">

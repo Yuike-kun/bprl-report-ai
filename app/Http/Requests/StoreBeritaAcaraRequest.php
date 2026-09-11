@@ -15,6 +15,9 @@ class StoreBeritaAcaraRequest extends FormRequest
     {
         $isAsistensi = $this->input('consultation_stage') === 'asistensi';
 
+        // Allowed attachment extensions for both fresh uploads and replacements.
+        $docExtensions = 'extensions:pdf,doc,docx,xls,xlsx,ppt,pptx,jpg,jpeg,png,zip,rar,shp,kml,kmz';
+
         return [
             // ── Step 1 : Session ───────────────────────────────────────────
             'consultation_stage' => ['required'],
@@ -51,10 +54,10 @@ class StoreBeritaAcaraRequest extends FormRequest
             'consultation_instruments' => ['nullable', 'string', 'max:255'],
             // ── Step 1 : Documents ─────────────────────────────────────────
             'dokumentasi_konsultasi' => ['nullable', 'array', 'max:5'],
-            'dokumentasi_konsultasi.*' => ['file', 'max:10240'],
-            'absensi_pendampingan' => ['nullable', 'file', 'max:10240'],
-            'tanda_tangan_perwakilan' => ['nullable', 'file', 'max:10240'],
-            'peta_hasil_plotting' => ['nullable', 'file', 'max:10240'],
+            'dokumentasi_konsultasi.*' => ['file', 'max:10240', $docExtensions],
+            'absensi_pendampingan' => ['nullable', 'file', 'max:10240', $docExtensions],
+            'tanda_tangan_perwakilan' => ['nullable', 'file', 'max:10240', $docExtensions],
+            'peta_hasil_plotting' => ['nullable', 'file', 'max:10240', $docExtensions],
             // ── Step 2 : Asistensi ─────────────────────────────────────────
             'activity_category' => [$isAsistensi ? 'required' : 'nullable', 'string', 'max:150'],
             'planned_area' => [$isAsistensi ? 'required' : 'nullable', 'numeric', 'min:0'],
@@ -70,12 +73,12 @@ class StoreBeritaAcaraRequest extends FormRequest
             'other_information' => [$isAsistensi ? 'required' : 'nullable', 'string'],
             'consultation_result' => [$isAsistensi ? 'required' : 'nullable', 'in:dokumen_sesuai,perlu_perbaikan'],
             // Step 2 uploads
-            'rencana_bangunan_instalasi' => ['nullable', 'file', 'max:10240'],
-            'informasi_pemanfaatan_ruang_laut' => ['nullable', 'file', 'max:10240'],
-            'data_kondisi_terkini' => ['nullable', 'file', 'max:10240'],
+            'rencana_bangunan_instalasi' => ['nullable', 'file', 'max:10240', $docExtensions],
+            'informasi_pemanfaatan_ruang_laut' => ['nullable', 'file', 'max:10240', $docExtensions],
+            'data_kondisi_terkini' => ['nullable', 'file', 'max:10240', $docExtensions],
             'persyaratan_lainnya' => ['nullable', 'array', 'max:5'],
-            'persyaratan_lainnya.*' => ['file', 'max:10240'],
-            'titik_koordinat' => ['nullable', 'file', 'max:10240'],
+            'persyaratan_lainnya.*' => ['file', 'max:10240', $docExtensions],
+            'titik_koordinat' => ['nullable', 'file', 'max:10240', $docExtensions],
             // Step 2 Konsultasi
             'consultation_notes' => ['nullable']
         ];

@@ -137,7 +137,10 @@ export function useBeritaAcaraForm(
 
     const removeExistingDoc = useCallback((doc: ExistingDocument) => {
         if (!confirm(`Hapus file "${doc.file_name}"?`)) return;
-        router.delete(`${adminMode ? '' : '/pegawai'}/berita-acara/documents/${doc.id}`, {
+        const endpoint = adminMode
+            ? `/berita-acara/documents/${doc.id}`
+            : `/berita-acara/documents/${doc.id}/pegawai`;
+        router.delete(endpoint, {
             preserveScroll: true,
             onSuccess: () =>
                 setExistingDocs((prev) => prev.filter((d) => d.id !== doc.id)),
@@ -235,6 +238,17 @@ export function useBeritaAcaraForm(
             if (adminMode) fd.append('_method', 'PUT');
             router.post(endpoint, fd, {
                 forceFormData: true,
+                preserveScroll: true,
+                onSuccess: (page: any) => {
+                    // Reflect replaced/deleted attachments without a full reload.
+                    const docs = page?.props?.berita_acara?.documents;
+
+                    if (Array.isArray(docs)) {
+                        setExistingDocs(docs);
+                    }
+
+                    setFiles({ ...EMPTY_FILES });
+                },
                 onFinish: () => setSubmitting(false),
             });
             return;
@@ -246,7 +260,7 @@ export function useBeritaAcaraForm(
             onSuccess: resetForm,
             onFinish: () => setSubmitting(false),
         });
-    }, [form, files, isEdit, berita_acara, konsultasi, resetForm, validateStep2]);
+    }, [form, files, isEdit, berita_acara, konsultasi, resetForm, validateStep2, adminMode]);
 
     return {
         isEdit,

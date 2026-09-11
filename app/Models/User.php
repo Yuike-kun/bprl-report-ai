@@ -27,6 +27,30 @@ class User extends Authenticatable
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
+    // ── Roles ─────────────────────────────────────────────────────────
+    // super_admin: full access to all system settings and management features
+    // admin:       general administration (consultations, documents, users)
+    // pegawai:     staff / field consultants
+    // pemohon:     public applicants
+    public const ROLE_SUPER_ADMIN = 'super_admin';
+    public const ROLE_ADMIN = 'admin';
+    public const ROLE_PEGAWAI = 'pegawai';
+    public const ROLE_PEMOHON = 'pemohon';
+
+    public const ALL_ROLES = [
+        self::ROLE_SUPER_ADMIN,
+        self::ROLE_ADMIN,
+        self::ROLE_PEGAWAI,
+        self::ROLE_PEMOHON,
+    ];
+
+    public const ROLE_LABELS = [
+        self::ROLE_SUPER_ADMIN => 'Super Admin',
+        self::ROLE_ADMIN => 'Admin',
+        self::ROLE_PEGAWAI => 'Pegawai',
+        self::ROLE_PEMOHON => 'Pemohon',
+    ];
+
     /**
      * Get the attributes that should be cast.
      *
@@ -45,6 +69,11 @@ class User extends Authenticatable
 
     public function hasRole(string|array $roles): bool
     {
+        // Super admin implicitly holds every role (full system access).
+        if ($this->isSuperAdmin()) {
+            return true;
+        }
+
         if (is_array($roles)) {
             return in_array($this->role, $roles, true);
         }
@@ -54,7 +83,12 @@ class User extends Authenticatable
 
     public function isAdmin(): bool
     {
-        return $this->role === 'admin';
+        return in_array($this->role, [self::ROLE_ADMIN, self::ROLE_SUPER_ADMIN], true);
+    }
+
+    public function isSuperAdmin(): bool
+    {
+        return $this->role === self::ROLE_SUPER_ADMIN;
     }
 
     public function isPegawai(): bool

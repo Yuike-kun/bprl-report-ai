@@ -51,9 +51,14 @@ class UsersController extends Controller
             'name'      => ['required', 'string', 'max:255'],
             'email'     => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password'  => ['required', 'confirmed', Password::defaults()],
-            'role'      => ['required', 'string', 'max:255'],
+            'role'      => ['required', 'string', Rule::in(User::ALL_ROLES)],
             'signature' => ['nullable', 'string'],
         ]);
+
+        // Only a super admin may create super admin accounts.
+        if ($validated['role'] === User::ROLE_SUPER_ADMIN && ! auth()->user()->isSuperAdmin()) {
+            abort(403, 'Only a super admin can create super admin accounts.');
+        }
 
         User::create([
             'name'      => $validated['name'],
@@ -87,6 +92,11 @@ class UsersController extends Controller
     {
         $user = User::findOrFail($id);
 
+        // Only a super admin may open the edit form for super admin accounts.
+        if ($user->isSuperAdmin() && ! auth()->user()->isSuperAdmin()) {
+            abort(403, 'Only a super admin can manage super admin accounts.');
+        }
+
         return Inertia::render('backend/users/edit', [
             'user' => $user,
         ]);
@@ -99,13 +109,30 @@ class UsersController extends Controller
     {
         $user = User::findOrFail($id);
 
+        // Only a super admin may modify super admin accounts.
+        if ($user->isSuperAdmin() && ! auth()->user()->isSuperAdmin()) {
+            abort(403, 'Only a super admin can modify super admin accounts.');
+        }
+
         $validated = $request->validate([
             'name'     => ['required', 'string', 'max:255'],
             'email'    => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
             'password' => ['nullable', 'confirmed', Password::defaults()],
-            'role'     => ['required', 'string', 'max:255'],
+            'role'     => ['required', 'string', Rule::in(User::ALL_ROLES)],
             'signature' => ['nullable', 'string'],
         ]);
+
+        // Only a super admin may promote an account to super admin.
+        if ($validated['role'] === User::ROLE_SUPER_ADMIN && ! auth()->user()->isSuperAdmin()) {
+            abort(403, 'Only a super admin can assign the super admin role.');
+        }
+
+        // The last remaining super admin cannot be demoted.
+        if ($user->isSuperAdmin()
+            && $validated['role'] !== User::ROLE_SUPER_ADMIN
+            && User::where('role', User::ROLE_SUPER_ADMIN)->count() <= 1) {
+            abort(403, 'The last super admin account cannot be demoted.');
+        }
 
         $user->update([
             'name'  => $validated['name'],
@@ -131,6 +158,17 @@ class UsersController extends Controller
 
         if ($user->id === auth()->id()) {
             return back()->with('error', 'You cannot delete your own account.');
+        }
+
+        // Only a super admin may delete super admin accounts.
+        if ($user->isSuperAdmin() && ! auth()->user()->isSuperAdmin()) {
+            abort(403, 'Only a super admin can delete super admin accounts.');
+        }
+
+        // Never allow the last remaining super admin to be deleted.
+        if ($user->isSuperAdmin()
+            && User::where('role', User::ROLE_SUPER_ADMIN)->count() <= 1) {
+            return back()->with('error', 'The last super admin account cannot be deleted.');
         }
 
         $user->delete();

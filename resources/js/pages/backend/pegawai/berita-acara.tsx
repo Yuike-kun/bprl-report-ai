@@ -54,6 +54,15 @@ export default function BeritaAcara({
 
     const { errors } = usePage<any>().props;
 
+    // Opens the hidden file input for a slot so an existing file can be replaced.
+    const replaceFile = (slot: string) => {
+        const input = document.getElementById(slot) as HTMLInputElement | null;
+        input?.click();
+    };
+
+    const DOC_ACCEPT = 'application/pdf,.pdf,.doc,.docx,.jpg,.jpeg,.png';
+    const GEO_ACCEPT = '.pdf,.zip,.rar,.shp,.kml,.kmz,.jpg,.jpeg,.png';
+
     const {
         isAsistensi,
         step,
@@ -757,11 +766,19 @@ export default function BeritaAcara({
                                     <ExistingFiles
                                         docs={docsFor('absensi_pendampingan')}
                                         onRemove={removeExistingDoc}
+                                        onReplace={() =>
+                                            replaceFile('absensi_pendampingan')
+                                        }
                                     />
                                     <FileUpload
                                         label="Tambahkan File Absensi"
                                         name="absensi_pendampingan"
                                         files={files.absensi_pendampingan}
+                                        accept={DOC_ACCEPT}
+                                        hasExisting={
+                                            docsFor('absensi_pendampingan')
+                                                .length > 0
+                                        }
                                         onChange={(f) =>
                                             setFile('absensi_pendampingan', f)
                                         }
@@ -781,11 +798,21 @@ export default function BeritaAcara({
                                             'tanda_tangan_perwakilan',
                                         )}
                                         onRemove={removeExistingDoc}
+                                        onReplace={() =>
+                                            replaceFile(
+                                                'tanda_tangan_perwakilan',
+                                            )
+                                        }
                                     />
                                     <FileUpload
                                         label="Tambahkan File TTD"
                                         name="tanda_tangan_perwakilan"
                                         files={files.tanda_tangan_perwakilan}
+                                        accept={DOC_ACCEPT}
+                                        hasExisting={
+                                            docsFor('tanda_tangan_perwakilan')
+                                                .length > 0
+                                        }
                                         onChange={(f) =>
                                             setFile(
                                                 'tanda_tangan_perwakilan',
@@ -800,11 +827,19 @@ export default function BeritaAcara({
                                     <ExistingFiles
                                         docs={docsFor('peta_hasil_plotting')}
                                         onRemove={removeExistingDoc}
+                                        onReplace={() =>
+                                            replaceFile('peta_hasil_plotting')
+                                        }
                                     />
                                     <FileUpload
                                         label="Tambahkan Peta"
                                         name="peta_hasil_plotting"
                                         files={files.peta_hasil_plotting}
+                                        accept={DOC_ACCEPT}
+                                        hasExisting={
+                                            docsFor('peta_hasil_plotting')
+                                                .length > 0
+                                        }
                                         onChange={(f) =>
                                             setFile('peta_hasil_plotting', f)
                                         }
@@ -1126,12 +1161,23 @@ export default function BeritaAcara({
                                                     'rencana_bangunan_instalasi',
                                                 )}
                                                 onRemove={removeExistingDoc}
+                                                onReplace={() =>
+                                                    replaceFile(
+                                                        'rencana_bangunan_instalasi',
+                                                    )
+                                                }
                                             />
                                             <FileUpload
                                                 label="Upload File"
                                                 name="rencana_bangunan_instalasi"
                                                 files={
                                                     files.rencana_bangunan_instalasi
+                                                }
+                                                accept={DOC_ACCEPT}
+                                                hasExisting={
+                                                    docsFor(
+                                                        'rencana_bangunan_instalasi',
+                                                    ).length > 0
                                                 }
                                                 onChange={(f) =>
                                                     setFile(
@@ -1150,12 +1196,23 @@ export default function BeritaAcara({
                                                     'informasi_pemanfaatan_ruang_laut',
                                                 )}
                                                 onRemove={removeExistingDoc}
+                                                onReplace={() =>
+                                                    replaceFile(
+                                                        'informasi_pemanfaatan_ruang_laut',
+                                                    )
+                                                }
                                             />
                                             <FileUpload
                                                 label="Upload File"
                                                 name="informasi_pemanfaatan_ruang_laut"
                                                 files={
                                                     files.informasi_pemanfaatan_ruang_laut
+                                                }
+                                                accept={DOC_ACCEPT}
+                                                hasExisting={
+                                                    docsFor(
+                                                        'informasi_pemanfaatan_ruang_laut',
+                                                    ).length > 0
                                                 }
                                                 onChange={(f) =>
                                                     setFile(
@@ -1174,12 +1231,23 @@ export default function BeritaAcara({
                                                     'data_kondisi_terkini',
                                                 )}
                                                 onRemove={removeExistingDoc}
+                                                onReplace={() =>
+                                                    replaceFile(
+                                                        'data_kondisi_terkini',
+                                                    )
+                                                }
                                             />
                                             <FileUpload
                                                 label="Upload File"
                                                 name="data_kondisi_terkini"
                                                 files={
                                                     files.data_kondisi_terkini
+                                                }
+                                                accept={DOC_ACCEPT}
+                                                hasExisting={
+                                                    docsFor(
+                                                        'data_kondisi_terkini',
+                                                    ).length > 0
                                                 }
                                                 onChange={(f) =>
                                                     setFile(
@@ -1224,11 +1292,22 @@ export default function BeritaAcara({
                                                     'titik_koordinat',
                                                 )}
                                                 onRemove={removeExistingDoc}
+                                                onReplace={() =>
+                                                    replaceFile(
+                                                        'titik_koordinat',
+                                                    )
+                                                }
                                             />
                                             <FileUpload
                                                 label="Upload File Koordinat"
                                                 name="titik_koordinat"
                                                 files={files.titik_koordinat}
+                                                accept={GEO_ACCEPT}
+                                                hasExisting={
+                                                    docsFor(
+                                                        'titik_koordinat',
+                                                    ).length > 0
+                                                }
                                                 onChange={(f) =>
                                                     setFile(
                                                         'titik_koordinat',

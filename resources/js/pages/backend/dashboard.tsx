@@ -117,6 +117,7 @@ export default function Dashboard() {
     const user = props.auth?.user;
     const role = user?.role || 'pemohon';
     const data = props.dashboardData;
+    const isAdminLevel = role === 'admin' || role === 'super_admin';
 
     return (
         <MainLayout pageTitle="Dashboard">
@@ -126,7 +127,7 @@ export default function Dashboard() {
                     description="Dashboard"
                     icon={User}
                 />
-                {role === 'admin' && <AdminDashboardView data={data} />}
+                {isAdminLevel && <AdminDashboardView data={data} />}
                 {(role === 'petugas' || role === 'pegawai') && (
                     <PetugasDashboardView data={data} />
                 )}

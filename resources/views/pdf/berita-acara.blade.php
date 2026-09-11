@@ -225,6 +225,13 @@
             line-height: 1.4;
         }
 
+        table.hasil-table thead, table.hasil-table tbody > tr > td,
+        table.sign-table thead, table.sign-table tbody > tr > td,
+        table.coord-table thead, table.coord-table tbody > tr > td
+        {
+            border: 1px solid black;
+        }
+
         /* ── Signatures ────────────────────────────────── */
         table.sign-table {
             width: 100%;
@@ -312,7 +319,6 @@
         /* ── Coordinate Table ───────────────────────────────── */
         table.coord-table {
             width: 100%;
-            /* was auto */
             border-collapse: collapse;
             margin: 8px 0 14px 0;
             font-size: 10.5pt;
@@ -652,7 +658,7 @@
                 </tbody>
             </table>
         @else
-            <p style="white-space: pre-line;">{{ $beritaAcara->coordinate_points ?: '-' }}</p>
+            <p style="white-space: pre-line; text-align: left;">{{ $beritaAcara->coordinate_points ?: '-' }}</p>
         @endif
 
         <div class="section-title">3. Informasi Pemanfaatan Ruang Laut Sekitar</div>

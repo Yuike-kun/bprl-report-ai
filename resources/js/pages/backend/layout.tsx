@@ -46,7 +46,9 @@ import MENU_PEGAWAI from './pegawai/menu.json';
 import MENU from './menu.json';
 import { usePage, Link, router } from '@inertiajs/react';
 
-const SIDEBAR_ROLES = ['admin', 'pemohon'];
+const SIDEBAR_ROLES = ['admin', 'super_admin', 'pemohon'];
+// Roles with access to admin-only system settings and management features.
+const ADMIN_LEVEL_ROLES = ['admin', 'super_admin'];
 
 type MenuLinkItem = { label: string; url: string; icon: string };
 
@@ -98,7 +100,7 @@ function visibleSectionsFor(user: any) {
         NAV = MENU_PEGAWAI as unknown as MenuSection[];
     }
     return NAV.filter(
-        (section) => !section.adminOnly || user?.role === 'admin',
+        (section) => !section.adminOnly || ADMIN_LEVEL_ROLES.includes(user?.role),
     );
 }
 

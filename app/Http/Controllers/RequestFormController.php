@@ -148,7 +148,7 @@ class RequestFormController extends Controller
         ]);
 
         User::query()
-            ->where('role', 'admin')
+            ->whereIn('role', [User::ROLE_ADMIN, User::ROLE_SUPER_ADMIN])
             ->get()
             ->each(function (User $admin) use ($permohonan): void {
                 try {

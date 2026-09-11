@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { PaginatedTable } from "@/components/backend/paginated-table";
 import { Pagination } from "@/components/backend/pagination";
 import { Button } from "@/components/ui/button";
+import { ROLES } from "./const";
 
 type User = {
     id: number;
@@ -140,8 +141,8 @@ export default function UsersIndex({ users, filters, success }: Props) {
                         <td className="px-5 py-4 text-slate-700 font-semibold">{item.name}</td>
                         <td className="px-5 py-4 text-sm text-slate-600">{item.email}</td>
                         <td className="px-5 py-4">
-                            <span className="inline-flex items-center gap-1.5 bg-cyan-50 text-cyan-700 text-xs font-semibold px-2.5 py-1 rounded-lg">
-                                {item.role}
+                            <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-lg ${item.role === "super_admin" ? "bg-violet-50 text-violet-700" : "bg-cyan-50 text-cyan-700"}`}>
+                                {ROLES.find((r) => r.value === item.role)?.label ?? item.role}
                             </span>
                         </td>
                         <td className="px-5 py-4">

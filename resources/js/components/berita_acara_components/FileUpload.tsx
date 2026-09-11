@@ -10,6 +10,8 @@ export function FileUpload({
     files,
     onChange,
     error,
+    accept,
+    hasExisting,
 }: {
     label: string;
     name: string;
@@ -18,15 +20,19 @@ export function FileUpload({
     files: File[];
     onChange: (files: File[]) => void;
     error?: string;
+    accept?: string;
+    hasExisting?: boolean;
 }) {
     const inputRef = useRef<HTMLInputElement>(null);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const picked = Array.from(e.target.files || []);
+        const picked = Array.from(e.target.files || []).filter(
+            (f): f is File => !!f,
+        );
         if (multiple) {
             const merged = [...files, ...picked].slice(0, max ?? 5);
             onChange(merged);
-        } else {
+        } else if (picked.length) {
             onChange([picked[0]]);
         }
         e.target.value = '';
@@ -41,15 +47,23 @@ export function FileUpload({
                 onClick={() => inputRef.current?.click()}
             >
                 <Upload className="mx-auto mb-1.5 h-5 w-5 text-slate-400" />
-                <p className="text-xs font-semibold text-slate-600">{label}</p>
+                <p className="text-xs font-semibold text-slate-600">
+                    {hasExisting && !multiple ? 'Ganti File' : label}
+                </p>
                 <p className="mt-0.5 text-[11px] text-slate-400">
-                    {multiple ? `Maks. ${max ?? 5} file` : '1 file'} • Maks. 10
-                    MB
+                    {hasExisting && !multiple
+                        ? 'Pilih file baru untuk mengganti file lama'
+                        : multiple
+                          ? `Maks. ${max ?? 5} file`
+                          : '1 file'}{' '}
+                    • Maks. 10 MB
                 </p>
                 <input
                     ref={inputRef}
+                    id={name}
                     type="file"
                     multiple={multiple}
+                    accept={accept}
                     className="hidden"
                     onChange={handleChange}
                 />
