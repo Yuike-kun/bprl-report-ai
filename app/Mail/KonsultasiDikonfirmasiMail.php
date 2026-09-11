@@ -2,15 +2,17 @@
 
 namespace App\Mail;
 
-use App\Models\PermohonanKonsultasi;
 use Carbon\Carbon;
+use App\Models\Regency;
+use App\Models\Province;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
-use Illuminate\Mail\Mailables\Attachment;
-use Illuminate\Mail\Mailables\Content;
-use Illuminate\Mail\Mailables\Envelope;
-use Illuminate\Queue\SerializesModels;
 use Barryvdh\DomPDF\Facade\Pdf;
+use App\Models\PermohonanKonsultasi;
+use Illuminate\Mail\Mailables\Content;
+use Illuminate\Queue\SerializesModels;
+use Illuminate\Mail\Mailables\Envelope;
+use Illuminate\Mail\Mailables\Attachment;
 
 class KonsultasiDikonfirmasiMail extends Mailable
 {
@@ -81,11 +83,31 @@ class KonsultasiDikonfirmasiMail extends Mailable
             ? Carbon::parse($tanggalKonsultasi)->locale('id')->translatedFormat('l, d F Y')
             : '';
 
+        // Resolve geolocation names. The 'kabupaten' and 'provinsi' columns may
+        // store either a numeric code (to be looked up in the location tables) or
+        // a plain name string (entered manually). Kabupaten/city codes map to the
+        // regencies table; province codes map to the provinces table.
+        $locationName = static function (?string $value, string $modelClass): string {
+            if ($value === null || trim($value) === '') {
+                return '-';
+            }
+
+            if (ctype_digit(trim($value))) {
+                return $modelClass::find(trim($value))?->name ?? trim($value);
+            }
+
+            return trim($value);
+        };
+        $kabupatenName = $locationName($this->permohonan->kabupaten, Regency::class);
+        $provinsiName = $locationName($this->permohonan->provinsi, Province::class);
+
         return Pdf::loadView('pdf.surat-konfirmasi-kkprl', [
             'permohonan' => $this->permohonan,
             'hariTanggal' => $hariTanggal,
             'tanggalSurat' => Carbon::now()->locale('id')->translatedFormat('d F Y'),
             'signatureData' => $signatureData,
+            'kabupatenName' => $kabupatenName,
+            'provinsiName' => $provinsiName,
         ])->output();
     }
 }

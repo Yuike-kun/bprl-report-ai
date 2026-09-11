@@ -114,7 +114,7 @@
     <p>Dengan hormat,</p>
     <p>
         Sehubungan dengan rencana kegiatan {{ $permohonan->rencana_kegiatan }} yang akan dilakukan oleh
-        {{ $permohonan->instansi }} di wilayah {{ $permohonan->kabupaten }} {{ $permohonan->provinsi }}, dimana kegiatan
+        {{ $permohonan->instansi }} di wilayah {{ $kabupatenName }} {{ $provinsiName }}, dimana kegiatan
         tersebut memerlukan perizinan Kesesuaian Kegiatan pemanfaatan Ruang Laut (KKPRL), dengan ini kami sampaikan
         permohonan Konsultasi terkait pelaksanaan penyusunan dokumen serta hal-hal pendukung lainnya.
     </p>

@@ -106,6 +106,23 @@ class DashboardController extends Controller
                 ];
             });
 
+        // Latest permohonan konsultasi entries, newest first (right column of admin dashboard)
+        $latestPermohonanKonsultasi = PermohonanKonsultasi::query()
+            ->latest()
+            ->take(10)
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'id' => $item->id,
+                    'nama_pemohon' => $item->nama_pemohon ?? 'Pemohon #' . $item->id,
+                    'instansi' => $item->instansi ?? '-',
+                    'status' => $item->status ?? 'draft',
+                    'created_at' => $item->created_at?->toIso8601String(),
+                    'created_at_human' => $item->created_at?->diffForHumans() ?? '-',
+                    'created_at_formatted' => $item->created_at?->format('d M Y, H:i') ?? '-',
+                ];
+            });
+
         return Inertia::render('backend/dashboard', [
             'dashboardData' => [
                 'stats' => [
@@ -116,6 +133,7 @@ class DashboardController extends Controller
                 ],
                 'chartMonthlyData' => $chartMonthlyData,
                 'loginHistory' => $loginHistory,
+                'latestPermohonanKonsultasi' => $latestPermohonanKonsultasi,
                 'petugas' => [
                     'pendingReviews' => $pendingReviewsCount,
                     'proposalsToProcess' => $proposalsToProcessCount,

@@ -50,9 +50,11 @@ class HandleInertiaRequests extends Middleware
                     'title' => $notification->data['title'] ?? 'Notifikasi baru',
                     'message' => $notification->data['message'] ?? '',
                     'url' => $notification->data['url'] ?? '/dashboard',
+                    'permohonan_id' => $notification->data['permohonan_id'] ?? null,
                     'created_at' => $notification->created_at?->toIso8601String(),
                 ])
                 ->values(),
+            'notifications_unread_count' => fn () => $request->user()?->unreadNotifications()->count() ?? 0,
             'flash' => [
                 'success'      => fn () => $request->session()->get('success'),
                 'error'        => fn () => $request->session()->get('error'),

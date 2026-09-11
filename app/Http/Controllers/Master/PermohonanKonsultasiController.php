@@ -174,13 +174,11 @@ class PermohonanKonsultasiController extends Controller
             'file_name' => $fileName,
         ]);
 
-        return response()->streamDownload(
-            static function () use ($pdfContent): void {
-                echo $pdfContent;
-            },
-            $fileName,
-            ['Content-Type' => 'application/pdf'],
-        );
+        // Serve the stored PDF inline so the user can preview/stream it in the
+        // browser first, then download it to their device manually.
+        return Storage::disk('public')->response($path, $fileName, [
+            'Content-Type' => 'application/pdf',
+        ], 'inline');
     }
 
     public function edit(PermohonanKonsultasi $permohonanKonsultasi): Response

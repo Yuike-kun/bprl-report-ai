@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\NotificationApiController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BeritaAcaraController;
 use App\Http\Controllers\DashboardController;
@@ -192,8 +193,15 @@ Route::middleware('auth')->group(function () {
         Route::delete('/{source}/{id}', [DocumentController::class, 'destroy'])->name('destroy');
     });
 
-    Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
-    Route::post('/notifications/{notification}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+Route::post('/notifications/{notification}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
+
+    // Real-time notification polling endpoints (JSON, no Inertia render)
+    Route::middleware('auth')->prefix('api/notifications')->as('api.notifications.')->group(function () {
+        Route::get('/', [NotificationApiController::class, 'index'])->name('index');
+        Route::post('/read-all', [NotificationApiController::class, 'readAll'])->name('read-all');
+        Route::post('/{notification}/read', [NotificationApiController::class, 'read'])->name('read');
+    });
 });
 
 Route::post('/pkkprl/analisis-ai', [GenerateDocxController::class, 'analyzeAi'])

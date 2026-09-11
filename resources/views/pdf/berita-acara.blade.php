@@ -11,7 +11,7 @@
         }
 
         body {
-            font-family: "Times New Roman", Times, "DejaVu Serif", serif;
+            font-family: "Arial", sans-serif;
             font-size: 11pt;
             color: #000;
             line-height: 1.4;
@@ -31,78 +31,69 @@
             border-collapse: collapse;
         }
 
-        .kop-table td {
-            padding: 0;
+        .kop-logo-cell {
+            width: 30mm;
+            text-align: left;
+            padding: 0 4mm 0 0;
             vertical-align: middle;
         }
 
-        .kop-logo-cell {
-            width: 120px;
-            text-align: left;
-        }
-
         .kop-logo-img {
-            width: 120px;
+            width: 25mm;
             height: auto;
             display: block;
         }
 
         .kop-logo-spacer {
-            width: 120px;
+            width: 30mm;
         }
 
         .kop-text-cell {
+            width: 120mm;
+            vertical-align: middle;
             text-align: center;
-            padding: 0 8px;
+            padding: 0 3mm;
+        }
+
+        .kop-link {
+            color: #0b3ea6;
+            text-decoration: underline;
+        }
+
+        .kop-line-1,
+        .kop-line-2,
+        .kop-line-3 {
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.2px;
+            line-height: 1.2;
+            margin: 0;
+            color: #0b3ea6;
+            white-space: normal;
         }
 
         .kop-line-1 {
-            font-size: 13pt;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 0.2px;
-            white-space: nowrap;
-            line-height: 1.18;
-            margin: 0;
-            color: #000;
+            font-size: 12.5pt;
         }
 
         .kop-line-2 {
-            font-size: 14.5pt;
+            font-size: 13.5pt;
             font-weight: normal;
-            text-transform: uppercase;
-            letter-spacing: 0.2px;
-            white-space: nowrap;
-            line-height: 1.18;
-            margin: 0;
-            color: #000;
         }
 
         .kop-line-3 {
-            font-size: 13pt;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 0.2px;
-            white-space: nowrap;
-            line-height: 1.18;
-            margin: 0 0 3px 0;
-            color: #000;
+            font-size: 12.5pt;
+            margin-bottom: 3px;
         }
 
-        .kop-line-4 {
-            font-size: 7.2pt;
-            line-height: 1.25;
-            text-transform: uppercase;
-            white-space: nowrap;
-            margin: 0;
-            color: #000;
-        }
-
+        .kop-line-4,
         .kop-line-5 {
-            font-size: 7.2pt;
-            line-height: 1.25;
+            font-size: 8pt;
+            line-height: 1.3;
             text-transform: uppercase;
-            white-space: nowrap;
+            white-space: normal;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
             margin: 0;
             color: #000;
         }
@@ -198,14 +189,6 @@
             line-height: 1.4;
         }
 
-        table.result-table td p {
-            margin: 0 0 3px 0;
-        }
-
-        table.result-table td p:last-child {
-            margin-bottom: 0;
-        }
-
         table.hasil-table {
             width: 100%;
             border-collapse: collapse;
@@ -213,7 +196,7 @@
         }
 
         table.hasil-table td {
-            border: 1px solid #777;
+            border: none;
             padding: 8px 10px;
             width: 50%;
             text-align: center;
@@ -252,7 +235,7 @@
 
         table.sign-table th,
         table.sign-table td {
-            border: 1px solid #444;
+            border: none;
             padding: 5px 6px;
             font-size: 10pt;
         }
@@ -303,7 +286,7 @@
 
         table.doc-grid td {
             width: 50%;
-            border: 1px solid #ccc;
+            border: none;
             padding: 6px;
             text-align: center;
             vertical-align: middle;
@@ -328,14 +311,15 @@
 
         /* ── Coordinate Table ───────────────────────────────── */
         table.coord-table {
-            width: auto;
+            width: 100%;
+            /* was auto */
             border-collapse: collapse;
             margin: 8px 0 14px 0;
             font-size: 10.5pt;
         }
 
         table.coord-table th {
-            border: 1px solid #555;
+            border: none;
             padding: 5px 12px;
             background: #f0f0f0;
             text-align: center;
@@ -343,7 +327,7 @@
         }
 
         table.coord-table td {
-            border: 1px solid #555;
+            border: none;
             padding: 5px 12px;
             text-align: center;
         }
@@ -358,6 +342,48 @@
             margin: 0 0 2px 0;
             font-size: 10.5pt;
         }
+
+        /* ── Detail Lampiran — right column of the page ─────────────── */
+        .lampiran-column {
+            float: right;
+            width: 60mm;
+            margin-left: 5mm;
+            font-size: 8.5pt;
+            line-height: 1.35;
+            color: #333;
+        }
+
+        .lampiran-column .lampiran-title {
+            font-weight: bold;
+            font-size: 9pt;
+            margin: 8px 0 3px 0;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 2px;
+            color: #000;
+        }
+
+        .lampiran-column .file-line {
+            padding: 1px 0;
+            font-size: 8.5pt;
+            border-bottom: 1px dotted #e2e2e2;
+            margin: 0;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        .lampiran-column .file-line:last-child {
+            border-bottom: none;
+        }
+
+        .lampiran-column .lampiran-header {
+            margin-bottom: 8px;
+            text-align: right;
+        }
+
+        .lampiran-column .lampiran-header p {
+            margin: 0 0 1px 0;
+            font-size: 8.5pt;
+        }
     </style>
 </head>
 
@@ -366,6 +392,11 @@
     {{-- ── Kop Surat 1:1 Resmi KKP ── --}}
     <div class="kop-surat">
         <table class="kop-table">
+            <colgroup>
+                <col style="width: 30mm;">
+                <col style="width: 120mm;">
+                <col style="width: 30mm;">
+            </colgroup>
             <tr>
                 <td class="kop-logo-cell">
                     @if ($logoPath ?? false)
@@ -376,8 +407,10 @@
                     <div class="kop-line-1">KEMENTERIAN KELAUTAN DAN PERIKANAN</div>
                     <div class="kop-line-2">DIREKTORAT JENDERAL PENATAAN RUANG LAUT</div>
                     <div class="kop-line-3">BALAI PENATAAN RUANG LAUT MAKASSAR</div>
-                    <div class="kop-line-4">JALAN MAKMUR DAENG SITAKKA NOMOR 129 MAROS 90511, TELEPON (0411) 371337 FAKSIMILI (0411) 371337</div>
-                    <div class="kop-line-5">LAMAN www.kkp.go.id SUREL bprlmakassar@kkp.go.id</div>
+                    <div class="kop-line-4">JALAN MAKMUR DAENG SITAKKA NOMOR 129 MAROS 90511, TELEPON (0411) 371337
+                        FAKSIMILI (0411) 371337</div>
+                    <div class="kop-line-5">LAMAN <span class="kop-link">www.kkp.go.id</span> SUREL <span
+                            class="kop-link">bprlmakassar@kkp.go.id</span></div>
                 </td>
                 <td class="kop-logo-spacer"></td>
             </tr>
@@ -395,36 +428,33 @@
         $bulanKata = $tanggal->translatedFormat('F');
         $tahun = $tanggal->format('Y');
 
-        $permitTypeLabel = [
-            'persetujuan' => 'Persetujuan KKPRL',
-            'konfirmasi' => 'Konfirmasi KKPRL',
-        ][$beritaAcara->permit_type] ?? $beritaAcara->permit_type;
+        $permitTypeLabel =
+            [
+                'persetujuan' => 'Persetujuan KKPRL',
+                'konfirmasi' => 'Konfirmasi KKPRL',
+            ][$beritaAcara->permit_type] ?? $beritaAcara->permit_type;
 
-        $modeLabel = [
-            'daring' => 'Daring (Online)',
-            'luring' => 'Luring (Tatap Muka)',
-            'hybrid' => 'Hybrid',
-        ][$beritaAcara->implementation_mode] ?? $beritaAcara->implementation_mode;
+        $modeLabel =
+            [
+                'daring' => 'Daring (Online)',
+                'luring' => 'Luring (Tatap Muka)',
+                'hybrid' => 'Hybrid',
+            ][$beritaAcara->implementation_mode] ?? $beritaAcara->implementation_mode;
 
         $activityDetailRaw = $beritaAcara->activity_detail;
         if (is_array($activityDetailRaw)) {
-            $parts = array_map(function($item) use ($beritaAcara) {
+            $parts = array_map(function ($item) use ($beritaAcara) {
                 return $item === 'Yang lain' ? ($beritaAcara->activity_detail_other ?: 'Yang lain') : $item;
             }, $activityDetailRaw);
             $activityDetail = implode(', ', $parts);
         } else {
-            $activityDetail = $activityDetailRaw === 'Yang lain'
-                ? $beritaAcara->activity_detail_other
-                : $activityDetailRaw;
+            $activityDetail =
+                $activityDetailRaw === 'Yang lain' ? $beritaAcara->activity_detail_other : $activityDetailRaw;
         }
 
-        $waterName = $beritaAcara->water_name === 'Lainnya'
-            ? $beritaAcara->water_name_other
-            : $beritaAcara->water_name;
+        $waterName = $beritaAcara->water_name === 'Lainnya' ? $beritaAcara->water_name_other : $beritaAcara->water_name;
 
-        $location = $beritaAcara->location === 'Lainnya'
-            ? $beritaAcara->location_other
-            : $beritaAcara->location;
+        $location = $beritaAcara->location === 'Lainnya' ? $beritaAcara->location_other : $beritaAcara->location;
 
         $ownedDocs = collect($beritaAcara->owned_documents ?? [])
             ->map(fn($d) => $d === 'Yang lain' ? $beritaAcara->owned_documents_other : $d)
@@ -491,33 +521,49 @@
         $signaturePath = $getSignatureSrc($rawRequesterSig);
 
         // Petugas Pembuat Berita Acara (prioritize staff1 / staffMaker)
-        $staffMaker = $beritaAcara->staff1
-            ?? $beritaAcara->staff->first()
-            ?? ($beritaAcara->permohonanKonsultasi?->assign_to_staff->first()?->Staff)
-            ?? ($beritaAcara->request_form?->assign_to_staff->first()?->Staff);
+        $staffMaker =
+            $beritaAcara->staff1 ??
+            ($beritaAcara->staff->first() ??
+                ($beritaAcara->permohonanKonsultasi?->assign_to_staff->first()?->Staff ??
+                    $beritaAcara->request_form?->assign_to_staff->first()?->Staff));
 
-        $rawStaffSig = $beritaAcara->permohonanKonsultasi?->staff_tanda_tangan
-            ?? $beritaAcara->request_form?->staff_tanda_tangan
-            ?? $staffMaker?->user?->signature;
+        $rawStaffSig =
+            $beritaAcara->permohonanKonsultasi?->staff_tanda_tangan ??
+            ($beritaAcara->request_form?->staff_tanda_tangan ?? $staffMaker?->user?->signature);
 
         $staffSignature = $getSignatureSrc($rawStaffSig);
 
         // ── Build full staff list ────────────────────────────────────────
-        // Priority: BelongsToMany staff (ordered by sort_order), then fallback to staff1-4 columns
+        // Merge BelongsToMany staff (ordered by sort_order) with the legacy
+        // staff_1..staff_4 columns so no member is ever omitted.
         $allStaff = $beritaAcara->staff->isNotEmpty()
             ? $beritaAcara->staff
-            : collect(array_filter([
+            : collect();
+
+        $columnStaff = collect(
+            array_filter([
                 $beritaAcara->staff1,
                 $beritaAcara->staff2,
                 $beritaAcara->staff3,
                 $beritaAcara->staff4,
-            ]));
+            ]),
+        );
 
-        // Deduplicate by ID in case both sources overlap
-        $allStaff = $allStaff->unique('id')->values();
+        $allStaff = $allStaff
+            ->merge($columnStaff)
+            ->unique('id')
+            ->values();
 
-        $svgChecked = 'data:image/svg+xml;base64,' . base64_encode('<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18"><rect width="18" height="18" rx="3" fill="#0d47a1"/><path d="M4 9.5L7.5 13L14 5" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>');
-        $svgUnchecked = 'data:image/svg+xml;base64,' . base64_encode('<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18"><rect x="1" y="1" width="16" height="16" rx="3" fill="#ffffff" stroke="#666666" stroke-width="1.8"/></svg>');
+        $svgChecked =
+            'data:image/svg+xml;base64,' .
+            base64_encode(
+                '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18"><rect width="18" height="18" rx="3" fill="#0d47a1"/><path d="M4 9.5L7.5 13L14 5" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>',
+            );
+        $svgUnchecked =
+            'data:image/svg+xml;base64,' .
+            base64_encode(
+                '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18"><rect x="1" y="1" width="16" height="16" rx="3" fill="#ffffff" stroke="#666666" stroke-width="1.8"/></svg>',
+            );
 
         $isAsistensi = $beritaAcara->consultation_stage === 'asistensi';
     @endphp
@@ -555,7 +601,8 @@
                 <td>
                     <p><strong>Subjek Hukum</strong> : {{ $beritaAcara->legal_entity_name }}</p>
                     <p><strong>Rencana Kegiatan</strong> : {{ $activityDetail }}</p>
-                    <p><strong>Luas/Panjang</strong> : {{ $beritaAcara->planned_area }} {{ $beritaAcara->planned_area_unit }}</p>
+                    <p><strong>Luas/Panjang</strong> : {{ $beritaAcara->planned_area }}
+                        {{ $beritaAcara->planned_area_unit }}</p>
                     <p>{{ $beritaAcara->activity_description }}</p>
                 </td>
             </tr>
@@ -568,11 +615,45 @@
             Kecamatan {{ $districtName }}, Kabupaten {{ $regencyName }}, Provinsi {{ $provinceName }}
             dengan titik koordinat sebagai berikut:
         </p>
-        <table class="result-table">
-            <tr>
-                <td style="white-space: pre-line;">{{ $beritaAcara->coordinate_points }}</td>
-            </tr>
-        </table>
+        @php
+            $coordinateRows = collect(preg_split('/\r\n|\r|\n/', trim($beritaAcara->coordinate_points ?? '')))
+                ->filter()
+                ->map(function ($line) {
+                    // Matches: "1. 121.805255,-2.289475"
+                    if (preg_match('/^\s*(\d+)\.\s*([\-\d.]+)\s*,\s*([\-\d.]+)\s*$/', $line, $m)) {
+                        return [
+                            'no' => $m[1],
+                            'lon' => $m[2],
+                            'lat' => $m[3],
+                        ];
+                    }
+                    return null;
+                })
+                ->filter()
+                ->values();
+        @endphp
+        @if ($coordinateRows->isNotEmpty())
+            <table class="result-table coord-table">
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>Bujur (Longitude)</th>
+                        <th>Lintang (Latitude)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($coordinateRows as $row)
+                        <tr>
+                            <td>{{ $row['no'] }}</td>
+                            <td>{{ $row['lon'] }}</td>
+                            <td>{{ $row['lat'] }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        @else
+            <p style="white-space: pre-line;">{{ $beritaAcara->coordinate_points ?: '-' }}</p>
+        @endif
 
         <div class="section-title">3. Informasi Pemanfaatan Ruang Laut Sekitar</div>
         <table class="result-table">
@@ -606,11 +687,13 @@
         <table class="hasil-table">
             <tr>
                 <td class="{{ $beritaAcara->consultation_result === 'dokumen_sesuai' ? 'active' : '' }}">
-                    <img src="{{ $beritaAcara->consultation_result === 'dokumen_sesuai' ? $svgChecked : $svgUnchecked }}" class="chk-icon">
+                    <img src="{{ $beritaAcara->consultation_result === 'dokumen_sesuai' ? $svgChecked : $svgUnchecked }}"
+                        class="chk-icon">
                     Dokumen Sudah Sesuai
                 </td>
                 <td class="{{ $beritaAcara->consultation_result === 'perlu_perbaikan' ? 'active' : '' }}">
-                    <img src="{{ $beritaAcara->consultation_result === 'perlu_perbaikan' ? $svgChecked : $svgUnchecked }}" class="chk-icon">
+                    <img src="{{ $beritaAcara->consultation_result === 'perlu_perbaikan' ? $svgChecked : $svgUnchecked }}"
+                        class="chk-icon">
                     Dokumen Perlu Perbaikan
                 </td>
             </tr>
@@ -647,9 +730,10 @@
         <tbody>
             @foreach ($allStaff as $i => $staff)
                 @php
-                    $rawSig = ($i === 0 && $staffSignature)
-                        ? $staffSignature
-                        : $getSignatureSrc($staff->user?->signature ?? null);
+                    $rawSig =
+                        $i === 0 && $staffSignature
+                            ? $staffSignature
+                            : $getSignatureSrc($staff->user?->signature ?? null);
                 @endphp
                 <tr>
                     <td class="no">{{ $i + 1 }}</td>
@@ -675,21 +759,21 @@
         </tbody>
     </table>
 
-    {{-- ── Attachments ── --}}
+    {{-- ── Attachments (right column) ── --}}
     <div class="page-break"></div>
+    <div class="lampiran-column">
     <div class="lampiran-header">
         <p>Lampiran Berita Acara</p>
         <p>Nomor : {{ $beritaAcara->berita_acara_number }}</p>
         <p>Tanggal : {{ $tanggal->translatedFormat('d F Y') }}</p>
     </div>
-
     <div class="lampiran-title">Lampiran I: Dokumentasi</div>
     <table class="doc-grid">
         @foreach ($docsByType->get('dokumentasi_konsultasi', collect())->chunk(2) as $row)
             <tr>
                 @foreach ($row as $doc)
                     <td>
-                        @if (($p = $documentPath($doc)))
+                        @if ($p = $documentPath($doc))
                             <img src="{{ $p }}">
                         @else
                             {{ $doc->file_name }}
@@ -708,15 +792,14 @@
         <p class="file-line">-</p>
     @else
         @foreach ($petaDocs as $doc)
-            @if (
-                ($p = $documentPath($doc)) &&
-                    in_array(strtolower(pathinfo($p, PATHINFO_EXTENSION)), ['jpg', 'jpeg', 'png']))
+            @if (($p = $documentPath($doc)) && in_array(strtolower(pathinfo($p, PATHINFO_EXTENSION)), ['jpg', 'jpeg', 'png']))
                 <div style="margin-bottom: 8px;">
                     <img src="{{ $p }}" style="max-width: 100%; max-height: 280px;">
                 </div>
             @else
                 <p class="file-line">
-                    <strong>{{ $doc->file_name }}</strong> <em>(Dokumen PDF terlampir utuh pada halaman lanjutan berkas ini)</em>
+                    <strong>{{ $doc->file_name }}</strong> <em>(Dokumen PDF terlampir utuh pada halaman lanjutan berkas
+                        ini)</em>
                 </p>
             @endif
         @endforeach
@@ -730,15 +813,14 @@
         <p class="file-line">-</p>
     @else
         @foreach ($absensiDocs as $doc)
-            @if (
-                ($p = $documentPath($doc)) &&
-                    in_array(strtolower(pathinfo($p, PATHINFO_EXTENSION)), ['jpg', 'jpeg', 'png']))
+            @if (($p = $documentPath($doc)) && in_array(strtolower(pathinfo($p, PATHINFO_EXTENSION)), ['jpg', 'jpeg', 'png']))
                 <div style="margin-bottom: 8px;">
                     <img src="{{ $p }}" style="max-width: 100%; max-height: 280px;">
                 </div>
             @else
                 <p class="file-line">
-                    <strong>{{ $doc->file_name }}</strong> <em>(Dokumen PDF terlampir utuh pada halaman lanjutan berkas ini)</em>
+                    <strong>{{ $doc->file_name }}</strong> <em>(Dokumen PDF terlampir utuh pada halaman lanjutan berkas
+                        ini)</em>
                 </p>
             @endif
         @endforeach
@@ -747,12 +829,12 @@
     @if ($isAsistensi)
         <div class="lampiran-title">Lampiran IV: Dokumen Konsultasi</div>
         @foreach ([
-            'rencana_bangunan_instalasi' => 'Dokumen Rencana Bangunan dan Instalasi di Laut',
-            'informasi_pemanfaatan_ruang_laut' => 'Dokumen Informasi Pemanfaatan Ruang Laut',
-            'data_kondisi_terkini' => 'Dokumen Data Kondisi Terkini Lokasi dan Sekitar',
-            'persyaratan_lainnya' => 'Dokumen Persyaratan Lainnya',
-            'titik_koordinat' => 'Dokumen Titik Koordinat Lokasi',
-        ] as $type => $label)
+        'rencana_bangunan_instalasi' => 'Dokumen Rencana Bangunan dan Instalasi di Laut',
+        'informasi_pemanfaatan_ruang_laut' => 'Dokumen Informasi Pemanfaatan Ruang Laut',
+        'data_kondisi_terkini' => 'Dokumen Data Kondisi Terkini Lokasi dan Sekitar',
+        'persyaratan_lainnya' => 'Dokumen Persyaratan Lainnya',
+        'titik_koordinat' => 'Dokumen Titik Koordinat Lokasi',
+    ] as $type => $label)
             @php
                 $matchingDocs = $docsByType->get($type, collect());
             @endphp
@@ -769,6 +851,7 @@
             </p>
         @endforeach
     @endif
+    </div><!-- /lampiran-column -->
 
 </body>
 

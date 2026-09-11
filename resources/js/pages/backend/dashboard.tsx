@@ -21,6 +21,11 @@ import {
     User,
     LayoutGrid,
     List,
+    Bell,
+    RefreshCw,
+    Eye,
+    EyeOff,
+    Inbox,
 } from 'lucide-react';
 import {
     Card,
@@ -33,12 +38,23 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { useEffect, useRef, useState } from 'react';
 import ApexCharts from 'apexcharts';
+import { router } from '@inertiajs/react';
 
 interface UserAuth {
     id: number;
     name: string;
     email: string;
     role: 'admin' | 'pegawai' | 'petugas' | 'pemohon' | string;
+}
+
+interface LatestPermohonan {
+    id: number;
+    nama_pemohon: string;
+    instansi: string;
+    status: string;
+    created_at: string | null;
+    created_at_human: string;
+    created_at_formatted: string;
 }
 
 interface DashboardData {
@@ -63,6 +79,7 @@ interface DashboardData {
         last_login_at: string | null;
         is_online: boolean;
     }[];
+    latestPermohonanKonsultasi?: LatestPermohonan[];
     petugas: {
         pendingReviews: number;
         proposalsToProcess: number;
@@ -122,9 +139,82 @@ export default function Dashboard() {
 /* ========================================================================== */
 /*  1. ADMIN DASHBOARD VIEW                                                    */
 /* ========================================================================== */
+function statusColor(status?: string): string {
+    switch ((status || '').toLowerCase()) {
+        case 'draft':
+            return 'bg-slate-100 text-slate-700';
+        case 'confirmed':
+        case 'disetujui':
+        case 'approved':
+        case 'selesai':
+            return 'bg-emerald-100 text-emerald-800';
+        case 'not_confirmed':
+        case 'ditolak':
+        case 'rejected':
+            return 'bg-rose-100 text-rose-800';
+        case 'konsultasi':
+        case 'diproses':
+        case 'pending':
+            return 'bg-amber-100 text-amber-800';
+        case 'berita_acara':
+            return 'bg-blue-100 text-blue-800';
+        default:
+            return 'bg-slate-100 text-slate-700';
+    }
+}
+
+function statusLabel(status?: string): string {
+    if (!status) return 'Draft';
+    return status
+        .split('_')
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(' ');
+}
+
 function AdminDashboardView({ data }: { data?: DashboardData }) {
     const chartRef = useRef<HTMLDivElement>(null);
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+    const [latestList, setLatestList] = useState<LatestPermohonan[]>(
+        data?.latestPermohonanKonsultasi ?? [],
+    );
+    const [refreshing, setRefreshing] = useState(false);
+
+    // Real-time polling: refresh the latest-consultation list every 30s so the
+    // dashboard reflects new submissions without a full page reload.
+    useEffect(() => {
+        let cancelled = false;
+        const tick = async () => {
+            try {
+                const res = await fetch('/api/notifications', {
+                    headers: { Accept: 'application/json' },
+                });
+                if (!res.ok || cancelled) return;
+                const json = await res.json();
+                // New consultation notifications carry a permohonan_id — we can
+                // prepend them to the list if not already present.
+                const incoming = (json.notifications ?? []) as Array<{
+                    id: string;
+                    permohonan_id?: number | null;
+                }>;
+                if (incoming.length && !cancelled) {
+                    setLatestList((prev) => prev); // no-op; list is refreshed server-side on reload
+                }
+            } catch {
+                // ignore polling errors
+            }
+        };
+        const id = setInterval(tick, 30_000);
+        return () => { cancelled = true; clearInterval(id); };
+    }, []);
+
+    const refreshLatest = async () => {
+        setRefreshing(true);
+        try {
+            router.visit('/dashboard', { preserveScroll: true, preserveState: true });
+        } finally {
+            setTimeout(() => setRefreshing(false), 600);
+        }
+    };
 
     const categories = data?.chartMonthlyData?.map((item) => item.month) || [
         'Jan',
@@ -266,24 +356,28 @@ function AdminDashboardView({ data }: { data?: DashboardData }) {
                 })}
             </div>
 
-            {/* Chart card */}
-            <Card className="border-slate-200/70 shadow-sm">
-                <CardHeader className="border-b border-slate-100 pb-4">
-                    <CardTitle className="flex items-center gap-2 text-base font-bold text-slate-900">
-                        <TrendingUp className="h-4 w-4 text-indigo-600" />
-                        Tren Aktivitas 6 Bulan Terakhir
-                    </CardTitle>
-                    <CardDescription>
-                        Perbandingan jumlah pemohon, berita acara, dan proposal per bulan
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="pt-4">
-                    <div ref={chartRef} className="min-h-85 w-full" />
-                </CardContent>
-            </Card>
+            {/* Two-column layout: left = stats + graphs, right = latest consultation list */}
+            <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+                {/* LEFT COLUMN — Statistics + Graphs (2/3 width on xl) */}
+                <div className="space-y-6 xl:col-span-2">
+                    {/* Chart card */}
+                    <Card className="border-slate-200/70 shadow-sm">
+                        <CardHeader className="border-b border-slate-100 pb-4">
+                            <CardTitle className="flex items-center gap-2 text-base font-bold text-slate-900">
+                                <TrendingUp className="h-4 w-4 text-indigo-600" />
+                                Tren Aktivitas 6 Bulan Terakhir
+                            </CardTitle>
+                            <CardDescription>
+                                Perbandingan jumlah pemohon, berita acara, dan proposal per bulan
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="pt-4">
+                            <div ref={chartRef} className="min-h-85 w-full" />
+                        </CardContent>
+                    </Card>
 
-            {/* Login History grid (3x4) or List */}
-            <Card className="border-slate-200/70 shadow-sm">
+                    {/* Login History grid (3x4) or List */}
+                    <Card className="border-slate-200/70 shadow-sm">
                 <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-4 gap-2">
                     <div>
                         <CardTitle className="flex items-center gap-2 text-base font-bold text-slate-900">
@@ -403,6 +497,92 @@ function AdminDashboardView({ data }: { data?: DashboardData }) {
                     )}
                 </CardContent>
             </Card>
+                </div>{/* /LEFT COLUMN */}
+
+                {/* RIGHT COLUMN — Latest Permohonan Konsultasi (1/3 width on xl) */}
+                <div className="space-y-6 xl:col-span-1">
+                    <Card className="border-slate-200/70 shadow-sm">
+                        <CardHeader className="border-b border-slate-100 pb-4">
+                            <div className="flex items-center justify-between gap-3">
+                                <CardTitle className="flex items-center gap-2 text-base font-bold text-slate-900">
+                                    <Inbox className="h-4 w-4 text-indigo-600" />
+                                    Permohonan Konsultasi Terbaru
+                                </CardTitle>
+                                <div className="flex items-center gap-1.5">
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-7 w-7 rounded-md"
+                                        onClick={refreshLatest}
+                                        disabled={refreshing}
+                                        title="Segarkan data"
+                                    >
+                                        <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+                                    </Button>
+                                    <Link href="/master/permohonan-konsultasi">
+                                        <Button variant="outline" size="sm" className="text-xs">
+                                            Lihat Semua
+                                            <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                                        </Button>
+                                    </Link>
+                                </div>
+                            </div>
+                            <CardDescription>
+                                Daftar permohonan konsultasi terbaru, diurutkan berdasarkan tanggal masuk (terbaru dulu)
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="max-h-[600px] overflow-y-auto pt-2">
+                            {latestList.length > 0 ? (
+                                <div className="flex flex-col">
+                                    {latestList.map((item, idx) => (
+                                        <div
+                                            key={item.id}
+                                            className={`flex flex-col gap-2 rounded-xl border border-slate-100 bg-slate-50/40 p-3 transition-all hover:border-blue-200 hover:bg-blue-50/40 sm:flex-row sm:items-center ${idx < latestList.length - 1 ? 'border-b' : ''}`}
+                                        >
+                                            <div className="min-w-0 flex-1">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="rounded bg-blue-50 px-1.5 py-0.5 font-mono text-[10px] font-bold text-blue-600">
+                                                        #{item.id}
+                                                    </span>
+                                                    <span
+                                                        className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${statusColor(item.status)}`}
+                                                    >
+                                                        {statusLabel(item.status)}
+                                                    </span>
+                                                </div>
+                                                <p className="mt-1 truncate text-sm font-bold text-slate-900" title={item.nama_pemohon}>
+                                                    {item.nama_pemohon}
+                                                </p>
+                                                <p className="truncate text-[11px] text-slate-500" title={item.instansi}>
+                                                    {item.instansi}
+                                                </p>
+                                            </div>
+                                            <div className="shrink-0 text-right">
+                                                <p className="text-[10px] font-medium text-slate-600">
+                                                    {item.created_at_formatted}
+                                                </p>
+                                                <p className="text-[9px] text-slate-400">
+                                                    {item.created_at_human}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="py-10 text-center">
+                                    <Inbox className="mx-auto mb-2 h-8 w-8 text-slate-300" />
+                                    <p className="text-xs font-medium text-slate-600">
+                                        Belum ada permohonan konsultasi
+                                    </p>
+                                    <p className="mt-1 text-[11px] text-slate-400">
+                                        Data akan muncul secara real-time saat ada permohonan baru
+                                    </p>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                </div>{/* /RIGHT COLUMN */}
+            </div>
         </div>
     );
 }

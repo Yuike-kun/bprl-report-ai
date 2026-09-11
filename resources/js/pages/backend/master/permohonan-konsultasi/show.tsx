@@ -285,7 +285,8 @@ export default function PermohonanKonsultasiShow({ submission }: Props) {
                         <div className="flex flex-wrap items-center gap-2">
                             <a
                                 href={`/master/permohonan-konsultasi/${submission.id}/download-confirmation-pdf`}
-                                download
+                                target="_blank"
+                                rel="noopener noreferrer"
                             >
                                 <Button
                                     type="button"
