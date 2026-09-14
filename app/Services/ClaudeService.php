@@ -41,24 +41,24 @@ class ClaudeService
     ];
 
     protected const SECTION_PROMPTS = [
-        'arus'             => 'Disampaikan sumber data arus yang digunakan dalam permohonan apakah data sekunder atau primer, untuk data sekunder disampaikan sumber pengambilan dan rentang tahun pengambilan. Variabel arus yang disampaikan dapat berupa Kecepatan Arus maksimal dalam periode tertentu dan atau Kecepatan Arus rata-rata dalam periode tertentu serta arah kecepatan arus dominan dalam periode tertentu.',
-        'gelombang'        => 'Disampaikan sumber data gelombang yang digunakan dalam permohonan apakah data sekunder atau primer ataupun analisis gelombang dengan menggunakan data angin, untuk data sekunder disampaikan sumber pengambilan dan rentang tahun pengambilan. Variabel gelombang yang disampaikan dapat berupa Tinggi Gelombang Signifikan maksimal dalam periode tertentu dan atau Tinggi Gelombang Signifikan Rata-rata dalam periode tertentu, Pero gelombang signifikan serta arah Gelombang dominan dalam periode tertentu.',
-        'pasang_surut'     => 'Disampaikan data pasang surut yang digunakan dalam permohonan apakah data sekunder atau primer, untuk data sekunder disampaikan sumber pengambilan dan periode tinjauan pasang surut. Untuk data primer pengambilan data pasang surut merujuk kepada standar analisis pasang surut baik Least Square maupun Admiralty. Variabel Pasang Surut yang disampaikan dapat berupa Elevasi Pasang tertinggi : HWS/HHWL/HAT ; Elevasi Muka Air Rata-rata (MSL/MWL) ; Elevasi Surut terendah (LWS/LLWL/LAT); Tipe Pasang Surut ; Grafik Muka Air Pasang Surut dan Range Pasang Surut.',
-        'batimetri'        => 'Disampaikan peta batimetri/Kontur kedalaman dilengkapi dengan posisi permohonan ruang lautnya. Disampaikan sumber data batimetri apakah berasal dari data sekunder (BIG/BATNAS/GEBCO/DISHIDROS TNI-AL/ dll) atau berasal dari pengambilan data primer. Jika menggunakan data primer, disampaikan alat yang digunakan dalam pengambilan dan pemrosesan datanya menjadi kontur. Peta tersebut kemudian dibuat narasi/deskripsi yang menggambarkan kondisi batimetri di lokasi tersebut.',
+        'arus' => 'Disampaikan sumber data arus yang digunakan dalam permohonan apakah data sekunder atau primer, untuk data sekunder disampaikan sumber pengambilan dan rentang tahun pengambilan. Variabel arus yang disampaikan dapat berupa Kecepatan Arus maksimal dalam periode tertentu dan atau Kecepatan Arus rata-rata dalam periode tertentu serta arah kecepatan arus dominan dalam periode tertentu.',
+        'gelombang' => 'Disampaikan sumber data gelombang yang digunakan dalam permohonan apakah data sekunder atau primer ataupun analisis gelombang dengan menggunakan data angin, untuk data sekunder disampaikan sumber pengambilan dan rentang tahun pengambilan. Variabel gelombang yang disampaikan dapat berupa Tinggi Gelombang Signifikan maksimal dalam periode tertentu dan atau Tinggi Gelombang Signifikan Rata-rata dalam periode tertentu, Pero gelombang signifikan serta arah Gelombang dominan dalam periode tertentu.',
+        'pasang_surut' => 'Disampaikan data pasang surut yang digunakan dalam permohonan apakah data sekunder atau primer, untuk data sekunder disampaikan sumber pengambilan dan periode tinjauan pasang surut. Untuk data primer pengambilan data pasang surut merujuk kepada standar analisis pasang surut baik Least Square maupun Admiralty. Variabel Pasang Surut yang disampaikan dapat berupa Elevasi Pasang tertinggi : HWS/HHWL/HAT ; Elevasi Muka Air Rata-rata (MSL/MWL) ; Elevasi Surut terendah (LWS/LLWL/LAT); Tipe Pasang Surut ; Grafik Muka Air Pasang Surut dan Range Pasang Surut.',
+        'batimetri' => 'Disampaikan peta batimetri/Kontur kedalaman dilengkapi dengan posisi permohonan ruang lautnya. Disampaikan sumber data batimetri apakah berasal dari data sekunder (BIG/BATNAS/GEBCO/DISHIDROS TNI-AL/ dll) atau berasal dari pengambilan data primer. Jika menggunakan data primer, disampaikan alat yang digunakan dalam pengambilan dan pemrosesan datanya menjadi kontur. Peta tersebut kemudian dibuat narasi/deskripsi yang menggambarkan kondisi batimetri di lokasi tersebut.',
         'ekosistem_pesisir' => 'Sesuai Pasal 42 ayat (4) Permen KP Nomor 28 Tahun 2021, kajian ekosistem pesisir mencakup mangrove, terumbu karang, dan padang lamun di sekitar lokasi kegiatan. Jika pada lokasi tidak terdapat salah satu ekosistem, wajib dinyatakan tidak ada disertai dokumentasi dan narasi yang relevan.',
-        'uraian_kegiatan'  => 'Jelaskan uraian jenis usaha, meliputi pembangunan bangunan dan instalasi di laut (dermaga/tambak/instalasi kabel/dll). Sebutkan tujuan kegiatan, manfaat kegiatan usaha, nilai investasi (estimasi jika perlu), dan keterlibatan masyarakat lokal dalam tenaga kerja.',
+        'uraian_kegiatan' => 'Jelaskan uraian jenis usaha, meliputi pembangunan bangunan dan instalasi di laut (dermaga/tambak/instalasi kabel/dll). Sebutkan tujuan kegiatan, manfaat kegiatan usaha, nilai investasi (estimasi jika perlu), dan keterlibatan masyarakat lokal dalam tenaga kerja.',
         'kegiatan_eksisting' => 'Jelaskan apakah terdapat kegiatan pemanfaatan ruang laut menetap (eksisting) di lokasi ini, atau jelaskan rencana kegiatan yang akan dimohonkan.',
         'jadwal_pelaksanaan' => 'Berikan narasi penjelasan mengenai jadwal pelaksanaan kegiatan utama dan pendukungnya (durasi konstruksi, fase mobilisasi, dll).',
         'reklamasi_status' => 'Berikan penjelasan singkat dan tegas mengenai apakah kegiatan ini dilakukan dengan reklamasi atau non-reklamasi.',
         'kegiatan_berusaha' => 'Nyatakan apakah kegiatan ini adalah berusaha atau non-berusaha. Jika berusaha, sebutkan izin berusaha yang relevan (NIB/KBLI). Jika non-berusaha, sampaikan data dukung yang relevan.',
         'kegiatan_strategis' => 'Nyatakan apakah kegiatan ini merupakan Proyek Strategis Nasional (PSN) atau non-strategis nasional. Sampaikan dasar hukum atau data dukung jika merupakan PSN.',
-        'rencana_tapak'    => 'Buatkan narasi terkait rencana tapak/site plan kegiatan, rencana bangunan yang akan dibuat, serta fasilitas penunjangnya yang relevan dengan permohonan ruang laut.',
-        'deskripsi_luas'   => 'Sampaikan rincian kebutuhan ruang laut untuk kegiatan yang dimohonkan, baik kegiatan utama maupun penunjangnya, dilengkapi dengan deskripsi luas/panjang sesuai rencana.',
+        'rencana_tapak' => 'Buatkan narasi terkait rencana tapak/site plan kegiatan, rencana bangunan yang akan dibuat, serta fasilitas penunjangnya yang relevan dengan permohonan ruang laut.',
+        'deskripsi_luas' => 'Sampaikan rincian kebutuhan ruang laut untuk kegiatan yang dimohonkan, baik kegiatan utama maupun penunjangnya, dilengkapi dengan deskripsi luas/panjang sesuai rencana.',
         'profil_dasar_laut' => 'Narasikan gambaran profil dasar laut pada lokasi permohonan, acuan profil melintang pantai, dan deskripsi kondisi substrat dasar laut berdasarkan data batimetri/pemeruman.',
-        'sosial_ekonomi'   => 'Uraikan kondisi sosial ekonomi masyarakat sekitar (mata pencaharian dominan, kelompok nelayan). Nyatakan bahwa kegiatan direncanakan tidak mengganggu akses melaut nelayan tradisional dan akan melibatkan konsultasi publik.',
-        'aksesibilitas'    => 'Jelaskan mengenai akses menuju lokasi kegiatan (jalur darat dan/atau laut) disertai dengan penggambaran rute atau metode mobilisasi material dan personel.',
-        'sumber_material'  => 'Jelaskan rencana sumber material reklamasi (misal: pasir laut), jarak lokasi pengambilan, volume material yang dibutuhkan (estimasi), dan metode pengendalian sedimentasi.',
-        'data_geoteknik'   => 'Narasikan kondisi geoteknik dasar laut secara umum (jenis tanah dasar, daya dukung, potensi penurunan/settlement) dan rekomendasi perbaikan tanah (soil improvement) jika diperlukan.',
+        'sosial_ekonomi' => 'Uraikan kondisi sosial ekonomi masyarakat sekitar (mata pencaharian dominan, kelompok nelayan). Nyatakan bahwa kegiatan direncanakan tidak mengganggu akses melaut nelayan tradisional dan akan melibatkan konsultasi publik.',
+        'aksesibilitas' => 'Jelaskan mengenai akses menuju lokasi kegiatan (jalur darat dan/atau laut) disertai dengan penggambaran rute atau metode mobilisasi material dan personel.',
+        'sumber_material' => 'Jelaskan rencana sumber material reklamasi (misal: pasir laut), jarak lokasi pengambilan, volume material yang dibutuhkan (estimasi), dan metode pengendalian sedimentasi.',
+        'data_geoteknik' => 'Narasikan kondisi geoteknik dasar laut secara umum (jenis tanah dasar, daya dukung, potensi penurunan/settlement) dan rekomendasi perbaikan tanah (soil improvement) jika diperlukan.',
         'pemanfaatan_lahan' => 'Jelaskan rencana pemanfaatan lahan hasil reklamasi (misal: area operasional, dermaga, gudang) dan jadwal pemanfaatan setelah masa konsolidasi tanah.',
         'metode_reklamasi' => 'Jelaskan secara detail metode pelaksanaan reklamasi (teknis, pengambilan material, penimbunan). Sertakan mitigasi efek reklamasi (perubahan hidro-oseanografi, dampak penimbunan, teknologi ramah lingkungan, mitigasi ekosistem).',
         'jadwal_reklamasi' => 'Berikan narasi mengenai jadwal rencana pelaksanaan pekerjaan reklamasi secara bertahap.',
@@ -67,7 +67,7 @@ class ClaudeService
     public function __construct()
     {
         $this->apiKey = (string) config('services.claude.key', '');
-        $this->model  = (string) config('services.claude.model', 'claude-opus-4-5');
+        $this->model = (string) config('services.claude.model', 'claude-opus-4-5');
     }
 
     /* ────────────────────────────────────────────────────────────────
@@ -88,7 +88,7 @@ class ClaudeService
 
                 Log::warning('Narasi belum lengkap, mencoba ulang.', [
                     'attempt' => $attempt,
-                    'empty'   => $this->emptySections($narasi),
+                    'empty' => $this->emptySections($narasi),
                 ]);
             } catch (Exception $e) {
                 Log::error('Error saat call Claude.', ['error' => $e->getMessage()]);
@@ -129,13 +129,13 @@ class ClaudeService
         }
 
         $fieldList = implode(', ', $missing);
-        $prompt    = 'Ekstrak hanya field metadata proposal PKKPRL berikut dari teks. Jangan mengarang nilai. '
+        $prompt = 'Ekstrak hanya field metadata proposal PKKPRL berikut dari teks. Jangan mengarang nilai. '
             ."Kembalikan JSON valid dengan seluruh key yang diminta; gunakan string kosong jika tidak ada.\n"
             .'FIELD: '.$fieldList."\nDOKUMEN:\n".$documentText
             ."\n\nOutput HANYA objek JSON valid tanpa markdown atau teks lain.";
 
         try {
-            $raw     = $this->callClaudeRaw($prompt, maxTokens: 2000);
+            $raw = $this->callClaudeRaw($prompt, maxTokens: 2000);
             $decoded = $this->parseJson($raw);
 
             return is_array($decoded) ? $decoded : [];
@@ -159,10 +159,10 @@ class ClaudeService
             $response = Http::timeout(30)
                 ->withHeaders($this->headers())
                 ->post(self::CLAUDE_API_URL, [
-                    'model'      => $this->model,
+                    'model' => $this->model,
                     'max_tokens' => 1000,
-                    'system'     => $systemPrompt,
-                    'messages'   => [
+                    'system' => $systemPrompt,
+                    'messages' => [
                         ['role' => 'user', 'content' => $question],
                     ],
                 ]);
@@ -170,20 +170,20 @@ class ClaudeService
             if ($response->failed()) {
                 Log::warning('Claude Asisten KKPRL API error.', [
                     'status' => $response->status(),
-                    'model'  => $this->model,
-                    'body'   => $response->json(),
+                    'model' => $this->model,
+                    'body' => $response->json(),
                 ]);
 
                 return 'Asisten belum dapat dihubungi. Periksa CLAUDE_API_KEY dan CLAUDE_MODEL pada konfigurasi server.';
             }
 
-            $answer = trim((string) $response->json('content.0.text'));
+            $answer = trim($this->extractResponseText($response->json() ?? []));
 
             if (blank($answer)) {
                 Log::warning('Claude Asisten KKPRL tidak mengembalikan jawaban.', [
-                    'model'         => $this->model,
-                    'stop_reason'   => $response->json('stop_reason'),
-                    'response'      => $response->json(),
+                    'model' => $this->model,
+                    'stop_reason' => $response->json('stop_reason'),
+                    'response' => $response->json(),
                 ]);
 
                 return 'Asisten tidak menerima jawaban dari model. Periksa konfigurasi model lalu coba lagi.';
@@ -206,7 +206,7 @@ class ClaudeService
      */
     protected function callClaude(string $prompt, int $maxTokens = 8192): array
     {
-        $raw     = $this->callClaudeRaw($prompt, $maxTokens);
+        $raw = $this->callClaudeRaw($prompt, $maxTokens);
         $decoded = $this->parseJson($raw);
 
         return is_array($decoded) ? $decoded : [];
@@ -220,9 +220,9 @@ class ClaudeService
         $response = Http::timeout(120)
             ->withHeaders($this->headers())
             ->post(self::CLAUDE_API_URL, [
-                'model'      => $this->model,
+                'model' => $this->model,
                 'max_tokens' => $maxTokens,
-                'messages'   => [
+                'messages' => [
                     ['role' => 'user', 'content' => $prompt],
                 ],
             ]);
@@ -230,18 +230,38 @@ class ClaudeService
         if ($response->failed()) {
             Log::error('Claude API error', [
                 'status' => $response->status(),
-                'body'   => $response->body(),
+                'body' => $response->body(),
             ]);
             throw new Exception('Gagal menghubungi Claude API: '.$response->status());
         }
 
-        $text = $response->json('content.0.text');
+        $text = $this->extractResponseText($response->json() ?? []);
 
-        if (! $text) {
+        if (blank($text)) {
             throw new Exception('Response Claude kosong.');
         }
 
-        return (string) $text;
+        return $text;
+    }
+
+    /**
+     * Claude's `content` array does not always put a text block at index 0 —
+     * models can prepend `thinking`/`redacted_thinking`/`server_tool_use`
+     * blocks (extended-thinking or tool-use responses) before the actual
+     * `text` block, or split the answer across multiple text blocks.
+     * Concatenates every text block instead of blindly reading content.0.text.
+     */
+    private function extractResponseText(array $json): string
+    {
+        $blocks = $json['content'] ?? [];
+        if (! is_array($blocks)) {
+            return '';
+        }
+
+        return trim(collect($blocks)
+            ->filter(fn ($block) => is_array($block) && ($block['type'] ?? null) === 'text')
+            ->map(fn ($block) => (string) ($block['text'] ?? ''))
+            ->implode("\n"));
     }
 
     /* ────────────────────────────────────────────────────────────────
@@ -249,7 +269,7 @@ class ClaudeService
      * ──────────────────────────────────────────────────────────────── */
     protected function fillMissingSections(array $missing, string $documentText, array $profileContext): array
     {
-        $list  = implode(', ', $missing);
+        $list = implode(', ', $missing);
         $guide = collect(self::SECTION_PROMPTS)
             ->only($missing)
             ->map(fn ($text, $key) => "- [{$key}] {$text}")
@@ -287,7 +307,7 @@ PROMPT;
      * ──────────────────────────────────────────────────────────────── */
     protected function buildPrompt(string $documentText, array $profileContext): string
     {
-        $guide    = collect(self::SECTION_PROMPTS)
+        $guide = collect(self::SECTION_PROMPTS)
             ->map(fn ($text, $key) => "- [{$key}] {$text}")
             ->implode("\n");
         $sections = implode(', ', self::REQUIRED_SECTIONS);
@@ -320,9 +340,9 @@ PROMPT;
     protected function headers(): array
     {
         return [
-            'x-api-key'         => $this->apiKey,
+            'x-api-key' => $this->apiKey,
             'anthropic-version' => self::CLAUDE_VERSION,
-            'content-type'      => 'application/json',
+            'content-type' => 'application/json',
         ];
     }
 
@@ -332,7 +352,7 @@ PROMPT;
 
         if (json_last_error() !== JSON_ERROR_NONE) {
             // Strip markdown fences and retry
-            $clean   = preg_replace('/^```(?:json)?\s*|\s*```$/s', '', trim($text));
+            $clean = preg_replace('/^```(?:json)?\s*|\s*```$/s', '', trim($text));
             $decoded = json_decode($clean, true);
 
             if (json_last_error() !== JSON_ERROR_NONE) {

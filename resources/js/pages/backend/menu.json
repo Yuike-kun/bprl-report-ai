@@ -92,6 +92,24 @@
         "icon": "FolderArchive"
     },
     {
+        "type": "dropdown",
+        "id": "laporan",
+        "label": "Laporan",
+        "icon": "BarChart3",
+        "items": [
+            {
+                "label": "Permohonan Konsultasi Report",
+                "url": "/reports/permohonan-konsultasi",
+                "icon": "FileBarChart"
+            },
+            {
+                "label": "Berita Acara Report",
+                "url": "/reports/berita-acara",
+                "icon": "FileSpreadsheet"
+            }
+        ]
+    },
+    {
         "type": "link",
         "label": "Users",
         "url": "/users",

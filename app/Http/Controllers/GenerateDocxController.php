@@ -1,17 +1,23 @@
 <?php
+
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
 use App\Models\GeneralDraft;
-use App\Services\GeminiService;
+use App\Models\KkprlProposal;
+use App\Services\ClaudeService;
+use App\Services\DocumentImageExtractor;
+use App\Services\KKPRL\ProposalExtractionService;
 use App\Services\PdfImageExtractorService;
+use App\Services\ProposalDocumentGenerator;
 use DOMDocument;
 use DOMXPath;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
-use PhpOffice\PhpWord\IOFactory;
+use Illuminate\Support\Str;
 use PhpOffice\PhpWord\PhpWord;
 use PhpOffice\PhpWord\TemplateProcessor;
 use Smalot\PdfParser\Parser as PdfParser;
@@ -49,7 +55,7 @@ class GenerateDocxController extends Controller
         'Contoh : Penggunaan ruang sekitar',                  // contoh dummy II.1
         'elaskan mengenai akses ke lokasi',                   // instruksi III.5
         'Lokasi kegiatan dapat ditempuh melalui jalur darat', // contoh dummy III.5
-                                                              // Section I Instructions
+        // Section I Instructions
         'Kegiatan yang dimohonkan adalah [uraian jenis usaha]',
         'Tujuan kegiatan: mendukung [aktivitas usaha',
         'Manfaat kegiatan usaha adalah ...',
@@ -111,7 +117,7 @@ class GenerateDocxController extends Controller
      */
     private function cleanDummyContent(string $docxPath): void
     {
-        $zip = new ZipArchive();
+        $zip = new ZipArchive;
         if ($zip->open($docxPath) !== true) {
             return;
         }
@@ -119,13 +125,14 @@ class GenerateDocxController extends Controller
         $xml = $zip->getFromName('word/document.xml');
         if ($xml === false) {
             $zip->close();
+
             return;
         }
 
         // 1. Delete dummy paragraphs
         foreach (self::DUMMY_PARAGRAPH_MARKERS as $marker) {
             $xml = preg_replace(
-                '/<w:p\b[^>]*>(?:(?!<\/w:p>).)*?' . preg_quote($marker, '/') . '(?:(?!<\/w:p>).)*?<\/w:p>/s',
+                '/<w:p\b[^>]*>(?:(?!<\/w:p>).)*?'.preg_quote($marker, '/').'(?:(?!<\/w:p>).)*?<\/w:p>/s',
                 '',
                 $xml
             );
@@ -134,7 +141,7 @@ class GenerateDocxController extends Controller
         // 2. Delete dummy table rows
         foreach (self::DUMMY_ROW_MARKERS as $marker) {
             $xml = preg_replace(
-                '/<w:tr\b[^>]*>(?:(?!<\/w:tr>).)*?' . preg_quote($marker, '/') . '(?:(?!<\/w:tr>).)*?<\/w:tr>/s',
+                '/<w:tr\b[^>]*>(?:(?!<\/w:tr>).)*?'.preg_quote($marker, '/').'(?:(?!<\/w:tr>).)*?<\/w:tr>/s',
                 '',
                 $xml
             );
@@ -160,30 +167,42 @@ class GenerateDocxController extends Controller
             return; // Jika true, biarkan section tetap ada
         }
 
-        $zip = new ZipArchive();
+        $zip = new ZipArchive;
         if ($zip->open($docxPath) !== true) {
             return;
         }
 
         $xml = $zip->getFromName('word/document.xml');
-        if ($xml === false) {$zip->close();return;}
+        if ($xml === false) {
+            $zip->close();
+
+            return;
+        }
 
         libxml_use_internal_errors(true);
         if (strpos($xml, '<?xml') === false) {
-            $xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' . "\n" . $xml;
+            $xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'."\n".$xml;
         }
 
-        $dom = new DOMDocument();
-        if (! $dom->loadXML($xml)) {$zip->close();return;}
+        $dom = new DOMDocument;
+        if (! $dom->loadXML($xml)) {
+            $zip->close();
+
+            return;
+        }
 
         $xpath = new DOMXPath($dom);
         $xpath->registerNamespace('w', 'http://schemas.openxmlformats.org/wordprocessingml/2006/main');
 
         $body = $xpath->query('//w:body')->item(0);
-        if (! $body) {$zip->close();return;}
+        if (! $body) {
+            $zip->close();
+
+            return;
+        }
 
         $isInsideReklamasi = false;
-        $nodesToRemove     = [];
+        $nodesToRemove = [];
 
         // Iterasi semua node anak di dalam <w:body> (paragraf, tabel, dll) secara berurutan
         foreach ($body->childNodes as $node) {
@@ -197,6 +216,7 @@ class GenerateDocxController extends Controller
             // 2. Berhenti hapus saat menemukan bab selanjutnya (Data Dukung / Penutup)
             if ($isInsideReklamasi && (stripos($text, 'DATA DUKUNG LAINNYA') !== false || stripos($text, 'PENUTUP') !== false)) {
                 $isInsideReklamasi = false;
+
                 continue; // Node ini jangan dihapus
             }
 
@@ -220,152 +240,109 @@ class GenerateDocxController extends Controller
     }
 
     public function __construct(
-        protected GeminiService $gemini,
+        protected ClaudeService $claude,
         protected PdfImageExtractorService $imageExtractor,
-    ) {
-    }
+    ) {}
 
     public function generateFromProposal(int $proposalId)
     {
-        $proposal = \App\Models\KkprlProposal::findOrFail($proposalId);
+        $proposal = KkprlProposal::findOrFail($proposalId);
 
-        $data = [
-            // Identitas Pemohon
-            'Nama Pemohon'             => $proposal->applicant_name ?? '',
-            'Jabatan Pemohon'          => $proposal->applicant_position ?? '',
-            'Nama Perusahaan/Instansi' => $proposal->company_name ?? '',
-            'NIB'                      => $proposal->nib ?? '',
-            'NPWP'                     => $proposal->npwp ?? '',
-            'Nomor Telepon Selular'    => $proposal->phone_number ?? '',
-            'Surat Elektronik'         => $proposal->email ?? '',
-
-            // Kegiatan & Lokasi
-            'Jenis Kegiatan'           => $proposal->activity_type ?? '',
-            'Nama Perairan'            => $proposal->water_name ?? '',
-            'Luas Kebutuhan Ruang'     => $proposal->area_size ? $proposal->area_size . ' Ha' : '',
-            'KBLI'                     => $proposal->activity_category ?? '',
-            'Tanggal Penyusunan'       => $proposal->created_at ? $proposal->created_at->format('d F Y') : now()->format('d F Y'),
-            'Provinsi'                 => $proposal->province ?? '',
-            'Kabupaten'                => $proposal->regency ?? '',
-            'Kecamatan'                => $proposal->district ?? '',
-            'Desa'                     => $proposal->village ?? '',
-
-            // Investasi & Tenaga Kerja
-            'investasi'                => $proposal->investment_value ? 'Rp ' . number_format((float) $proposal->investment_value, 0, ',', '.') : '',
-            'tenaga_kerja'             => $proposal->local_workers ?? '0',
-            'tenaga_kerja_asing'       => $proposal->foreign_workers ?? '0',
-
-            // Social & Eco
-            'desa_luas_ha'             => $proposal->village_area ?? '',
-            'desa_penduduk'            => $proposal->population_count ?? '',
-
-            // Legacy keys compatibility
-            'nama_perusahaan'          => $proposal->company_name ?? '',
-            'nib'                      => $proposal->nib ?? '',
-            'npwp'                     => $proposal->npwp ?? '',
-            'telp'                     => $proposal->phone_number ?? '',
-            'email'                    => $proposal->email ?? '',
-            'jenis_kegiatan'           => $proposal->activity_type ?? '',
-            'no_referensi'             => 'KKPRL-' . str_pad((string) $proposal->id, 5, '0', STR_PAD_LEFT),
-            'tanggal_penyusunan'       => $proposal->created_at ? $proposal->created_at->format('d F Y') : now()->format('d F Y'),
-            'nama_perairan'            => $proposal->water_name ?? '',
-            'provinsi'                 => $proposal->province ?? '',
-            'kabupaten'                => $proposal->regency ?? '',
-            'kecamatan'                => $proposal->district ?? '',
-            'desa'                     => $proposal->village ?? '',
-            'uraian_kegiatan'          => $proposal->activity_description ?? '',
-            'jadwal_konstruksi'        => $proposal->schedule_description ?? '',
-            'luas_ruang_total'         => $proposal->area_size ? $proposal->area_size . ' Ha' : '',
-            'ada_reklamasi'            => $proposal->is_reclamation ? 'Ya' : 'Tidak',
+        // Direct per-purpose uploads already stored on the `public` disk by
+        // KkprlProposalController::store() — map 1:1 onto the figure tags used
+        // by ProposalDocumentGenerator (a faithful port of the reference app's
+        // generate_docx.py). Only real image files are embedded; PDFs stored in
+        // these slots are intentionally skipped (shown as a "not found" note)
+        // rather than guessed at.
+        $images = [];
+        $publicImagePaths = [
+            'siteplan' => $proposal->site_plan_path,
+            'peta_lokasi' => $proposal->location_map_path,
+            'foto_mangrove' => $proposal->mangrove_doc_path,
+            'foto_lamun' => $proposal->seagrass_doc_path,
+            'foto_karang_insitu' => $proposal->coral_reef_doc_path,
+            'gambar_aksesibilitas' => $proposal->accessibility_map_path,
+            'sertifikat_lahan' => $proposal->land_certificate_path,
+            'dok_sosialisasi' => $proposal->socialization_doc_path,
+            'dok_pendukung_lainnya' => $proposal->other_supporting_doc_path,
         ];
+        foreach ($publicImagePaths as $tag => $path) {
+            $resolved = $this->resolvePublicImage($path);
+            if ($resolved) {
+                $images[$tag] = [$resolved];
+            }
+        }
+        $polaRuang = collect((array) ($proposal->marine_spatial_docs_path ?? []))
+            ->map(fn ($path) => $this->resolvePublicImage($path))
+            ->filter()
+            ->values()
+            ->all();
+        if ($polaRuang) {
+            $images['peta_pola_ruang'] = $polaRuang;
+        }
 
-        // ── AI narasi: try to extract from uploaded proposal file ──────────
-        $narasi = [
-            'nama_pemohon'       => $proposal->applicant_name ?? '',
-            'jabatan_pemohon'    => $proposal->applicant_position ?? '',
-            'tujuan_kegiatan'    => $proposal->activity_purpose ?? '',
-            'manfaat_kegiatan'   => $proposal->activity_benefit ?? '',
-            'deskripsi_kegiatan' => $proposal->activity_description ?? '',
-            'nilai_investasi'    => $proposal->investment_value ? 'Rp ' . number_format((float) $proposal->investment_value, 0, ',', '.') : '',
-        ];
-
+        // Hidro-oceanography figures (mawar gelombang/arus, siklus pasut, profil
+        // batimetri, peta ekosistem) are keyword-detected from the single
+        // uploaded PDF laporan, since there is no separate per-figure upload.
         $tempImages = [];
-
-        // 1. Extract text from the uploaded proposal (existing_doc_path)
-        $proposalDocPath = $proposal->existing_doc_path;
-        if ($proposalDocPath) {
-            $fullPath = Storage::disk('public')->exists($proposalDocPath)
-                ? Storage::disk('public')->path($proposalDocPath)
-                : null;
-
-            if ($fullPath && file_exists($fullPath)) {
-                try {
-                    $documentText = $this->extractTextFromFile($fullPath, basename($fullPath));
-                    $documentText = $this->cleanDocumentText($documentText);
-
-                    if (!empty(trim($documentText))) {
-                        $profileContext = array_filter($data, fn($v) => !is_null($v) && $v !== '');
-                        $aiNarasi = $this->gemini->generateNarasi($documentText, $profileContext);
-                        $aiNarasi = $this->cleanAiOutput($aiNarasi);
-                        // Merge AI output into narasi (AI wins over empty defaults)
-                        foreach ($aiNarasi as $key => $value) {
-                            if (!empty($value)) {
-                                $narasi[$key] = $value;
-                            }
-                        }
-                    }
-                } catch (\Exception $e) {
-                    Log::warning('AI narasi extraction skipped for proposal ' . $proposalId . ': ' . $e->getMessage());
-                }
-            }
-        }
-
-        // 2. Extract images from hydro-oceanography report (hydro_oceanography_doc_path)
         $hydroDocPath = $proposal->hydro_oceanography_doc_path;
-        if ($hydroDocPath) {
-            $hydroFullPath = Storage::disk('public')->exists($hydroDocPath)
-                ? Storage::disk('public')->path($hydroDocPath)
-                : null;
-
-            if ($hydroFullPath && file_exists($hydroFullPath)) {
-                if (strtolower(pathinfo($hydroFullPath, PATHINFO_EXTENSION)) === 'pdf') {
-                    try {
-                        $tempImages = $this->imageExtractor->extractSectionImages($hydroFullPath);
-                    } catch (\Exception $e) {
-                        Log::warning('Image extraction from hydro doc skipped: ' . $e->getMessage());
-                    }
+        if ($hydroDocPath && Storage::disk('public')->exists($hydroDocPath)) {
+            $hydroFullPath = Storage::disk('public')->path($hydroDocPath);
+            if (strtolower(pathinfo($hydroFullPath, PATHINFO_EXTENSION)) === 'pdf') {
+                try {
+                    $tempImages = $this->imageExtractor->extractSectionImages($hydroFullPath);
+                } catch (Exception $e) {
+                    Log::warning('Image extraction from hydro doc skipped: '.$e->getMessage());
                 }
             }
         }
+        $sectionTagMap = [
+            'gelombang' => 'mawar_gelombang',
+            'arus' => 'mawar_arus',
+            'pasang_surut' => 'siklus_pasut',
+            'batimetri' => 'profil_batimetri',
+            'ekosistem' => 'peta_ekosistem',
+        ];
+        foreach ($sectionTagMap as $section => $tag) {
+            if (! empty($tempImages[$section])) {
+                $images[$tag] = [$tempImages[$section]];
+            }
+        }
 
-        $templatePath = public_path('template-docx.docx');
-        $outputPath   = storage_path('app/tmp/Proposal_PKKPRL_' . uniqid() . '.docx');
-
+        $outputPath = storage_path('app/tmp/Proposal_PKKPRL_'.uniqid().'.docx');
         if (! is_dir(dirname($outputPath))) {
             mkdir(dirname($outputPath), 0755, true);
         }
 
         try {
-            if (file_exists($templatePath)) {
-                $this->fillTemplate($templatePath, $outputPath, $data, $narasi, $tempImages);
-            } else {
-                $this->buildDocxFromScratch($data, $narasi, $outputPath);
-            }
+            (new ProposalDocumentGenerator)->createKkprlProposal($proposal, $images, $outputPath);
 
-            $this->removeReklamasiSection($outputPath, (bool) $proposal->is_reclamation);
+            $timestamp = now()->format('HisYmd');
 
-            $timestamp = now()->format("HisYmd");
-
-            return response()->download($outputPath, 'Proposal_PKKPRL_' . $timestamp . '.docx')
+            return response()->download($outputPath, 'Proposal_PKKPRL_'.$timestamp.'.docx')
                 ->deleteFileAfterSend(true);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Gagal generate docx from proposal', ['message' => $e->getMessage()]);
-            return response()->json(['message' => 'Gagal memproses dokumen: ' . $e->getMessage()], 500);
+
+            return response()->json(['message' => 'Gagal memproses dokumen: '.$e->getMessage()], 500);
         } finally {
             foreach ($tempImages as $imgPath) {
                 @unlink($imgPath);
             }
         }
+    }
+
+    /** Resolve a `public` disk path to an absolute file path, only when it is a real image. */
+    private function resolvePublicImage(?string $path): ?string
+    {
+        if (! $path || ! Storage::disk('public')->exists($path)) {
+            return null;
+        }
+        if (! in_array(strtolower(pathinfo($path, PATHINFO_EXTENSION)), ['jpg', 'jpeg', 'png', 'gif', 'bmp'], true)) {
+            return null;
+        }
+
+        return Storage::disk('public')->path($path);
     }
 
     // ──────────────────────────────────────────────────────────────────────────
@@ -382,54 +359,54 @@ class GenerateDocxController extends Controller
             'aiAnalysisResult',
         ])->findOrFail($draftId);
 
-        $sea   = $draft->seaConstructionAndInstallation;
+        $sea = $draft->seaConstructionAndInstallation;
         $space = $draft->spaceUtilizationInfo;
-        $rec   = $draft->reclamationRequirement;
-        $ai    = $draft->aiAnalysisResult;
+        $rec = $draft->reclamationRequirement;
+        $ai = $draft->aiAnalysisResult;
 
         $data = [
             // Identitas
-            'nama_perusahaan'    => $draft->nama_perusahaan ?? '',
-            'nib'                => $draft->nib ?? '',
-            'npwp'               => $draft->npwp ?? '',
-            'telp'               => $draft->telp ?? '',
-            'email'              => $draft->email ?? '',
-            'jenis_kegiatan'     => $draft->jenis_kegiatan ?? '',
-            'no_referensi'       => $draft->no_referensi ?? '',
+            'nama_perusahaan' => $draft->nama_perusahaan ?? '',
+            'nib' => $draft->nib ?? '',
+            'npwp' => $draft->npwp ?? '',
+            'telp' => $draft->telp ?? '',
+            'email' => $draft->email ?? '',
+            'jenis_kegiatan' => $draft->jenis_kegiatan ?? '',
+            'no_referensi' => $draft->no_referensi ?? '',
             'tanggal_penyusunan' => $draft->tanggal_penyusunan?->format('d F Y') ?? '',
             // Bab I
-            'nama_perairan'      => $sea?->nama_perairan ?? '',
-            'provinsi'           => $sea?->provinsi ?? '',
-            'kabupaten'          => $sea?->kabupaten ?? '',
-            'kecamatan'          => $sea?->kecamatan ?? '',
-            'desa'               => $sea?->desa ?? '',
-            'uraian_kegiatan'    => $sea?->uraian_kegiatan ?? '',
-            'jadwal_konstruksi'  => $sea?->jadwal_konstruksi ?? '',
-            'luas_ruang_total'   => $sea?->luas_ruang_total ?? '',
+            'nama_perairan' => $sea?->nama_perairan ?? '',
+            'provinsi' => $sea?->provinsi ?? '',
+            'kabupaten' => $sea?->kabupaten ?? '',
+            'kecamatan' => $sea?->kecamatan ?? '',
+            'desa' => $sea?->desa ?? '',
+            'uraian_kegiatan' => $sea?->uraian_kegiatan ?? '',
+            'jadwal_konstruksi' => $sea?->jadwal_konstruksi ?? '',
+            'luas_ruang_total' => $sea?->luas_ruang_total ?? '',
             // Bab II
             'permukiman_nelayan' => $space?->permukiman_nelayan ?? '',
-            'alur_pelayaran'     => $space?->alur_pelayaran ?? '',
-            'area_tangkap'       => $space?->area_tangkap ?? '',
-            'aktivitas_lain'     => $space?->aktivitas_lain ?? '',
+            'alur_pelayaran' => $space?->alur_pelayaran ?? '',
+            'area_tangkap' => $space?->area_tangkap ?? '',
+            'aktivitas_lain' => $space?->aktivitas_lain ?? '',
             // Bab IV
-            'ada_reklamasi'      => $rec?->ada_reklamasi ?? 'Tidak',
-            'sumber_material'    => $rec?->sumber_material ?? '',
-            'metode_reklamasi'   => $rec?->metode_reklamasi ?? '',
-            'jenis_tanah'        => $rec?->jenis_tanah ?? '',
-            'daya_dukung'        => $rec?->daya_dukung ?? '',
-            'pemanfaatan_lahan'  => $rec?->pemanfaatan_lahan ?? '',
-            'jadwal_reklamasi'   => $rec?->jadwal_reklamasi ?? '',
+            'ada_reklamasi' => $rec?->ada_reklamasi ?? 'Tidak',
+            'sumber_material' => $rec?->sumber_material ?? '',
+            'metode_reklamasi' => $rec?->metode_reklamasi ?? '',
+            'jenis_tanah' => $rec?->jenis_tanah ?? '',
+            'daya_dukung' => $rec?->daya_dukung ?? '',
+            'pemanfaatan_lahan' => $rec?->pemanfaatan_lahan ?? '',
+            'jadwal_reklamasi' => $rec?->jadwal_reklamasi ?? '',
         ];
 
         $adaReklamasi = $rec?->ada_reklamasi ?? 'Tidak';
-        $isReklamasi  = in_array(
+        $isReklamasi = in_array(
             strtolower(trim((string) $adaReklamasi)),
             ['ya', 'ada', 'true', '1', 'reklamasi', 'yes']
         );
-        $narasi       = $ai?->analysis_result ?? [];
-        $tempImages   = [];
+        $narasi = $ai?->analysis_result ?? [];
+        $tempImages = [];
         $templatePath = public_path('template-docx.docx');
-        $outputPath   = storage_path('app/tmp/Proposal_PKKPRL_' . uniqid() . '.docx');
+        $outputPath = storage_path('app/tmp/Proposal_PKKPRL_'.uniqid().'.docx');
 
         if (! is_dir(dirname($outputPath))) {
             mkdir(dirname($outputPath), 0755, true);
@@ -443,8 +420,8 @@ class GenerateDocxController extends Controller
                 if (strtolower(pathinfo($fullPath, PATHINFO_EXTENSION)) === 'pdf') {
                     try {
                         $tempImages = $this->imageExtractor->extractSectionImages($fullPath);
-                    } catch (\Exception $e) {
-                        Log::warning('Image extraction skipped: ' . $e->getMessage());
+                    } catch (Exception $e) {
+                        Log::warning('Image extraction skipped: '.$e->getMessage());
                     }
                 }
             }
@@ -458,13 +435,14 @@ class GenerateDocxController extends Controller
 
             $this->removeReklamasiSection($outputPath, $isReklamasi);
 
-            $timestamp_name = now()->format("HisYmd");
+            $timestamp_name = now()->format('HisYmd');
 
             return response()->download($outputPath, 'Proposal_PKKPRL_'.$timestamp_name.'.docx')
                 ->deleteFileAfterSend(true);
         } catch (Exception $e) {
             Log::error('Gagal generate docx from draft', ['message' => $e->getMessage()]);
-            return response()->json(['message' => 'Gagal memproses dokumen: ' . $e->getMessage()], 500);
+
+            return response()->json(['message' => 'Gagal memproses dokumen: '.$e->getMessage()], 500);
         } finally {
             foreach ($tempImages as $imgPath) {
                 @unlink($imgPath);
@@ -477,30 +455,30 @@ class GenerateDocxController extends Controller
     // Accepts: proposal (required), laporan/report (optional)
     // Returns: Redirect to kkprl-proposal.review for user correction & download
     // ──────────────────────────────────────────────────────────────────────────
-    public function reviewAndGenerate(Request $request, \App\Services\KKPRL\ProposalExtractionService $extractor)
+    public function reviewAndGenerate(Request $request, ProposalExtractionService $extractor)
     {
         $request->validate([
             'proposal' => ['required', 'file', 'extensions:pdf,doc,docx', 'max:262144'],
-            'laporan'  => ['nullable', 'file', 'extensions:pdf,doc,docx', 'max:262144'],
-            'report'   => ['nullable', 'file', 'extensions:pdf,doc,docx', 'max:262144'],
+            'laporan' => ['nullable', 'file', 'extensions:pdf,doc,docx', 'max:262144'],
+            'report' => ['nullable', 'file', 'extensions:pdf,doc,docx', 'max:262144'],
         ]);
 
         $proposalFile = $request->file('proposal');
-        $laporanFile  = $request->file('laporan') ?? $request->file('report');
+        $laporanFile = $request->file('laporan') ?? $request->file('report');
 
         try {
-            $jobId = \Illuminate\Support\Str::uuid()->toString();
-            $base  = storage_path('app/private/egerai/' . $jobId);
-            \Illuminate\Support\Facades\File::ensureDirectoryExists($base);
+            $jobId = Str::uuid()->toString();
+            $base = storage_path('app/private/egerai/'.$jobId);
+            File::ensureDirectoryExists($base);
 
             $images = [];
             $extractedFields = [];
 
             // Extract images and fields from proposal
             if ($proposalFile) {
-                $propPath = $base . '/proposal.' . $proposalFile->getClientOriginalExtension();
+                $propPath = $base.'/proposal.'.$proposalFile->getClientOriginalExtension();
                 $proposalFile->move($base, basename($propPath));
-                foreach ((new \App\Services\DocumentImageExtractor())->extract($propPath, 'proposal', $base . '/images-proposal') as $tag => $paths) {
+                foreach ((new DocumentImageExtractor)->extract($propPath, 'proposal', $base.'/images-proposal') as $tag => $paths) {
                     $images[$tag] = array_merge($images[$tag] ?? [], $paths);
                 }
 
@@ -508,20 +486,20 @@ class GenerateDocxController extends Controller
                     $result = $extractor->extract($propPath);
                     $extractedFields = $result['fields'] ?? [];
                 } catch (\Throwable $e) {
-                    Log::warning('Auto-fill extraction failed: ' . $e->getMessage());
+                    Log::warning('Auto-fill extraction failed: '.$e->getMessage());
                 }
             }
 
             // Extract images from laporan/report if provided
             if ($laporanFile) {
-                $repPath = $base . '/report.' . $laporanFile->getClientOriginalExtension();
+                $repPath = $base.'/report.'.$laporanFile->getClientOriginalExtension();
                 $laporanFile->move($base, basename($repPath));
-                foreach ((new \App\Services\DocumentImageExtractor())->extract($repPath, 'report', $base . '/images-report') as $tag => $paths) {
+                foreach ((new DocumentImageExtractor)->extract($repPath, 'report', $base.'/images-report') as $tag => $paths) {
                     $images[$tag] = array_merge($images[$tag] ?? [], $paths);
                 }
             }
 
-            $request->session()->put('egerai_jobs.' . $jobId, ['images' => $images]);
+            $request->session()->put('egerai_jobs.'.$jobId, ['images' => $images]);
 
             // Clean up area size string
             $areaSize = null;
@@ -533,18 +511,18 @@ class GenerateDocxController extends Controller
             }
 
             // Save to DB for review page editing
-            $kkprlProposal = \App\Models\KkprlProposal::create([
-                'status'               => 'on_review',
-                'existing_doc_path'    => $base . '/proposal',
-                'company_name'         => $extractedFields['nama_perusahaan'] ?? null,
-                'applicant_name'       => $extractedFields['nama_perusahaan'] ?? null,
-                'nib'                  => $extractedFields['nib'] ?? null,
-                'npwp'                 => $extractedFields['npwp'] ?? null,
-                'phone_number'         => $extractedFields['telp'] ?? null,
-                'email'                => $extractedFields['email'] ?? null,
-                'activity_type'        => $extractedFields['jenis_kegiatan'] ?? null,
-                'water_name'           => $extractedFields['nama_perairan'] ?? null,
-                'area_size'            => $areaSize,
+            $kkprlProposal = KkprlProposal::create([
+                'status' => 'on_review',
+                'existing_doc_path' => $base.'/proposal',
+                'company_name' => $extractedFields['nama_perusahaan'] ?? null,
+                'applicant_name' => $extractedFields['nama_perusahaan'] ?? null,
+                'nib' => $extractedFields['nib'] ?? null,
+                'npwp' => $extractedFields['npwp'] ?? null,
+                'phone_number' => $extractedFields['telp'] ?? null,
+                'email' => $extractedFields['email'] ?? null,
+                'activity_type' => $extractedFields['jenis_kegiatan'] ?? null,
+                'water_name' => $extractedFields['nama_perairan'] ?? null,
+                'area_size' => $areaSize,
                 'activity_description' => $extractedFields['uraian_kegiatan'] ?? null,
             ]);
 
@@ -553,15 +531,14 @@ class GenerateDocxController extends Controller
         } catch (\Throwable $e) {
             Log::error('reviewAndGenerate failed', [
                 'message' => $e->getMessage(),
-                'trace'   => $e->getTraceAsString(),
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return redirect()->back()->withErrors([
-                'proposal' => 'Gagal memproses dokumen: ' . $e->getMessage(),
+                'proposal' => 'Gagal memproses dokumen: '.$e->getMessage(),
             ]);
         }
     }
-
 
     // ──────────────────────────────────────────────────────────────────────────
     // LEGACY: Upload PDF + DOCX template together, generate on the fly
@@ -569,32 +546,32 @@ class GenerateDocxController extends Controller
     public function generate(Request $request)
     {
         $request->validate([
-            'laporan_pdf'        => ['nullable', 'file', 'extensions:pdf,doc,docx', 'max:262144'],
-            'template_docx'      => ['nullable', 'file', 'extensions:docx', 'max:262144'],
-            'proposal'           => ['nullable', 'file', 'extensions:pdf,doc,docx', 'max:262144'],
-            'report'             => ['nullable', 'file', 'extensions:pdf,doc,docx', 'max:262144'],
-            'nama_perusahaan'    => ['nullable', 'string', 'max:255'],
-            'nib'                => ['nullable', 'string', 'max:255'],
-            'npwp'               => ['nullable', 'string', 'max:255'],
-            'telp'               => ['nullable', 'string', 'max:255'],
-            'email'              => ['nullable', 'string', 'max:255'],
-            'jenis_kegiatan'     => ['nullable', 'string', 'max:255'],
-            'no_referensi'       => ['nullable', 'string', 'max:255'],
+            'laporan_pdf' => ['nullable', 'file', 'extensions:pdf,doc,docx', 'max:262144'],
+            'template_docx' => ['nullable', 'file', 'extensions:docx', 'max:262144'],
+            'proposal' => ['nullable', 'file', 'extensions:pdf,doc,docx', 'max:262144'],
+            'report' => ['nullable', 'file', 'extensions:pdf,doc,docx', 'max:262144'],
+            'nama_perusahaan' => ['nullable', 'string', 'max:255'],
+            'nib' => ['nullable', 'string', 'max:255'],
+            'npwp' => ['nullable', 'string', 'max:255'],
+            'telp' => ['nullable', 'string', 'max:255'],
+            'email' => ['nullable', 'string', 'max:255'],
+            'jenis_kegiatan' => ['nullable', 'string', 'max:255'],
+            'no_referensi' => ['nullable', 'string', 'max:255'],
             'tanggal_penyusunan' => ['nullable', 'string', 'max:255'],
-            'luas_ruang_total'   => ['nullable', 'string', 'max:255'],
+            'luas_ruang_total' => ['nullable', 'string', 'max:255'],
         ]);
 
-        $pdfPath    = $request->file('laporan_pdf')->getRealPath();
+        $pdfPath = $request->file('laporan_pdf')->getRealPath();
         $tempImages = [];
 
         try {
-            $parser       = new PdfParser();
-            $pdf          = $parser->parseFile($pdfPath);
+            $parser = new PdfParser;
+            $pdf = $parser->parseFile($pdfPath);
             $documentText = $pdf->getText();
 
-            $narasi = $this->gemini->generateNarasi($documentText, [
+            $narasi = $this->claude->generateNarasi($documentText, [
                 'nama_perusahaan' => $request->input('nama_perusahaan'),
-                'jenis_kegiatan'  => $request->input('jenis_kegiatan'),
+                'jenis_kegiatan' => $request->input('jenis_kegiatan'),
             ]);
 
             $tempImages = $this->imageExtractor->extractSectionImages($pdfPath);
@@ -615,12 +592,12 @@ class GenerateDocxController extends Controller
             foreach ($tempImages as $section => $imagePath) {
                 try {
                     $templateProcessor->setImageValue("gambar_{$section}", [
-                        'path'   => $imagePath,
-                        'width'  => 400,
+                        'path' => $imagePath,
+                        'width' => 400,
                         'height' => 300,
-                        'ratio'  => true,
+                        'ratio' => true,
                     ]);
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     Log::warning("Image placeholder gambar_{$section} not found in template, skipping.");
                 }
             }
@@ -628,7 +605,7 @@ class GenerateDocxController extends Controller
             $inserted = $this->insertSectionImages($templateProcessor, $tempImages);
             $this->purgeRemainingPlaceholders($templateProcessor);
 
-            $outputPath = storage_path('app/tmp/Proposal_Terisi_' . uniqid() . '.docx');
+            $outputPath = storage_path('app/tmp/Proposal_Terisi_'.uniqid().'.docx');
             if (! is_dir(dirname($outputPath))) {
                 mkdir(dirname($outputPath), 0755, true);
             }
@@ -640,8 +617,9 @@ class GenerateDocxController extends Controller
                 ->deleteFileAfterSend(true);
         } catch (Exception $e) {
             Log::error('Gagal generate docx dari laporan', ['message' => $e->getMessage()]);
+
             return response()->json([
-                'message' => 'Gagal memproses dokumen: ' . $e->getMessage(),
+                'message' => 'Gagal memproses dokumen: '.$e->getMessage(),
             ], 422);
         } finally {
             foreach ($tempImages as $imagePath) {
@@ -661,7 +639,7 @@ class GenerateDocxController extends Controller
 
         $tmpFile = null;
         try {
-            $dokumen  = $request->input('dokumen');
+            $dokumen = $request->input('dokumen');
             $filePath = $this->resolveFilePath($dokumen, $tmpFile);
 
             if (! $filePath || ! file_exists($filePath)) {
@@ -679,10 +657,10 @@ class GenerateDocxController extends Controller
 
             $profileContext = array_filter(
                 $request->only(self::ALL_FIELDS),
-                fn($val) => ! is_null($val) && $val !== ''
+                fn ($val) => ! is_null($val) && $val !== ''
             );
 
-            $rawResponse = $this->gemini->generateNarasi($documentText, $profileContext);
+            $rawResponse = $this->claude->generateNarasi($documentText, $profileContext);
 
             // ✅ STEP 2: Clean the AI output
             $cleanedNarasi = $this->cleanAiOutput($rawResponse);
@@ -690,10 +668,11 @@ class GenerateDocxController extends Controller
             // ✅ FIX: Return ALL sections dynamically, not just the hardcoded 5
             return response()->json([
                 'success' => true,
-                'narasi'  => $cleanedNarasi,
+                'narasi' => $cleanedNarasi,
             ]);
         } catch (Exception $e) {
             Log::error('AI Analysis Failed', ['error' => $e->getMessage()]);
+
             return response()->json(['message' => $e->getMessage()], 500);
         } finally {
             if ($tmpFile && file_exists($tmpFile)) {
@@ -719,14 +698,16 @@ class GenerateDocxController extends Controller
         foreach ($data as $key => $value) {
             try {
                 $tp->setValue($key, htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8'));
-            } catch (\Exception) {}
+            } catch (Exception) {
+            }
         }
 
         // 2. Fill ALL AI narrative sections dynamically
         foreach ($narasi as $key => $value) {
             try {
                 $tp->setValue($key, htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8'));
-            } catch (\Exception) {}
+            } catch (Exception) {
+            }
         }
 
         // 3. Images & Cleanup
@@ -742,7 +723,7 @@ class GenerateDocxController extends Controller
     private function buildDocxFromScratch(array $data, array $narasi, string $outputPath, array $tempImages = []): void
     {
         $mergedData = array_merge($data, $narasi);
-        (new \App\Services\ProposalDocumentGenerator())->create($mergedData, $outputPath, $tempImages);
+        (new ProposalDocumentGenerator)->create($mergedData, $outputPath, $tempImages);
     }
 
     private function addTableRows($section, PhpWord $phpWord, string $title, array $rows): void
@@ -756,24 +737,25 @@ class GenerateDocxController extends Controller
         }
     }
 
-    private function resolveFilePath(mixed $dokumen,  ? string &$tmpFile): ?string
+    private function resolveFilePath(mixed $dokumen, ?string &$tmpFile): ?string
     {
         if (is_array($dokumen) && isset($dokumen['data'])) {
-            $fileName   = $dokumen['name'] ?? 'document.pdf';
+            $fileName = $dokumen['name'] ?? 'document.pdf';
             $base64Data = $dokumen['data'];
             if (preg_match('/^data:(.*?);base64,/', $base64Data)) {
                 $base64Data = substr($base64Data, strpos($base64Data, ',') + 1);
             }
             $decoded = base64_decode($base64Data);
-            $tmpFile = storage_path('app/tmp/' . uniqid('ai_doc_') . '_' . $fileName);
+            $tmpFile = storage_path('app/tmp/'.uniqid('ai_doc_').'_'.$fileName);
             if (! is_dir(dirname($tmpFile))) {
                 mkdir(dirname($tmpFile), 0755, true);
             }
             file_put_contents($tmpFile, $decoded);
+
             return $tmpFile;
         }
 
-        if ($dokumen instanceof \Illuminate\Http\UploadedFile) {
+        if ($dokumen instanceof UploadedFile) {
             return $dokumen->getRealPath();
         }
 
@@ -795,15 +777,16 @@ class GenerateDocxController extends Controller
 
         if ($ext === 'pdf') {
             try {
-                return (new PdfParser())->parseFile($filePath)->getText();
-            } catch (\Exception $e) {
-                Log::error('PDF Parsing Error: ' . $e->getMessage());
+                return (new PdfParser)->parseFile($filePath)->getText();
+            } catch (Exception $e) {
+                Log::error('PDF Parsing Error: '.$e->getMessage());
+
                 return '';
             }
         }
 
         if ($ext === 'docx') {
-            $zip = new ZipArchive();
+            $zip = new ZipArchive;
             if ($zip->open($filePath) === true) {
                 $index = $zip->locateName('word/document.xml');
                 if ($index !== false) {
@@ -815,6 +798,7 @@ class GenerateDocxController extends Controller
                         $xml
                     );
                     $text = preg_replace('/\s+/', ' ', trim(strip_tags($xmlWithSpaces)));
+
                     return html_entity_decode($text);
                 }
                 $zip->close();
@@ -826,7 +810,7 @@ class GenerateDocxController extends Controller
 
     private function cleanAiOutput(array $narasi): array
     {
-        $cleaned       = [];
+        $cleaned = [];
         $fillerPhrases = [
             'berdasarkan dokumen', 'berdasarkan teks', 'berikut adalah',
             'secara keseluruhan', 'tidak ada informasi', 'data tidak tersedia',
@@ -836,6 +820,7 @@ class GenerateDocxController extends Controller
         foreach ($narasi as $key => $value) {
             if (! is_string($value)) {
                 $cleaned[$key] = '';
+
                 continue;
             }
 
@@ -844,7 +829,7 @@ class GenerateDocxController extends Controller
 
             // Remove introductory filler phrases
             foreach ($fillerPhrases as $phrase) {
-                $value = preg_replace('/^' . preg_quote($phrase, '/') . '.*?[.:]\s*/i', '', $value);
+                $value = preg_replace('/^'.preg_quote($phrase, '/').'.*?[.:]\s*/i', '', $value);
             }
 
             // Discard if it's essentially empty or a refusal to answer
@@ -854,6 +839,7 @@ class GenerateDocxController extends Controller
 
             $cleaned[$key] = trim($value);
         }
+
         return $cleaned;
     }
 
@@ -888,12 +874,12 @@ class GenerateDocxController extends Controller
      * value = caption keyword ("Gambar N. ...") used to locate orphan captions.
      */
     protected const FIGURE_SECTIONS = [
-        'peta_lokasi'       => 'Peta Lokasi',
-        'batimetri'         => 'Peta Batimetri',
-        'arus'              => 'Mawar Arus',
-        'gelombang'         => 'Mawar Gelombang',
-        'pasang_surut'      => 'Grafik Pasang Surut',
-        'ekosistem'         => 'Peta Sebaran Ekosistem',
+        'peta_lokasi' => 'Peta Lokasi',
+        'batimetri' => 'Peta Batimetri',
+        'arus' => 'Mawar Arus',
+        'gelombang' => 'Mawar Gelombang',
+        'pasang_surut' => 'Grafik Pasang Surut',
+        'ekosistem' => 'Peta Sebaran Ekosistem',
         'pemanfaatan_ruang' => 'Pemanfaatan Ruang Laut',
         'profil_dasar_laut' => 'Profil Dasar Laut',
     ];
@@ -904,7 +890,7 @@ class GenerateDocxController extends Controller
      */
     private function insertSectionImages(TemplateProcessor $tp, array $sectionImages): array
     {
-        $inserted  = [];
+        $inserted = [];
         $variables = $tp->getVariables();
 
         foreach ($sectionImages as $section => $imagePath) {
@@ -923,15 +909,15 @@ class GenerateDocxController extends Controller
                 [$w, $h] = $this->fitImageDimensions($imagePath, 450, 300);
 
                 $tp->setImageValue($placeholder, [
-                    'path'   => $imagePath,
-                    'width'  => $w,
+                    'path' => $imagePath,
+                    'width' => $w,
                     'height' => $h,
-                    'ratio'  => true,
+                    'ratio' => true,
                 ]);
 
                 $inserted[] = $section;
-            } catch (\Exception $e) {
-                Log::warning("Gagal menyisipkan gambar {$section}: " . $e->getMessage());
+            } catch (Exception $e) {
+                Log::warning("Gagal menyisipkan gambar {$section}: ".$e->getMessage());
             }
         }
 
@@ -967,7 +953,7 @@ class GenerateDocxController extends Controller
      */
     private function removeOrphanCaptions(string $docxPath, array $insertedSections): void
     {
-        $zip = new ZipArchive();
+        $zip = new ZipArchive;
         if ($zip->open($docxPath) !== true) {
             return;
         }
@@ -975,6 +961,7 @@ class GenerateDocxController extends Controller
         $xml = $zip->getFromName('word/document.xml');
         if ($xml === false) {
             $zip->close();
+
             return;
         }
 
@@ -985,8 +972,8 @@ class GenerateDocxController extends Controller
             }
 
             $pattern = '/<w:p\b[^>]*>(?:(?!<\/w:p>).)*?Gambar\s*\d+\.(?:(?!<\/w:p>).)*?'
-            . preg_quote($keyword, '/')
-                . '(?:(?!<\/w:p>).)*?<\/w:p>/s';
+            .preg_quote($keyword, '/')
+                .'(?:(?!<\/w:p>).)*?<\/w:p>/s';
 
             $xml = preg_replace($pattern, '', $xml);
         }

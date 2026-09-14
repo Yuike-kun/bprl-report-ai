@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -23,6 +24,7 @@ class KkprlProposal extends Model
 
         // Status Kegiatan
         'activity_status', 'activity_category', 'activity_type',
+        'is_business_activity', 'is_national_strategic',
         'marine_installation', 'installation_location',
 
         // Deskripsi & TK
@@ -57,21 +59,23 @@ class KkprlProposal extends Model
     {
         return [
             // Boolean
-            'is_reclamation'              => 'boolean',
-            'has_mangrove'                => 'boolean',
-            'has_seagrass'                => 'boolean',
-            'has_coral_reef'              => 'boolean',
+            'is_reclamation' => 'boolean',
+            'is_business_activity' => 'boolean',
+            'is_national_strategic' => 'boolean',
+            'has_mangrove' => 'boolean',
+            'has_seagrass' => 'boolean',
+            'has_coral_reef' => 'boolean',
 
             // Array / JSON
-            'activity_details'            => 'array',
-            'installation_location'       => 'array',
-            'supporting_documents'        => 'array',
-            'marine_spatial_docs_path'    => 'array',
+            'activity_details' => 'array',
+            'installation_location' => 'array',
+            'supporting_documents' => 'array',
+            'marine_spatial_docs_path' => 'array',
 
             // Array / JSON
-            'activity_details'         => 'array',
-            'installation_location'    => 'array',
-            'supporting_documents'     => 'array',
+            'activity_details' => 'array',
+            'installation_location' => 'array',
+            'supporting_documents' => 'array',
             'marine_spatial_docs_path' => 'array',
         ];
     }
@@ -96,7 +100,6 @@ class KkprlProposal extends Model
 
         return parent::setAttribute($key, $value);
     }
-
 
     public function permohonanKonsultasi()
     {

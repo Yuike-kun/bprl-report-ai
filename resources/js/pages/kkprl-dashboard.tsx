@@ -81,7 +81,7 @@ export default function Home() {
                                 Unggah file proposal yang akan digabungkan.
                                 Belum punya file-nya?{' '}
                                 <Link
-                                    href="/kkprl-proposal"
+                                    href="/proposal-manual"
                                     className="text-blue-600 underline"
                                 >
                                     Isi formulir manual

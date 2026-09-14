@@ -439,7 +439,7 @@ export function SpeciesPicker({
                 placeholder="Cari nama spesies..."
                 className="mb-2.5 w-full rounded-lg border border-[#e3e9f0] px-2.5 py-2 text-[13px] disabled:bg-[#f3f5f7]"
             />
-            <div className="grid max-h-[260px] grid-cols-1 gap-x-3.5 gap-y-0.5 overflow-y-auto pr-1 sm:grid-cols-2">
+            <div className="grid max-h-[260px] grid-cols-2 gap-x-3.5 gap-y-0.5 overflow-y-auto pr-1 sm:grid-cols-3 lg:grid-cols-6">
                 {species.map((sp, i) => {
                     if (q && !sp.toLowerCase().includes(q)) return null;
                     const id = `${name}_${i}`;
@@ -1264,6 +1264,13 @@ export default function ManualProposalForm() {
         if (reklamasi) fd.append('is_reclamation', '1');
         else if (nonReklamasi) fd.append('is_reclamation', '0');
 
+        // ── Business / strategic-national classification ──────────────────────
+        if (kegiatanBerusaha) fd.append('is_business_activity', '1');
+        else if (nonBerusaha) fd.append('is_business_activity', '0');
+        // Only a "non-strategis" checkbox exists; strategic is the unchecked default state,
+        // but we only submit an explicit value once the applicant has made a choice.
+        if (nonStrategis) fd.append('is_national_strategic', '0');
+
         // ── Activity status ───────────────────────────────────────────────────
         fd.append('activity_status', values.kegiatan_status ?? '');
 
@@ -1429,7 +1436,7 @@ export default function ManualProposalForm() {
             <Head title="Isi Formulir Draft Proposal — e-GeRAI KKPRL" />
 
             <div>
-                <div className="relative z-[2] mx-auto mb-10 max-w-[1600px] px-4 py-6 sm:px-10">
+                <div className="relative z-[2] mx-auto w-full mb-10 px-4 py-6 sm:px-10">
                     <form onSubmit={handleSubmit}>
                         {/* Laporan pendukung upload */}
                         <div className={cardClass}>

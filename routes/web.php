@@ -4,28 +4,32 @@ use App\Http\Controllers\Api\NotificationApiController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BeritaAcaraController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DocumentController;
+use App\Http\Controllers\EgeraiManualController;
+use App\Http\Controllers\EgeraiProposalController;
 use App\Http\Controllers\GeneralDraftController;
 use App\Http\Controllers\GenerateDocxController;
 use App\Http\Controllers\GeolocationController;
 use App\Http\Controllers\KkprlProposalController;
+use App\Http\Controllers\LogHistoryController;
 use App\Http\Controllers\Master\ChangelogController;
+use App\Http\Controllers\Master\HolidayController;
 use App\Http\Controllers\Master\JadwalKonsultasiController;
 use App\Http\Controllers\Master\KkprlProposalMasterController;
 use App\Http\Controllers\Master\LokasiKonsultasiController;
-use App\Http\Controllers\Master\HolidayController;
 use App\Http\Controllers\Master\PermohonanKonsultasiController;
 use App\Http\Controllers\Master\TandaTanganUserController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\Pegawai\DashboardController as PegawaiDashboardController;
 use App\Http\Controllers\Pegawai\SignatureKonsultasiController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProposalExtractionController;
+use App\Http\Controllers\PublicUploadSignatureController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RequestFormController;
 use App\Http\Controllers\StaffController;
 use App\Http\Controllers\UsersController;
-use App\Http\Controllers\LogHistoryController;
-use App\Http\Controllers\NotificationController;
-use App\Http\Controllers\DocumentController;
-use App\Http\Controllers\PublicUploadSignatureController;
+use App\Http\Controllers\WilayahController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('api')->prefix('api/geolocation')->group(function () {
@@ -50,10 +54,39 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::get('/kkprl', [KkprlProposalController::class, 'index_iframe'])->name('kkprl');
-Route::get('/kkprl-proposal', [KkprlProposalController::class, 'create'])->name('kkprl-proposal.create');
-Route::post('/kkprl-proposal', [KkprlProposalController::class, 'store'])->name('kkprl-proposal.store');
+// The public wizard (kkprl-konsultasi-form.tsx) is retired in favor of the
+// egerai pipeline (upload PDFs or manual entry -> extract/enter -> review with
+// live preview -> finalize), which now creates the same KkprlProposal record
+// the wizard used to, so the staff master panel/dashboard/assignment workflow
+// keeps working unchanged. Old bookmarks/links to the wizard just land here.
+Route::get('/kkprl-proposal', fn () => redirect()->route('egerai.create'))->name('kkprl-proposal.create');
 Route::get('/kkprl-proposal/{kkprlProposal}/review', [KkprlProposalController::class, 'review'])->name('kkprl-proposal.review');
 Route::post('/kkprl-proposal/{kkprlProposal}/finalize', [KkprlProposalController::class, 'finalize'])->name('kkprl-proposal.finalize');
+
+// Faithful 1:1 port of the reference e-GeRAI Python app's core pipeline:
+// upload 2 PDFs -> extract (regex + AI fallback) -> review/correct -> finalize -> download.
+Route::prefix('egerai')->as('egerai.')->group(function () {
+    Route::get('/', [EgeraiProposalController::class, 'create'])->name('create');
+    Route::post('/', [EgeraiProposalController::class, 'store'])->name('store');
+    Route::get('/{egeraiJob}/review', [EgeraiProposalController::class, 'review'])->name('review');
+    Route::put('/{egeraiJob}/review', [EgeraiProposalController::class, 'update'])->name('update');
+    Route::get('/{egeraiJob}/download', [EgeraiProposalController::class, 'download'])->name('download');
+    Route::get('/{egeraiJob}/image/{type}/{filename}', [EgeraiProposalController::class, 'image'])->name('image');
+});
+
+// Manual entry variant (no source PDF): faithful port of the reference app's
+// /proposal-manual, /proposal-manual/simpan, /proposal-manual/draft routes,
+// feeding the same EgeraiJob/review/finalize pipeline above.
+Route::get('/proposal-manual', [EgeraiManualController::class, 'create'])->name('proposal-manual.create');
+Route::post('/proposal-manual', [EgeraiManualController::class, 'store'])->name('proposal-manual.store');
+Route::post('/proposal-manual/simpan', [EgeraiManualController::class, 'simpan'])->name('proposal-manual.simpan');
+Route::post('/proposal-manual/draft', [EgeraiManualController::class, 'draft'])->name('proposal-manual.draft');
+
+Route::prefix('api/wilayah')->as('api.wilayah.')->group(function () {
+    Route::get('/regencies/{provinceCode}', [WilayahController::class, 'regencies'])->name('regencies');
+    Route::get('/districts/{regencyCode}', [WilayahController::class, 'districts'])->name('districts');
+    Route::get('/villages/{districtCode}', [WilayahController::class, 'villages'])->name('villages');
+});
 
 Route::middleware('auth')->group(function () {
     Route::middleware('role:admin')->prefix('master/tanda-tangan-user')->as('master.tanda-tangan-user.')->group(function () {
@@ -193,8 +226,22 @@ Route::middleware('auth')->group(function () {
         Route::delete('/{source}/{id}', [DocumentController::class, 'destroy'])->name('destroy');
     });
 
-Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
-Route::post('/notifications/{notification}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
+    Route::middleware('role:admin,pegawai,pemohon')->prefix('reports')->as('reports.')->group(function () {
+        Route::get('/permohonan-konsultasi', [ReportController::class, 'permohonanReport'])->name('permohonan-konsultasi');
+        Route::get('/permohonan-konsultasi/export-csv', [ReportController::class, 'exportPermohonanCsv'])->name('permohonan-konsultasi.export-csv');
+        Route::get('/berita-acara', [ReportController::class, 'beritaAcaraReport'])->name('berita-acara');
+        Route::get('/berita-acara/export-csv', [ReportController::class, 'exportBeritaAcaraCsv'])->name('berita-acara.export-csv');
+    });
+
+    Route::middleware('role:pegawai,admin,pemohon')->prefix('master/reports')->as('master.reports.')->group(function () {
+        Route::get('/permohonan-konsultasi', [ReportController::class, 'permohonanReport']);
+        Route::get('/permohonan-konsultasi/export-csv', [ReportController::class, 'exportPermohonanCsv']);
+        Route::get('/berita-acara', [ReportController::class, 'beritaAcaraReport']);
+        Route::get('/berita-acara/export-csv', [ReportController::class, 'exportBeritaAcaraCsv']);
+    });
+
+    Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+    Route::post('/notifications/{notification}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
 
     // Real-time notification polling endpoints (JSON, no Inertia render)
     Route::middleware('auth')->prefix('api/notifications')->as('api.notifications.')->group(function () {
@@ -216,7 +263,7 @@ Route::get('/pkkprl/download-kkprl-proposal/{proposalId}', [GenerateDocxControll
 Route::post('/kkprl/review', [GenerateDocxController::class, 'reviewAndGenerate'])
     ->name('kkprl.review');
 
-Route::get('/asisten', fn() => inertia('Assistant'))->name('asisten');
+Route::get('/asisten', fn () => inertia('Assistant'))->name('asisten');
 
 Route::post('/kkprl/assistant', [ProposalExtractionController::class, 'assistant'])
     ->middleware(['throttle:20,1', 'api'])

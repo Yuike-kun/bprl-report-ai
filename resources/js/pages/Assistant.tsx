@@ -8,14 +8,29 @@ type Message = {
     content: string;
 };
 
-const CHIPS = [
-    'Apa itu KKPRL?',
-    'Apa saja dokumen persyaratan KKPRL?',
-    'Bagaimana cara mendaftar KKPRL di OSS?',
-    'Berapa biaya PNBP KKPRL?',
-    'Bagaimana cara melacak status permohonan KKPRL?',
-    'Berapa lama proses (SLA) penerbitan KKPRL?',
-    'Apa saja mitos yang salah tentang KKPRL?',
+const CHIPS: { label: string; question: string }[] = [
+    { label: 'Apa itu KKPRL?', question: 'Apa itu KKPRL?' },
+    {
+        label: 'Dokumen persyaratan',
+        question: 'Apa saja dokumen persyaratan KKPRL?',
+    },
+    {
+        label: 'Cara daftar OSS',
+        question: 'Bagaimana cara mendaftar KKPRL di OSS?',
+    },
+    { label: 'Biaya PNBP', question: 'Berapa biaya PNBP KKPRL?' },
+    {
+        label: 'Lacak status',
+        question: 'Bagaimana cara melacak status permohonan KKPRL?',
+    },
+    {
+        label: 'SLA proses',
+        question: 'Berapa lama proses (SLA) penerbitan KKPRL?',
+    },
+    {
+        label: 'Cek fakta KKPRL',
+        question: 'Apa saja mitos yang salah tentang KKPRL?',
+    },
 ];
 
 function escapeHtml(str: string) {
@@ -46,31 +61,39 @@ export default function Assistant() {
         }
     }, [history, sending]);
 
-    const askAsisten = async (question: string, nextHistory: Message[]) => {
+    const askAsisten = async (question: string) => {
         setSending(true);
+
         try {
             const res = await fetch('/kkprl/assistant', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN':
-                        (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)
-                            ?.content ?? '',
+                        (
+                            document.querySelector(
+                                'meta[name="csrf-token"]',
+                            ) as HTMLMetaElement
+                        )?.content ?? '',
                 },
-                body: JSON.stringify({ messages: nextHistory }),
+                body: JSON.stringify({ question }),
             });
             const data = await res.json().catch(() => null);
             const text =
-                data && data.reply
-                    ? data.reply
+                res.ok && data && data.answer
+                    ? data.answer
                     : 'Maaf, terjadi kendala saat memproses pertanyaan. Silakan coba lagi.';
-            setHistory((prev) => [...prev, { role: 'assistant', content: text }]);
+            setHistory((prev) => [
+                ...prev,
+                { role: 'assistant', content: text },
+            ]);
         } catch {
             setHistory((prev) => [
                 ...prev,
                 {
                     role: 'assistant',
-                    content: 'Maaf, terjadi kesalahan koneksi. Silakan coba lagi sesaat lagi.',
+                    content:
+                        'Maaf, terjadi kesalahan koneksi. Silakan coba lagi sesaat lagi.',
                 },
             ]);
         } finally {
@@ -80,18 +103,33 @@ export default function Assistant() {
 
     const sendMessage = (q: string) => {
         const question = q.trim();
-        if (!question) return;
-        const nextHistory: Message[] = [...history, { role: 'user', content: question }];
+
+        if (!question) {
+            return;
+        }
+
+        const nextHistory: Message[] = [
+            ...history,
+            { role: 'user', content: question },
+        ];
         setHistory(nextHistory);
-        askAsisten(question, nextHistory);
+        askAsisten(question);
     };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         const q = input.trim();
-        if (!q) return;
+
+        if (!q) {
+            return;
+        }
+
         setInput('');
-        if (inputRef.current) inputRef.current.style.height = 'auto';
+
+        if (inputRef.current) {
+            inputRef.current.style.height = 'auto';
+        }
+
         sendMessage(q);
     };
 
@@ -99,9 +137,17 @@ export default function Assistant() {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             const q = input.trim();
-            if (!q) return;
+
+            if (!q) {
+                return;
+            }
+
             setInput('');
-            if (inputRef.current) inputRef.current.style.height = 'auto';
+
+            if (inputRef.current) {
+                inputRef.current.style.height = 'auto';
+            }
+
             sendMessage(q);
         }
     };
@@ -114,7 +160,8 @@ export default function Assistant() {
             <section
                 className="px-8 pt-6.5 pb-7.5"
                 style={{
-                    background: 'linear-gradient(135deg,#eaf2fb 0%,#cfe1f6 55%,#a9cdec 100%)',
+                    background:
+                        'linear-gradient(135deg,#eaf2fb 0%,#cfe1f6 55%,#a9cdec 100%)',
                 }}
             >
                 <div className="mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-5">
@@ -123,13 +170,14 @@ export default function Assistant() {
                             Asisten e-GerAI &mdash; Tanya KKPRL
                         </h1>
                         <p className="m-0 max-w-[560px] text-[13.5px] leading-[1.5] text-[#33495e]">
-                            Tanyakan apa pun seputar persyaratan, alur permohonan OSS/e-SEA,
-                            biaya PNBP, reklamasi, hingga cara tracking permohonan KKPRL.
-                            Dijawab singkat dan jelas oleh asisten BPRL Makassar.
+                            Tanyakan apa pun seputar persyaratan, alur
+                            permohonan OSS/e-SEA, biaya PNBP, reklamasi, hingga
+                            cara tracking permohonan KKPRL. Dijawab singkat dan
+                            jelas oleh asisten BPRL Makassar.
                         </p>
                     </div>
                     <img
-                        src="/static/logo-egerai-v2.png"
+                        src="/egerai-logo.png"
                         alt="e-GerAI BPRL Makassar"
                         className="h-14 w-auto object-contain"
                     />
@@ -153,7 +201,7 @@ export default function Assistant() {
                     <img
                         src="/navi.png"
                         alt="Navi"
-                        className="pointer-events-none absolute -left-20 bottom-0 z-0 h-[85%] w-auto select-none object-contain object-bottom drop-shadow-[0_12px_24px_rgba(10,37,87,.25)] sm:-left-28 md:-left-36"
+                        className="pointer-events-none absolute bottom-0 -left-20 z-0 h-[85%] w-auto object-contain object-bottom drop-shadow-[0_12px_24px_rgba(10,37,87,.25)] select-none sm:-left-28 md:-left-36"
                     />
 
                     {/* .chat-card — z-10 + solid bg so it visually overlaps the image */}
@@ -190,37 +238,42 @@ export default function Assistant() {
                             </div>
                             <div className="relative z-[1] min-w-0 flex-1">
                                 <div className="text-[10.5px] font-bold tracking-[.13em] uppercase opacity-78">
-                                    Balai Penataan Ruang Laut Makassar &middot; Ditjen Penataan
-                                    Ruang Laut, KKP
+                                    Balai Penataan Ruang Laut Makassar &middot;
+                                    Ditjen Penataan Ruang Laut, KKP
                                 </div>
                                 <h2 className="mt-0.75 mb-0.75 text-lg font-extrabold tracking-[-.01em]">
                                     Halo e-GerAI BPRL Makassar
                                 </h2>
                                 <div className="max-w-[440px] text-xs leading-[1.5] opacity-85">
-                                    Jawaban singkat &amp; jelas seputar Kesesuaian Kegiatan
-                                    Pemanfaatan Ruang Laut.
+                                    Jawaban singkat &amp; jelas seputar
+                                    Kesesuaian Kegiatan Pemanfaatan Ruang Laut.
                                 </div>
                                 <div className="mt-2.5 inline-flex items-center gap-1.5 rounded-full border border-white/22 bg-white/14 py-0.75 pr-2.25 pl-1.75 text-[10.5px]">
                                     <span className="h-1.5 w-1.5 rounded-full bg-[#F2A83B] shadow-[0_0_0_3px_rgba(242,168,59,.3)]" />
                                     Asisten Navi Siap Menjawab
                                 </div>
                             </div>
+                            <div className="pointer-events-none absolute right-0 h-[100px] w-[100px] rounded-full bg-[#F2A83B]/30 shadow-[0_12px_24px_rgba(242,168,59,.25)]">
+                                <img src="/navi.gif" alt="Navi" className="relative z-[1] h-full w-full flex-none object-contain" />
+                            </div>
                         </div>
 
                         {/* .chat-chips */}
                         <div
-                            className="flex gap-2 overflow-x-auto border-b bg-[#EAF6FC] px-3.5 py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                            className="flex [scrollbar-width:none] gap-2 overflow-x-auto border-b bg-[#EAF6FC] px-3.5 py-3 [&::-webkit-scrollbar]:hidden"
                             style={{ borderColor: 'rgba(10,37,87,0.13)' }}
                         >
-                            {CHIPS.map((q) => (
+                            {CHIPS.map((chip) => (
                                 <button
-                                    key={q}
+                                    key={chip.question}
                                     type="button"
-                                    onClick={() => sendMessage(q)}
+                                    onClick={() => sendMessage(chip.question)}
                                     className="flex-none rounded-full border bg-white px-3 py-1.5 text-xs font-semibold whitespace-nowrap text-[#12468C] transition-transform duration-150 hover:-translate-y-px hover:border-[#F2A83B] hover:bg-[#FFF9EF] hover:text-[#D6821A] hover:shadow-[0_4px_10px_rgba(242,168,59,.22)]"
-                                    style={{ borderColor: 'rgba(10,37,87,0.13)' }}
+                                    style={{
+                                        borderColor: 'rgba(10,37,87,0.13)',
+                                    }}
                                 >
-                                    {q}
+                                    {chip.label}
                                 </button>
                             ))}
                         </div>
@@ -232,14 +285,18 @@ export default function Assistant() {
                         >
                             <div
                                 className="max-w-[86%] self-start rounded-xl rounded-tl-[3px] border border-l-[3px] bg-[#EAF6FC] px-3 py-2.25 text-[13.3px] leading-[1.55] whitespace-pre-wrap text-[#0A2557]"
-                                style={{ borderColor: 'rgba(10,37,87,0.13)', borderLeftColor: '#1AA6E0' }}
+                                style={{
+                                    borderColor: 'rgba(10,37,87,0.13)',
+                                    borderLeftColor: '#1AA6E0',
+                                }}
                             >
                                 <div className="mb-1 text-[9.5px] font-bold tracking-[.08em] text-[#D6821A] uppercase opacity-85">
                                     e-GerAI BPRL Makassar
                                 </div>
-                                Selamat datang. Silakan tanyakan hal seputar <b>KKPRL</b> &mdash;
-                                persyaratan, prosedur OSS, reklamasi, biaya, atau tracking
-                                permohonan. Jawaban akan diberikan singkat dan jelas.
+                                Selamat datang. Silakan tanyakan hal seputar{' '}
+                                <b>KKPRL</b> &mdash; persyaratan, prosedur OSS,
+                                reklamasi, biaya, atau tracking permohonan.
+                                Jawaban akan diberikan singkat dan jelas.
                             </div>
 
                             {history.map((m, i) =>
@@ -248,8 +305,10 @@ export default function Assistant() {
                                         key={i}
                                         className="max-w-[86%] self-end rounded-xl rounded-tr-[3px] px-3 py-2.25 text-[13.3px] leading-[1.55] whitespace-pre-wrap text-white"
                                         style={{
-                                            background: 'linear-gradient(135deg,#0A2557,#12468C)',
-                                            boxShadow: '0 4px 12px rgba(10,37,87,.22)',
+                                            background:
+                                                'linear-gradient(135deg,#0A2557,#12468C)',
+                                            boxShadow:
+                                                '0 4px 12px rgba(10,37,87,.22)',
                                         }}
                                     >
                                         {m.content}
@@ -258,12 +317,19 @@ export default function Assistant() {
                                     <div
                                         key={i}
                                         className="max-w-[86%] self-start rounded-xl rounded-tl-[3px] border border-l-[3px] bg-[#EAF6FC] px-3 py-2.25 text-[13.3px] leading-[1.55] whitespace-pre-wrap text-[#0A2557]"
-                                        style={{ borderColor: 'rgba(10,37,87,0.13)', borderLeftColor: '#1AA6E0' }}
+                                        style={{
+                                            borderColor: 'rgba(10,37,87,0.13)',
+                                            borderLeftColor: '#1AA6E0',
+                                        }}
                                     >
                                         <div className="mb-1 text-[9.5px] font-bold tracking-[.08em] text-[#D6821A] uppercase opacity-85">
                                             e-GerAI BPRL Makassar
                                         </div>
-                                        <div dangerouslySetInnerHTML={{ __html: formatText(m.content) }} />
+                                        <div
+                                            dangerouslySetInnerHTML={{
+                                                __html: formatText(m.content),
+                                            }}
+                                        />
                                     </div>
                                 ),
                             )}
@@ -272,13 +338,18 @@ export default function Assistant() {
                             {sending && (
                                 <div
                                     className="flex w-fit gap-1 self-start rounded-xl rounded-tl-[3px] border border-l-[3px] bg-[#EAF6FC] px-3.25 py-2.75"
-                                    style={{ borderColor: 'rgba(10,37,87,0.13)', borderLeftColor: '#1AA6E0' }}
+                                    style={{
+                                        borderColor: 'rgba(10,37,87,0.13)',
+                                        borderLeftColor: '#1AA6E0',
+                                    }}
                                 >
                                     {[0, 1, 2].map((d) => (
                                         <span
                                             key={d}
                                             className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#1AA6E0]"
-                                            style={{ animationDelay: `${d * 200}ms` }}
+                                            style={{
+                                                animationDelay: `${d * 200}ms`,
+                                            }}
                                         />
                                     ))}
                                 </div>
@@ -299,12 +370,16 @@ export default function Assistant() {
                                     setInput(e.target.value);
                                     e.target.style.height = 'auto';
                                     e.target.style.height =
-                                        Math.min(e.target.scrollHeight, 86) + 'px';
+                                        Math.min(e.target.scrollHeight, 86) +
+                                        'px';
                                 }}
                                 onKeyDown={handleKeyDown}
                                 placeholder="Tulis pertanyaan seputar KKPRL..."
                                 className="flex-1 resize-none rounded-[10px] border bg-[#F3F7FB] px-2.75 py-2.25 font-sans text-[13px] text-[#0A2557] outline-none placeholder:text-slate-400 focus:border-[#1AA6E0] focus:bg-white"
-                                style={{ borderColor: 'rgba(10,37,87,0.13)', maxHeight: '86px' }}
+                                style={{
+                                    borderColor: 'rgba(10,37,87,0.13)',
+                                    maxHeight: '86px',
+                                }}
                             />
                             <button
                                 type="submit"
@@ -312,8 +387,10 @@ export default function Assistant() {
                                 disabled={!input.trim() || sending}
                                 className="flex h-10.5 w-10.5 flex-none items-center justify-center rounded-[10px] text-white transition-transform duration-150 hover:-translate-y-px hover:brightness-105 disabled:translate-y-0 disabled:cursor-default disabled:opacity-50"
                                 style={{
-                                    background: 'linear-gradient(135deg,#F2A83B,#D6821A)',
-                                    boxShadow: '0 4px 10px rgba(214,130,26,.35)',
+                                    background:
+                                        'linear-gradient(135deg,#F2A83B,#D6821A)',
+                                    boxShadow:
+                                        '0 4px 10px rgba(214,130,26,.35)',
                                 }}
                             >
                                 {sending ? (
@@ -327,8 +404,8 @@ export default function Assistant() {
 
                     {/* .chat-foot */}
                     <p className="px-2.5 pt-1.25 text-center text-[10px] text-[#8a97a3]">
-                        Jawaban bersifat informatif, bukan pengganti dokumen resmi peraturan
-                        KKP.
+                        Jawaban bersifat informatif, bukan pengganti dokumen
+                        resmi peraturan KKP.
                     </p>
                 </div>
             </div>

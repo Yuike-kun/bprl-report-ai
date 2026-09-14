@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Head, useForm, router } from '@inertiajs/react';
+import DocxPreviewViewer from '@/components/DocxPreviewViewer';
 import AppLayout from './layout';
 import { FIELD_GROUPS, formFieldName, getValue } from './field-groups';
 
@@ -44,7 +45,13 @@ interface ProposalData {
     [key: string]: any;
 }
 
-export default function KKPRLProposalReview({ kkprlProposal }: { kkprlProposal: ProposalData }) {
+export default function KKPRLProposalReview({
+    kkprlProposal,
+    preview_html,
+}: {
+    kkprlProposal: ProposalData;
+    preview_html?: string | null;
+}) {
     // Map database fields to prop_data and lap_data dictionaries
     const [propData, setPropData] = useState<Record<string, any>>({
         'Nama Pemohon': kkprlProposal.applicant_name || '',
@@ -226,88 +233,11 @@ export default function KKPRLProposalReview({ kkprlProposal }: { kkprlProposal: 
 
                             {/* Right Column: Live Document Preview */}
                             <div className="sticky top-20">
-                                <div className="rounded-2xl bg-white p-6 shadow-[0_6px_24px_rgba(18,58,99,0.08)]">
-                                    <h3 className="mb-3.5 flex items-center gap-2 text-[14.5px] font-extrabold text-[#123A63]">
-                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#1E63C7]">
-                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                                            <path d="M14 2v6h6" />
-                                        </svg>
-                                        Pratinjau Dokumen Lengkap
-                                    </h3>
-
-                                    <div className="max-h-[75vh] overflow-y-auto rounded-xl border border-[#e3e9f0] bg-white p-6 text-[13.5px] leading-relaxed">
-                                        <p className="text-center font-bold">DRAFT PROPOSAL TEKNIS</p>
-                                        <p className="text-center font-bold">
-                                            PERMOHONAN PERSETUJUAN KESESUAIAN KEGIATAN<br />
-                                            PEMANFAATAN RUANG LAUT (PKKPRL)
-                                        </p>
-                                        <p className="mt-2 text-center text-xs italic">
-                                            Disusun mengacu pada Peraturan Menteri Kelautan dan Perikanan Nomor 28 Tahun 2021 tentang Penyelenggaraan Penataan Ruang Laut
-                                        </p>
-
-                                        <table className="my-4 w-full border-collapse border border-[#c7d1db] text-xs">
-                                            <tbody>
-                                                <tr>
-                                                    <td className="border border-[#c7d1db] p-2 font-bold">Nama Pemohon</td>
-                                                    <td className="border border-[#c7d1db] p-2">{propData['Nama Pemohon'] || '[data belum diisi]'}</td>
-                                                </tr>
-                                                <tr>
-                                                    <td className="border border-[#c7d1db] p-2 font-bold">Jabatan Pemohon</td>
-                                                    <td className="border border-[#c7d1db] p-2">{propData['Jabatan Pemohon'] || '[data belum diisi]'}</td>
-                                                </tr>
-                                                <tr>
-                                                    <td className="border border-[#c7d1db] p-2 font-bold">Nama Perusahaan/Instansi</td>
-                                                    <td className="border border-[#c7d1db] p-2">{propData['Nama Perusahaan/Instansi'] || '[data belum diisi]'}</td>
-                                                </tr>
-                                                <tr>
-                                                    <td className="border border-[#c7d1db] p-2 font-bold">NIB</td>
-                                                    <td className="border border-[#c7d1db] p-2">{propData['NIB'] || '[data belum diisi]'}</td>
-                                                </tr>
-                                                <tr>
-                                                    <td className="border border-[#c7d1db] p-2 font-bold">NPWP</td>
-                                                    <td className="border border-[#c7d1db] p-2">{propData['NPWP'] || '[data belum diisi]'}</td>
-                                                </tr>
-                                                <tr>
-                                                    <td className="border border-[#c7d1db] p-2 font-bold">Nomor Telepon Selular</td>
-                                                    <td className="border border-[#c7d1db] p-2">{propData['Nomor Telepon Selular'] || '[data belum diisi]'}</td>
-                                                </tr>
-                                                <tr>
-                                                    <td className="border border-[#c7d1db] p-2 font-bold">Surat Elektronik</td>
-                                                    <td className="border border-[#c7d1db] p-2">{propData['Surat Elektronik'] || '[data belum diisi]'}</td>
-                                                </tr>
-                                                <tr>
-                                                    <td className="border border-[#c7d1db] p-2 font-bold">Jenis Kegiatan</td>
-                                                    <td className="border border-[#c7d1db] p-2">{propData['Jenis Kegiatan'] || '[data belum diisi]'}</td>
-                                                </tr>
-                                                <tr>
-                                                    <td className="border border-[#c7d1db] p-2 font-bold">Lokasi Kegiatan</td>
-                                                    <td className="border border-[#c7d1db] p-2">
-                                                        Desa {propData._lokasi_parts[0] || '-'}, Kecamatan {propData._lokasi_parts[1] || '-'}, {propData._lokasi_parts[2] || '-'}, Provinsi {propData._lokasi_parts[3] || '-'}
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td className="border border-[#c7d1db] p-2 font-bold">Nama Perairan</td>
-                                                    <td className="border border-[#c7d1db] p-2">{propData['Nama Perairan'] || '[data belum diisi]'}</td>
-                                                </tr>
-                                                <tr>
-                                                    <td className="border border-[#c7d1db] p-2 font-bold">Luas Kebutuhan Ruang</td>
-                                                    <td className="border border-[#c7d1db] p-2">{propData['Luas Kebutuhan Ruang'] ? `${propData['Luas Kebutuhan Ruang']} Ha` : '[data belum diisi]'}</td>
-                                                </tr>
-                                                <tr>
-                                                    <td className="border border-[#c7d1db] p-2 font-bold">KBLI</td>
-                                                    <td className="border border-[#c7d1db] p-2">{propData['KBLI'] || '[data belum diisi]'}</td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-
-                                        <div className="mt-4 space-y-3">
-                                            <p className="font-bold">I. RENCANA BANGUNAN DAN INSTALASI LAUT</p>
-                                            <p>
-                                                {propData['Nama Perusahaan/Instansi'] || 'Pemohon'} yang diwakili oleh {propData['Nama Pemohon'] || 'PIC'} berencana menyelenggarakan kegiatan berupa {propData['Jenis Kegiatan'] || '-'}. Rencana kegiatan ini berlokasi di Desa {propData._lokasi_parts[0] || '-'}, Kecamatan {propData._lokasi_parts[1] || '-'}, {propData._lokasi_parts[2] || '-'}, Provinsi {propData._lokasi_parts[3] || '-'}, menggunakan perairan {propData['Nama Perairan'] || '-'} dengan total kebutuhan luas ruang laut yang dimohonkan sebesar {propData['Luas Kebutuhan Ruang'] || '-'} Ha.
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
+                                <DocxPreviewViewer
+                                    htmlContent={preview_html}
+                                    title="Pratinjau Dokumen (.docx)"
+                                    subtitle="Tampilan 1:1 format A4 MS Word"
+                                />
                             </div>
                         </div>
                     </form>

@@ -1,16 +1,11 @@
-import { Button } from '@/components/ui/button';
 import { Link, usePage } from '@inertiajs/react';
-import { ReactNode, useEffect, useRef, useState } from 'react';
-import logo_djprl from '/public/logo-djprl.png';
-import logo_kkp from '/public/logo-kkp.png';
-import logo_klp_white from '/public/logo_klp_putih.png';
-import logo_kpl from '/public/logo_klp.png';
 import {
     ArrowRight,
     BadgeCheck,
     ChevronDown,
     ClipboardCheck,
     FileCheck2,
+    FileUp,
     Sparkles,
     Waves,
     ShieldCheck,
@@ -20,6 +15,13 @@ import {
     Compass,
     PenTool,
 } from 'lucide-react';
+import type { ReactNode } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import logo_djprl from '/public/logo-djprl.png';
+import logo_kkp from '/public/logo-kkp.png';
+import logo_klp_white from '/public/logo_klp_putih.png';
+import logo_kpl from '/public/logo_klp.png';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 const services = [
@@ -45,6 +47,13 @@ const services = [
         badge: 'User',
     },
     {
+        href: '/egerai',
+        icon: FileUp,
+        title: 'Penggabung Proposal PKKPRL',
+        desc: 'Unggah Draft Proposal & Laporan Hidro-Oseanografi, sistem ekstrak & susun dokumen otomatis.',
+        badge: 'Otomatis',
+    },
+    {
         href: '/login',
         icon: FileCheck2,
         title: 'Portal Petugas BPRL',
@@ -67,11 +76,14 @@ function Navbar({ scrolled }: { scrolled: boolean }) {
             }
         };
         const onKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') setOpen(false);
+            if (e.key === 'Escape') {
+                setOpen(false);
+            }
         };
         document.addEventListener('mousedown', onPointerDown);
         document.addEventListener('touchstart', onPointerDown);
         document.addEventListener('keydown', onKeyDown);
+
         return () => {
             document.removeEventListener('mousedown', onPointerDown);
             document.removeEventListener('touchstart', onPointerDown);
@@ -290,6 +302,7 @@ export default function HomeLayout({ children }: { children: ReactNode }) {
         };
         handleScroll();
         window.addEventListener('scroll', handleScroll, { passive: true });
+
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 

@@ -1,7 +1,9 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use App\Models\KkprlProposal;
+use App\Services\ProposalDocumentGenerator;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -21,17 +23,17 @@ class KkprlProposalController extends Controller
     {
         try {
             $propMap = [
-                'prop__Nama_Pemohon'             => 'applicant_name',
-                'prop__Jabatan_Pemohon'          => 'applicant_position',
+                'prop__Nama_Pemohon' => 'applicant_name',
+                'prop__Jabatan_Pemohon' => 'applicant_position',
                 'prop__Nama_Perusahaan_Instansi' => 'company_name',
-                'prop__NIB'                      => 'nib',
-                'prop__NPWP'                     => 'npwp',
-                'prop__Nomor_Telepon_Selular'    => 'phone_number',
-                'prop__Surat_Elektronik'         => 'email',
-                'prop__Jenis_Kegiatan'           => 'activity_type',
-                'prop__Nama_Perairan'            => 'water_name',
-                'prop__KBLI'                     => 'activity_category',
-                'prop__Luas_Kebutuhan_Ruang'     => 'area_size',
+                'prop__NIB' => 'nib',
+                'prop__NPWP' => 'npwp',
+                'prop__Nomor_Telepon_Selular' => 'phone_number',
+                'prop__Surat_Elektronik' => 'email',
+                'prop__Jenis_Kegiatan' => 'activity_type',
+                'prop__Nama_Perairan' => 'water_name',
+                'prop__KBLI' => 'activity_category',
+                'prop__Luas_Kebutuhan_Ruang' => 'area_size',
             ];
             foreach ($propMap as $frontend => $backend) {
                 // Only merge when backend field not already directly provided
@@ -42,79 +44,81 @@ class KkprlProposalController extends Controller
 
             $validated = $request->validate([
                 // ── Core applicant (nullable for direct file upload) ──
-                'applicant_name'                      => 'nullable|string|max:255',
-                'applicant_position'                  => 'nullable|string|max:255',
-                'company_name'                        => 'nullable|string|max:255',
-                'nib'                                 => 'nullable|string|max:255',
-                'npwp'                                => 'nullable|string|max:255',
-                'phone_number'                        => 'nullable|string|max:20',
-                'email'                               => 'nullable|email|max:255',
-                'officer_email'                       => 'nullable|email|max:255',
+                'applicant_name' => 'nullable|string|max:255',
+                'applicant_position' => 'nullable|string|max:255',
+                'company_name' => 'nullable|string|max:255',
+                'nib' => 'nullable|string|max:255',
+                'npwp' => 'nullable|string|max:255',
+                'phone_number' => 'nullable|string|max:20',
+                'email' => 'nullable|email|max:255',
+                'officer_email' => 'nullable|email|max:255',
                 // ── Activity & location (nullable for direct file upload) ──
-                'activity_type'                       => 'nullable|string|max:255',
-                'water_name'                          => 'nullable|string|max:255',
-                'area_size'                           => 'nullable|numeric|min:0',
-                'province'                            => 'nullable|string|max:255',
-                'regency'                             => 'nullable|string|max:255',
-                'district'                            => 'nullable|string|max:255',
-                'village'                             => 'nullable|string|max:255',
-                'activity_status'                     => 'nullable|string|max:255',
-                'activity_description'                => 'nullable|string',
-                'activity_benefit'                    => 'nullable|string',
-                'activity_purpose'                    => 'nullable|string',
+                'activity_type' => 'nullable|string|max:255',
+                'water_name' => 'nullable|string|max:255',
+                'area_size' => 'nullable|numeric|min:0',
+                'province' => 'nullable|string|max:255',
+                'regency' => 'nullable|string|max:255',
+                'district' => 'nullable|string|max:255',
+                'village' => 'nullable|string|max:255',
+                'activity_status' => 'nullable|string|max:255',
+                'activity_description' => 'nullable|string',
+                'activity_benefit' => 'nullable|string',
+                'activity_purpose' => 'nullable|string',
                 // ── Optional activity details ──────────────────────────
-                'activity_details'                    => 'nullable|array',
-                'activity_category'                   => 'nullable|string|max:255',
-                'is_reclamation'                      => 'nullable|boolean',
-                'coordinates'                         => 'nullable|string',
-                'marine_installation'                 => 'nullable|string|max:255',
-                'installation_location'               => 'nullable|array',
-                'schedule_description'                => 'nullable|string',
+                'activity_details' => 'nullable|array',
+                'activity_category' => 'nullable|string|max:255',
+                'is_reclamation' => 'nullable|boolean',
+                'is_business_activity' => 'nullable|boolean',
+                'is_national_strategic' => 'nullable|boolean',
+                'coordinates' => 'nullable|string',
+                'marine_installation' => 'nullable|string|max:255',
+                'installation_location' => 'nullable|array',
+                'schedule_description' => 'nullable|string',
                 // ── Workforce & investment ─────────────────────────────
-                'local_workers'                       => 'nullable|integer|min:0',
-                'foreign_workers'                     => 'nullable|integer|min:0',
-                'investment_value'                    => 'nullable|numeric|min:0',
+                'local_workers' => 'nullable|integer|min:0',
+                'foreign_workers' => 'nullable|integer|min:0',
+                'investment_value' => 'nullable|numeric|min:0',
                 // ── Supporting documents ───────────────────────────────
-                'supporting_documents'                => 'nullable|array',
-                'map_source'                          => 'nullable|string|max:255',
+                'supporting_documents' => 'nullable|array',
+                'map_source' => 'nullable|string|max:255',
                 // ── File uploads (all nullable — stored separately) ────
-                'existing_doc_path'                   => 'nullable|file|extensions:pdf,jpg,jpeg,png,doc,docx|max:20000',
-                'site_plan_path'                      => 'nullable|file|extensions:pdf,jpg,jpeg,png|max:20000',
-                'location_map_path'                   => 'nullable|file|extensions:pdf,jpg,jpeg,png|max:20000',
-                'accessibility_map_path'              => 'nullable|file|extensions:pdf,jpg,jpeg,png|max:20000',
-                'hydro_oceanography_doc_path'         => 'nullable|file|extensions:pdf,doc,docx|max:20000',
-                'mangrove_doc_path'                   => 'nullable|file|extensions:pdf,jpg,jpeg,png|max:20000',
-                'seagrass_doc_path'                   => 'nullable|file|extensions:pdf,jpg,jpeg,png|max:20000',
-                'coral_reef_doc_path'                 => 'nullable|file|extensions:pdf,jpg,jpeg,png|max:20000',
-                'land_certificate_path'               => 'nullable|file|extensions:pdf,jpg,jpeg,png|max:20000',
-                'socialization_doc_path'              => 'nullable|file|extensions:pdf,doc,docx,jpg,jpeg,png|max:20000',
-                'other_supporting_doc_path'           => 'nullable|file|extensions:pdf,doc,docx,jpg,jpeg,png|max:20000',
-                'proposal'                            => 'nullable|file|max:20000',
-                'report'                              => 'nullable|file|max:20000',
+                'existing_doc_path' => 'nullable|file|extensions:pdf,jpg,jpeg,png,doc,docx|max:20000',
+                'site_plan_path' => 'nullable|file|extensions:pdf,jpg,jpeg,png|max:20000',
+                'location_map_path' => 'nullable|file|extensions:pdf,jpg,jpeg,png|max:20000',
+                'accessibility_map_path' => 'nullable|file|extensions:pdf,jpg,jpeg,png|max:20000',
+                'hydro_oceanography_doc_path' => 'nullable|file|extensions:pdf,doc,docx|max:20000',
+                'mangrove_doc_path' => 'nullable|file|extensions:pdf,jpg,jpeg,png|max:20000',
+                'seagrass_doc_path' => 'nullable|file|extensions:pdf,jpg,jpeg,png|max:20000',
+                'coral_reef_doc_path' => 'nullable|file|extensions:pdf,jpg,jpeg,png|max:20000',
+                'land_certificate_path' => 'nullable|file|extensions:pdf,jpg,jpeg,png|max:20000',
+                'socialization_doc_path' => 'nullable|file|extensions:pdf,doc,docx,jpg,jpeg,png|max:20000',
+                'other_supporting_doc_path' => 'nullable|file|extensions:pdf,doc,docx,jpg,jpeg,png|max:20000',
+                'proposal' => 'nullable|file|max:20000',
+                'report' => 'nullable|file|max:20000',
                 // ── Socio-economic (nullable) ──────────────────────────
-                'population_count'                    => 'nullable|integer|min:0',
-                'village_area'                        => 'nullable|numeric|min:0',
-                'livelihood_description'              => 'nullable|string',
-                'sosek_data_source'                   => 'nullable|string|max:255',
-                'sosek_data_year'                     => 'nullable|string|max:4',
-                'accessibility_description'           => 'nullable|string',
+                'population_count' => 'nullable|integer|min:0',
+                'village_area' => 'nullable|numeric|min:0',
+                'livelihood_description' => 'nullable|string',
+                'sosek_data_source' => 'nullable|string|max:255',
+                'sosek_data_year' => 'nullable|string|max:4',
+                'accessibility_description' => 'nullable|string',
                 // ── Ecosystem (nullable) ───────────────────────────────
-                'has_mangrove'                        => 'nullable|boolean',
-                'mangrove_species'                    => 'nullable|string|max:1000',
-                'mangrove_cover_percentage'           => 'nullable|numeric|min:0|max:100',
-                'mangrove_condition'                  => 'nullable|string|max:255',
-                'has_seagrass'                        => 'nullable|boolean',
-                'seagrass_species'                    => 'nullable|string|max:1000',
-                'seagrass_cover_percentage'           => 'nullable|numeric|min:0|max:100',
-                'seagrass_condition'                  => 'nullable|string|max:255',
-                'has_coral_reef'                      => 'nullable|boolean',
-                'coral_reef_species'                  => 'nullable|string|max:1000',
-                'coral_reef_cover_percentage'         => 'nullable|numeric|min:0|max:100',
-                'coral_reef_condition'                => 'nullable|string|max:255',
+                'has_mangrove' => 'nullable|boolean',
+                'mangrove_species' => 'nullable|string|max:1000',
+                'mangrove_cover_percentage' => 'nullable|numeric|min:0|max:100',
+                'mangrove_condition' => 'nullable|string|max:255',
+                'has_seagrass' => 'nullable|boolean',
+                'seagrass_species' => 'nullable|string|max:1000',
+                'seagrass_cover_percentage' => 'nullable|numeric|min:0|max:100',
+                'seagrass_condition' => 'nullable|string|max:255',
+                'has_coral_reef' => 'nullable|boolean',
+                'coral_reef_species' => 'nullable|string|max:1000',
+                'coral_reef_cover_percentage' => 'nullable|numeric|min:0|max:100',
+                'coral_reef_condition' => 'nullable|string|max:255',
                 // ── Marine spatial (nullable) ──────────────────────────
                 'marine_spatial_activity_description' => 'nullable|string',
-                'marine_spatial_docs'                 => 'nullable|array|max:5',
-                'marine_spatial_docs.*'               => 'file|mimes:pdf,jpg,jpeg,png|max:10240',
+                'marine_spatial_docs' => 'nullable|array|max:5',
+                'marine_spatial_docs.*' => 'file|mimes:pdf,jpg,jpeg,png|max:10240',
             ]);
 
             // Store single file uploads
@@ -148,7 +152,7 @@ class KkprlProposalController extends Controller
             // Store multi-file: marine spatial documentation
             if ($request->hasFile('marine_spatial_docs')) {
                 $validated['marine_spatial_docs_path'] = collect($request->file('marine_spatial_docs'))
-                    ->map(fn($file) => $file->store('kkprl/ruang-laut', 'public'))
+                    ->map(fn ($file) => $file->store('kkprl/ruang-laut', 'public'))
                     ->values()
                     ->all();
             }
@@ -164,31 +168,39 @@ class KkprlProposalController extends Controller
 
     public function review(KkprlProposal $kkprlProposal)
     {
+        $previewHtml = null;
+        try {
+            $previewHtml = (new ProposalDocumentGenerator)->renderKkprlPreviewHtml($kkprlProposal);
+        } catch (\Throwable $e) {
+            // Fail silently or fallback
+        }
+
         return Inertia::render('kkprl-proposal-review', [
             'kkprlProposal' => $kkprlProposal,
+            'preview_html' => $previewHtml,
         ]);
     }
 
     public function finalize(Request $request, KkprlProposal $kkprlProposal)
     {
         $validated = $request->validate([
-            'applicant_name'       => 'nullable|string|max:255',
-            'applicant_position'   => 'nullable|string|max:255',
-            'company_name'         => 'nullable|string|max:255',
-            'nib'                  => 'nullable|string|max:255',
-            'npwp'                 => 'nullable|string|max:255',
-            'phone_number'         => 'nullable|string|max:20',
-            'email'                => 'nullable|email|max:255',
-            'activity_type'        => 'nullable|string|max:255',
-            'water_name'           => 'nullable|string|max:255',
-            'area_size'            => 'nullable|numeric|min:0',
-            'province'             => 'nullable|string|max:255',
-            'regency'              => 'nullable|string|max:255',
-            'district'             => 'nullable|string|max:255',
-            'village'              => 'nullable|string|max:255',
+            'applicant_name' => 'nullable|string|max:255',
+            'applicant_position' => 'nullable|string|max:255',
+            'company_name' => 'nullable|string|max:255',
+            'nib' => 'nullable|string|max:255',
+            'npwp' => 'nullable|string|max:255',
+            'phone_number' => 'nullable|string|max:20',
+            'email' => 'nullable|email|max:255',
+            'activity_type' => 'nullable|string|max:255',
+            'water_name' => 'nullable|string|max:255',
+            'area_size' => 'nullable|numeric|min:0',
+            'province' => 'nullable|string|max:255',
+            'regency' => 'nullable|string|max:255',
+            'district' => 'nullable|string|max:255',
+            'village' => 'nullable|string|max:255',
             'activity_description' => 'nullable|string',
-            'activity_benefit'     => 'nullable|string',
-            'activity_purpose'     => 'nullable|string',
+            'activity_benefit' => 'nullable|string',
+            'activity_purpose' => 'nullable|string',
         ]);
 
         $kkprlProposal->update($validated);
@@ -196,7 +208,7 @@ class KkprlProposalController extends Controller
         // Download document if template generation exists or redirect with notification
         if ($request->wantsJson()) {
             return response()->json([
-                'message'     => 'Proposal berhasil difinalisasi!',
+                'message' => 'Proposal berhasil difinalisasi!',
                 'proposal_id' => $kkprlProposal->id,
             ]);
         }

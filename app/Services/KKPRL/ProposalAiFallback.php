@@ -2,11 +2,11 @@
 
 namespace App\Services\KKPRL;
 
-use App\Services\GeminiService;
+use App\Services\ClaudeService;
 
 class ProposalAiFallback
 {
-    public function __construct(private GeminiService $gemini) {}
+    public function __construct(private ClaudeService $claude) {}
 
     public function fill(string $text, array $fields, array $missing): array
     {
@@ -14,6 +14,6 @@ class ProposalAiFallback
             return $fields;
         }
 
-        return array_replace($fields, $this->gemini->extractProposalFields($text, $missing));
+        return array_replace($fields, $this->claude->extractProposalFields($text, $missing));
     }
 }

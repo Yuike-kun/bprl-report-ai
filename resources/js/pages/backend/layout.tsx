@@ -39,6 +39,9 @@ import {
     History,
     FileSearch,
     FolderArchive,
+    BarChart3,
+    FileBarChart,
+    FileSpreadsheet,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { ReactNode, useEffect, useLayoutEffect, useRef, useState } from 'react';
@@ -82,6 +85,9 @@ const ICONS: Record<string, LucideIcon> = {
     History,
     FileSearch,
     FolderArchive,
+    BarChart3,
+    FileBarChart,
+    FileSpreadsheet,
 };
 
 const getIcon = (name?: string): LucideIcon =>

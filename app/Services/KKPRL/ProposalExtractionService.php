@@ -42,7 +42,7 @@ class ProposalExtractionService
 
         $extracted = $this->fields->extract($text);
         $missing = $this->fields->missing($extracted);
-        if ($useAiFallback && config('services.gemini.key') && $missing) {
+        if ($useAiFallback && config('services.claude.key') && $missing) {
             $extracted = $this->fallback->fill(mb_substr($text, 0, 30000), $extracted, $missing);
             $missing = $this->fields->missing($extracted);
         }
@@ -52,7 +52,7 @@ class ProposalExtractionService
 
     private function extractTextFromDocx(string $path): string
     {
-        $zip = new \ZipArchive();
+        $zip = new \ZipArchive;
         if ($zip->open($path) === true) {
             $index = $zip->locateName('word/document.xml');
             if ($index !== false) {
@@ -65,6 +65,7 @@ class ProposalExtractionService
                     $xml
                 );
                 $text = preg_replace('/\s+/', ' ', trim(strip_tags($xmlWithSpaces)));
+
                 return html_entity_decode($text);
             }
             $zip->close();
