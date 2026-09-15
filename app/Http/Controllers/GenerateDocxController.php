@@ -315,7 +315,7 @@ class GenerateDocxController extends Controller
         }
 
         try {
-            (new ProposalDocumentGenerator)->createKkprlProposal($proposal, $images, $outputPath);
+            (new ProposalDocumentGenerator($this->claude))->createKkprlProposal($proposal, $images, $outputPath);
 
             $timestamp = now()->format('HisYmd');
 

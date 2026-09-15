@@ -92,7 +92,12 @@ class ProposalExtractionController extends Controller
     {
         $validated = $request->validate(['question' => ['required', 'string', 'max:2000']]);
 
-        return response()->json(['answer' => $assistant->reply($validated['question'])]);
+        $result = $assistant->reply($validated['question']);
+
+        return response()->json([
+            'answer' => $result['answer'] ?? '',
+            'sources' => $result['sources'] ?? [],
+        ]);
     }
 
     private function authorize(Request $request, ProposalExtraction $proposalExtraction): void

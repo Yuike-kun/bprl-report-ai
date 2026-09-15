@@ -164,3 +164,60 @@ tr > td {
 table tr:last-child {
     @apply border-b;
 }
+
+.markdown-answer {
+    font-size: 13.3px;
+    line-height: 1.55;
+    color: #0A2557;
+}
+.markdown-answer p {
+    margin: 0 0 0.5em 0;
+}
+.markdown-answer p:last-child {
+    margin-bottom: 0;
+}
+.markdown-answer strong {
+    color: #123A63;
+    font-weight: 700;
+}
+.markdown-answer ul,
+.markdown-answer ol {
+    margin: 0.4em 0;
+    padding-left: 1.2em;
+}
+.markdown-answer li {
+    margin-bottom: 0.25em;
+}
+.markdown-answer ul {
+    list-style-type: disc !important;
+    padding-left: 1.2em !important;
+    margin: 0.3em 0 !important;
+}
+.markdown-answer li {
+    margin: 0.1em 0 !important;
+}
+.markdown-answer table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 0.5em 0;
+    font-size: 12.5px;
+}
+.markdown-answer th,
+.markdown-answer td {
+    border: 1px solid rgba(10, 37, 87, 0.15);
+    padding: 4px 8px;
+    text-align: left;
+}
+.markdown-answer th {
+    background: rgba(10, 37, 87, 0.06);
+}
+.markdown-answer a {
+    color: #1AA6E0;
+    text-decoration: underline;
+}
+.markdown-answer code {
+    background: rgba(10, 37, 87, 0.08);
+    padding: 1px 4px;
+    border-radius: 4px;
+    font-size: 12px;
+}

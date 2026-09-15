@@ -14,6 +14,9 @@ import {
     HelpCircle,
     Compass,
     PenTool,
+    Menu,
+    X,
+    MessageCircle,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
@@ -65,9 +68,15 @@ const services = [
 function Navbar({ scrolled }: { scrolled: boolean }) {
     const { auth } = usePage().props;
     const [open, setOpen] = useState(false);
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [mobileServicesOpen, setMobileServicesOpen] = useState(false);
     const navRef = useRef<HTMLElement>(null);
 
-    const close = () => setOpen(false);
+    const close = () => {
+        setOpen(false);
+        setMobileMenuOpen(false);
+        setMobileServicesOpen(false);
+    };
 
     useEffect(() => {
         const onPointerDown = (e: MouseEvent | TouchEvent) => {
@@ -165,17 +174,31 @@ function Navbar({ scrolled }: { scrolled: boolean }) {
                     </div>
 
                     {/* Right Action Cluster */}
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 sm:gap-3">
+                        {/* Mobile Menu Hamburger */}
+                        <button
+                            type="button"
+                            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                            className="inline-flex items-center justify-center rounded-lg p-2 text-slate-700 transition-colors hover:bg-slate-100 md:hidden"
+                            aria-label="Toggle menu"
+                        >
+                            {mobileMenuOpen ? (
+                                <X className="h-5 w-5" />
+                            ) : (
+                                <Menu className="h-5 w-5" />
+                            )}
+                        </button>
+
                         <Link
                             href="/login"
                             onClick={close}
-                            className="hidden items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 transition-all hover:bg-blue-50/80 hover:text-blue-600 sm:inline-flex"
+                            className="inline-flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 transition-all hover:bg-blue-50/80 hover:text-blue-600 sm:px-3 sm:py-2"
                         >
                             <User className="h-3.5 w-3.5" />
-                            {auth.user ? auth.user.name : 'Masuk'}
+                            <span className="hidden sm:inline">{auth.user ? auth.user.name : 'Masuk'}</span>
                         </Link>
 
-                        <Link href="/request-form" onClick={close}>
+                        <Link href="/request-form" onClick={close} className="hidden sm:block">
                             <Button className="group bbg-blue-600 relative overflow-hidden rounded-full px-5 py-2 text-xs font-bold text-white shadow-md shadow-blue-600/20 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-blue-600/30">
                                 <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/30 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
                                 <span className="relative flex items-center gap-1.5">
@@ -201,10 +224,10 @@ function Navbar({ scrolled }: { scrolled: boolean }) {
                     </div>
                 </div>
 
-                {/* Mega Dropdown Menu */}
+                {/* Mega Dropdown Menu - Desktop Only */}
                 <div
                     id="nav-mega-menu"
-                    className={`absolute inset-x-0 top-full z-40 px-6 pt-3 transition-all duration-300 ease-out lg:px-8 ${
+                    className={`absolute inset-x-0 top-full z-40 hidden px-6 pt-3 transition-all duration-300 ease-out md:block lg:px-8 ${
                         open
                             ? 'pointer-events-auto translate-y-0 scale-100 opacity-100'
                             : 'pointer-events-none -translate-y-3 scale-[0.99] opacity-0'
@@ -288,6 +311,75 @@ function Navbar({ scrolled }: { scrolled: boolean }) {
                         </div>
                     </div>
                 </div>
+
+                {/* Mobile Menu */}
+                <div
+                    className={`absolute inset-x-0 top-full z-40 px-4 pt-2 transition-all duration-300 ease-out md:hidden ${
+                        mobileMenuOpen
+                            ? 'pointer-events-auto translate-y-0 opacity-100'
+                            : 'pointer-events-none -translate-y-3 opacity-0'
+                    }`}
+                >
+                    <div className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white/95 shadow-lg backdrop-blur-md">
+                        <div className="flex flex-col divide-y divide-slate-100">
+                            <Link
+                                href="/"
+                                onClick={close}
+                                className="px-4 py-3 text-sm font-bold text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-600"
+                            >
+                                Beranda
+                            </Link>
+                            <Link
+                                href="/asisten"
+                                onClick={close}
+                                className="px-4 py-3 text-sm font-bold text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-600"
+                            >
+                                Asisten KKPRL
+                            </Link>
+                            <Link
+                                href="/request-form"
+                                onClick={close}
+                                className="px-4 py-3 text-sm font-bold text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-600"
+                            >
+                                Konsultasi
+                            </Link>
+                            <button
+                                type="button"
+                                onClick={() => setMobileServicesOpen(!mobileServicesOpen)}
+                                className="flex items-center justify-between px-4 py-3 text-left text-sm font-bold text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-600"
+                            >
+                                Layanan Digital
+                                <ChevronDown
+                                    className={`h-4 w-4 transition-transform duration-300 ${mobileServicesOpen ? 'rotate-180' : ''}`}
+                                />
+                            </button>
+                            {mobileServicesOpen && (
+                                <div className="bg-slate-50/50 px-2 py-2">
+                                    {services.map((s) => (
+                                        <Link
+                                            key={s.title}
+                                            href={s.href}
+                                            onClick={close}
+                                            className="flex items-start gap-3 rounded-lg p-3 transition-colors hover:bg-white"
+                                        >
+                                            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-blue-100 text-blue-600">
+                                                <s.icon className="h-4 w-4" />
+                                            </div>
+                                            <div className="min-w-0 flex-1">
+                                                <div className="text-xs font-bold text-slate-900">
+                                                    {s.title}
+                                                </div>
+                                                <div className="mt-0.5 text-[11px] leading-relaxed text-slate-500">
+                                                    {s.desc}
+                                                </div>
+                                            </div>
+                                        </Link>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
             </nav>
         </header>
     );
@@ -295,6 +387,7 @@ function Navbar({ scrolled }: { scrolled: boolean }) {
 
 export default function HomeLayout({ children }: { children: ReactNode }) {
     const [scrolled, setScrolled] = useState(false);
+    const [showAIButton, setShowAIButton] = useState(true);
 
     useEffect(() => {
         const handleScroll = () => {
@@ -304,6 +397,11 @@ export default function HomeLayout({ children }: { children: ReactNode }) {
         window.addEventListener('scroll', handleScroll, { passive: true });
 
         return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
+    useEffect(() => {
+        const isAssistantPage = window.location.pathname.includes('/asisten');
+        setShowAIButton(!isAssistantPage);
     }, []);
 
     const scrollToTop = () => {
@@ -317,6 +415,19 @@ export default function HomeLayout({ children }: { children: ReactNode }) {
             <div className="pointer-events-none absolute top-0 right-0 -z-10 h-[550px] w-[550px] translate-x-1/3 -translate-y-1/3 rounded-full bg-cyan-200/30 blur-3xl" />
 
             <Navbar scrolled={scrolled} />
+
+            {/* Floating "Tanya AI" Button */}
+            {showAIButton && (
+                <Link
+                    href="/asisten"
+                    className="group fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-full bg-gradient-to-r from-[#0A2557] via-[#12468C] to-[#1AA6E0] px-5 py-3 text-sm font-bold text-white shadow-lg shadow-blue-600/30 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-600/40 md:bottom-8 md:right-8 md:w-auto md:h-auto justify-center md:justify-start overflow-hidden"
+                >
+                    <MessageCircle  />
+                    <span className="hidden sm:inline">Tanya AI</span>
+                    <div className="absolute -top-1 -right-1 h-3 w-3 animate-ping rounded-full bg-[#F2A83B] opacity-75" />
+                    <div className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-[#F2A83B]" />
+                </Link>
+            )}
 
             <main className="mx-auto flex min-h-[calc(100vh-80px)] w-full flex-1 flex-col px-6 pt-20 pb-16 lg:px-8">
                 {children}

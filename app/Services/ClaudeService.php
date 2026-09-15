@@ -146,54 +146,229 @@ class ClaudeService
         }
     }
 
-    public function answerKkprl(string $question): string
+    /**
+     * Generate detailed, professional Bahasa Indonesia narration for the coastal
+     * ecosystem subsection (mangrove, seagrass/lamun, coral reef) of a KKPRL
+     * proposal DOCX, strictly grounded on the real data supplied in $context.
+     *
+     * The model is explicitly instructed to use ONLY the facts given (species,
+     * cover percentage, condition, location) and never invent numbers, species
+     * names, or distances that are not present in $context — any data point
+     * that is genuinely absent must be reported as unavailable rather than
+     * fabricated. Returns an array with keys: mangrove, lamun, karang, ringkasan.
+     * Returns [] on any failure so the caller can fall back to static text.
+     */
+    public function generateEkosistemNarrative(array $context): array
     {
         if (blank($this->apiKey)) {
-            return 'Asisten belum aktif. Silakan hubungi BPRL Makassar atau gunakan layanan e-SEA resmi.';
+            return [];
         }
 
-        $systemPrompt = 'Anda adalah Asisten KKPRL BPRL Makassar. Jawab ringkas dalam Bahasa Indonesia berdasarkan aturan KKPRL. '
-            .'Jangan mengarang dasar hukum atau keputusan izin; sarankan verifikasi ke OSS/e-SEA bila informasinya tidak pasti.';
+        $facts = collect($context)
+            ->map(fn ($value, $key) => '- '.$key.': '.(is_bool($value) ? ($value ? 'Ya' : 'Tidak') : (filled($value) ? $value : '(tidak ada data)')))
+            ->implode("\n");
+
+        $year = now()->year;
+        $today = now()->translatedFormat('j F Y');
+
+        $prompt = <<<PROMPT
+Anda adalah Analis Lingkungan Pesisir yang menyusun narasi teknis untuk proposal PKKPRL sesuai Pasal 42 ayat (4) Permen KP Nomor 28 Tahun 2021 mengenai kajian ekosistem pesisir (mangrove, terumbu karang, padang lamun).
+
+Hari ini adalah {$today}. Tahun berjalan adalah {$year}.
+
+ATURAN MUTLAK — WAJIB DIPATUHI:
+1. HANYA gunakan data spesifik lokasi (spesies, persentase tutupan, kondisi) dari DATA FAKTUAL di bawah ini. DILARANG KERAS mengarang, menebak, atau menambahkan jenis spesies, persentase tutupan, kondisi, jarak, maupun angka spesifik-lokasi apa pun yang tidak tercantum secara eksplisit di DATA FAKTUAL.
+2. Jika suatu data (misalnya persentase atau jarak) tidak tersedia di DATA FAKTUAL, JANGAN mengisinya dengan angka perkiraan — nyatakan secara eksplisit bahwa data tersebut tidak tersedia/tidak terukur dan perlu survei lanjutan, atau cukup hilangkan detail tersebut dari kalimat.
+3. Jika suatu ekosistem dinyatakan TIDAK ADA (mis. has_mangrove = Tidak), tulis narasi yang menyatakan ekosistem tersebut tidak teridentifikasi pada lokasi kegiatan — jangan menulis narasi keberadaannya.
+4. Gunakan alat pencarian web (web_search) secara aktif — lakukan BEBERAPA kali pencarian (bukan hanya satu) — untuk mencari referensi ILMIAH/RESMI TERKINI (tahun {$year} atau publikasi terbaru yang tersedia, JANGAN mengutip data usang bertahun-tahun lampau kecuali itu memang dasar hukum/peraturan yang masih berlaku) mengenai kondisi umum ekosistem pesisir (mangrove/lamun/terumbu karang) di wilayah "{$context['lokasi']}" dan perairan "{$context['nama_perairan']}" dari situs web NYATA dan tepercaya (contoh: kkp.go.id, brin.go.id, big.go.id, jurnal ilmiah/repositori kampus, mongabay.co.id, walhi.or.id, situs pemerintah daerah/BPS/OPD DKP setempat). Gunakan hasil pencarian sebagai konteks ekologis regional pendukung yang KAYA dan SPESIFIK-WILAYAH (mis. karakteristik ekosistem pesisir kabupaten/kota atau perairan tersebut, ancaman/tekanan lingkungan yang umum terjadi di kawasan itu, program konservasi/rehabilitasi yang pernah/sedang berjalan di sana, status kawasan konservasi terdekat bila ada) — BUKAN untuk mengganti atau menambah angka spesifik lokasi kegiatan yang tidak ada di DATA FAKTUAL.
+5. Gunakan gaya bahasa teknis-formal Bahasa Indonesia sebagaimana lazim pada dokumen proposal PKKPRL/AMDAL resmi. WAJIB tulis 3-4 paragraf yang cukup panjang dan padat informasi untuk SETIAP subbagian ekosistem (mangrove, lamun, terumbu karang) — bukan 1-2 paragraf singkat, dan bukan poin-poin.
+6. Setiap subbagian ekosistem WAJIB membahas seluruh aspek berikut secara berurutan dan mengalir sebagai narasi (bukan daftar bernomor), sepanjang relevan dengan data/hasil pencarian yang ada:
+   a. Deskripsi kondisi eksisting di lokasi berdasarkan DATA FAKTUAL (spesies, persentase tutupan, kondisi) — jika ekosistem tidak ada, jelaskan hal ini secara eksplisit dengan penjelasan yang tetap informatif (mis. kemungkinan penyebab ekologis/geomorfologis ketiadaan ekosistem tersebut, bila didukung konteks pencarian web).
+   b. Signifikansi ekologis jenis/kondisi yang disebutkan: peran fungsional ekosistem tersebut (mis. mangrove sebagai penahan abrasi & nursery ground, lamun sebagai habitat dugong/penyu & penyerap karbon biru, terumbu karang sebagai pemecah gelombang alami & habitat biota laut).
+   c. Konteks regional/wilayah dari hasil pencarian web (karakteristik kawasan, status konservasi, tekanan/ancaman lingkungan yang umum di wilayah tersebut, upaya pengelolaan yang diketahui ada).
+   d. Implikasi terhadap rencana kegiatan dan arahan mitigasi spesifik untuk ekosistem tersebut (mis. metode konstruksi yang meminimalkan gangguan, buffer zone, pengendalian sedimentasi, larangan penambatan pada substrat vegetasi, dsb.).
+7. DILARANG mengulang kalimat yang sama persis antar subbagian; setiap subbagian harus punya narasi unik dan spesifik terhadap ekosistemnya masing-masing.
+8. Output HANYA objek JSON valid tanpa markdown, dengan struktur persis:
+{"mangrove": "...", "lamun": "...", "karang": "...", "ringkasan": "..."}
+   - "ringkasan" berisi 1-2 paragraf kesimpulan komprehensif kondisi ekosistem pesisir di lokasi kegiatan secara keseluruhan (bukan mengulang isi subbagian) dan arahan mitigasi terpadu (revegetasi, penghindaran/avoidance, pengendalian sedimen, pemantauan berkala, dsb.) HANYA berdasarkan ekosistem yang benar-benar teridentifikasi ada pada DATA FAKTUAL.
+
+DATA FAKTUAL:
+{$facts}
+
+Output HANYA objek JSON valid tanpa markdown atau teks lain di dalam blok teks akhir Anda.
+PROMPT;
 
         try {
-            $response = Http::timeout(30)
-                ->withHeaders($this->headers())
-                ->post(self::CLAUDE_API_URL, [
-                    'model' => $this->model,
-                    'max_tokens' => 1000,
-                    'system' => $systemPrompt,
-                    'messages' => [
-                        ['role' => 'user', 'content' => $question],
-                    ],
-                ]);
+            $json = $this->callClaudeWithWebSearch($prompt, maxTokens: 6000);
+            $text = $this->extractResponseText($json);
 
-            if ($response->failed()) {
-                Log::warning('Claude Asisten KKPRL API error.', [
-                    'status' => $response->status(),
-                    'model' => $this->model,
-                    'body' => $response->json(),
-                ]);
-
-                return 'Asisten belum dapat dihubungi. Periksa CLAUDE_API_KEY dan CLAUDE_MODEL pada konfigurasi server.';
+            if (blank($text)) {
+                throw new Exception('Response Claude (web search) kosong.');
             }
 
-            $answer = trim($this->extractResponseText($response->json() ?? []));
+            $decoded = $this->parseJson($text);
+
+            if (! is_array($decoded)) {
+                return [];
+            }
+
+            $result = [];
+            foreach (['mangrove', 'lamun', 'karang', 'ringkasan'] as $key) {
+                $value = $decoded[$key] ?? '';
+                $result[$key] = is_string($value) ? trim($value) : '';
+            }
+
+            $result['sumber'] = $this->extractCitations($json);
+
+            return $result;
+        } catch (Exception $exception) {
+            Log::warning('AI narasi ekosistem (web search) gagal, mencoba tanpa pencarian web.', ['error' => $exception->getMessage()]);
+
+            // Fallback: same instructions, no web search tool (older accounts/models
+            // may not support the tool, or the call may have failed transiently).
+            try {
+                $raw = $this->callClaudeRaw($prompt, maxTokens: 4000);
+                $decoded = $this->parseJson($raw);
+
+                if (! is_array($decoded)) {
+                    return [];
+                }
+
+                $result = [];
+                foreach (['mangrove', 'lamun', 'karang', 'ringkasan'] as $key) {
+                    $value = $decoded[$key] ?? '';
+                    $result[$key] = is_string($value) ? trim($value) : '';
+                }
+
+                $result['sumber'] = [];
+
+                return $result;
+            } catch (Exception $fallbackException) {
+                Log::warning('AI narasi ekosistem gagal total.', ['error' => $fallbackException->getMessage()]);
+
+                return [];
+            }
+        }
+    }
+
+    /**
+     * Same as callClaudeRaw() but enables Anthropic's native web_search tool so the
+     * model can ground its answer in real, current web pages instead of relying on
+     * stale training data. Returns the full decoded JSON response (not just the text)
+     * so callers can also pull out the `citations` attached to text blocks — these
+     * citations are populated by Anthropic only from pages the tool actually fetched,
+     * so any URL surfaced this way corresponds to a real page that was retrieved.
+     */
+    protected function callClaudeWithWebSearch(string $prompt, int $maxTokens = 3000, int $maxSearchUses = 6, ?string $system = null): array
+    {
+        $payload = [
+            'model' => $this->model,
+            'max_tokens' => $maxTokens,
+            'tools' => [
+                [
+                    'type' => 'web_search_20250305',
+                    'name' => 'web_search',
+                    'max_uses' => $maxSearchUses,
+                ],
+            ],
+            'messages' => [
+                ['role' => 'user', 'content' => $prompt],
+            ],
+        ];
+
+        if (filled($system)) {
+            $payload['system'] = $system;
+        }
+
+        $response = Http::timeout(180)
+            ->withHeaders($this->headers())
+            ->post(self::CLAUDE_API_URL, $payload);
+
+        if ($response->failed()) {
+            Log::warning('Claude web search API error.', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+            throw new Exception('Gagal menghubungi Claude API (web search): '.$response->status());
+        }
+
+        return $response->json() ?? [];
+    }
+
+    /**
+     * Pull the real source pages Claude's web_search tool actually visited out of the
+     * response's `citations` metadata (attached by Anthropic to the text spans that
+     * used them). Never fabricated — if the tool found nothing, this returns [].
+     *
+     * @return array<int, array{title: string, url: string}>
+     */
+    private function extractCitations(array $json): array
+    {
+        $blocks = $json['content'] ?? [];
+        if (! is_array($blocks)) {
+            return [];
+        }
+
+        return collect($blocks)
+            ->filter(fn ($block) => is_array($block) && ($block['type'] ?? null) === 'text' && ! empty($block['citations']))
+            ->flatMap(fn ($block) => $block['citations'])
+            ->filter(fn ($citation) => is_array($citation) && filled($citation['url'] ?? null))
+            ->map(fn ($citation) => [
+                'title' => trim((string) ($citation['title'] ?? $citation['url'])),
+                'url' => trim((string) $citation['url']),
+            ])
+            ->unique('url')
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Answer a KKPRL question, grounded on real, current web pages via Anthropic's
+     * native web_search tool wherever the question benefits from up-to-date info
+     * (e.g. PNBP rates, OSS procedures, SLA). Returns ['answer' => string, 'sources' => array]
+     * where `sources` only ever contains pages the tool actually fetched (from Anthropic's
+     * `citations` metadata) — never fabricated URLs — so the frontend can render a
+     * "Sumber" list beneath the answer, similar to ChatGPT's web-search citations.
+     */
+    public function answerKkprl(string $question): array
+    {
+        if (blank($this->apiKey)) {
+            return ['answer' => 'Asisten belum aktif. Silakan hubungi BPRL Makassar atau gunakan layanan e-SEA resmi.', 'sources' => []];
+        }
+
+        $year = now()->year;
+        $systemPrompt = 'Anda adalah Asisten KKPRL BPRL Makassar dengan Nama Navi. '
+    ."Tahun berjalan adalah {$year} — jangan menyampaikan informasi/angka yang sudah usang seolah-olah masih berlaku saat ini. "
+    .'Jawab ringkas dalam Bahasa Indonesia berdasarkan aturan KKPRL. '
+    .'Gunakan format Markdown: **bold** untuk istilah/angka penting, '
+    .'gunakan poin (-) untuk daftar syarat atau langkah. Jangan gunakan heading (#). '
+    .'Jika pertanyaan menyangkut hal yang bisa berubah dari waktu ke waktu (biaya PNBP, prosedur OSS/e-SEA, SLA, dasar hukum), gunakan alat pencarian web (web_search) untuk memverifikasi jawaban dari situs resmi terkini (contoh: oss.go.id, kkp.go.id, peraturan.go.id, jdih.kkp.go.id) sebelum menjawab. '
+    .'Jangan mengarang dasar hukum, angka, atau keputusan izin; jika tidak yakin walau sudah mencari, sarankan verifikasi langsung ke OSS/e-SEA resmi.';
+
+        try {
+            $json = $this->callClaudeWithWebSearch(
+                $question,
+                maxTokens: 1200,
+                maxSearchUses: 3,
+                system: $systemPrompt,
+            );
+
+            $answer = trim($this->extractResponseText($json));
 
             if (blank($answer)) {
                 Log::warning('Claude Asisten KKPRL tidak mengembalikan jawaban.', [
                     'model' => $this->model,
-                    'stop_reason' => $response->json('stop_reason'),
-                    'response' => $response->json(),
+                    'response' => $json,
                 ]);
 
-                return 'Asisten tidak menerima jawaban dari model. Periksa konfigurasi model lalu coba lagi.';
+                return ['answer' => 'Asisten tidak menerima jawaban dari model. Periksa konfigurasi model lalu coba lagi.', 'sources' => []];
             }
 
-            return $answer;
+            return ['answer' => $answer, 'sources' => $this->extractCitations($json)];
         } catch (Exception $exception) {
             Log::warning('Asisten KKPRL gagal.', ['error' => $exception->getMessage()]);
 
-            return 'Maaf, asisten sedang tidak dapat dihubungi. Silakan coba lagi.';
+            return ['answer' => 'Maaf, asisten sedang tidak dapat dihubungi. Silakan coba lagi.', 'sources' => []];
         }
     }
 

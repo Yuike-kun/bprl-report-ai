@@ -23,6 +23,21 @@ class ProposalDocumentGenerator
 
     private array $images = [];
 
+    private ?ClaudeService $claude = null;
+
+    /** Cached result of the AI ecosystem narrative for the proposal currently being rendered. */
+    private ?array $ekosistemNarasi = null;
+
+    public function __construct(?ClaudeService $claude = null)
+    {
+        $this->claude = $claude;
+    }
+
+    private function claude(): ClaudeService
+    {
+        return $this->claude ??= new ClaudeService;
+    }
+
     /** key (supporting_documents checkbox value) => label, mirrors DUKUNG_ITEMS in kkprl-konsultasi-form.tsx */
     private const DUKUNG_LABELS = [
         'nib' => 'NIB',
@@ -161,9 +176,8 @@ class ProposalDocumentGenerator
         $paths = array_values(array_filter($paths, fn ($path) => is_string($path) && is_file($path)));
 
         if (empty($paths)) {
-            $s->addText("[GAMBAR '$tag' TIDAK DITEMUKAN DI DOKUMEN SUMBER]", ['name' => 'Arial', 'size' => 10, 'italic' => true, 'color' => 'AA0000'], ['alignment' => Jc::CENTER]);
-            $this->caption($s, $caption);
-
+            // No image available for this tag — omit both the placeholder and its
+            // caption entirely instead of leaving a dangling/orphaned "Gambar X. ..." label.
             return;
         }
 
@@ -370,14 +384,49 @@ class ProposalDocumentGenerator
         ];
     }
 
+    /**
+     * Builds the strictly-factual context sent to the AI and requests the
+     * ecosystem narrative once per document render (cached in $this->ekosistemNarasi).
+     * Falls back to [] (handled by callers via ?? static text) on any AI failure,
+     * so the DOCX generation never breaks or blocks on the AI call.
+     */
+    private function ekosistemNarasi(KkprlProposal $p): array
+    {
+        if ($this->ekosistemNarasi !== null) {
+            return $this->ekosistemNarasi;
+        }
+
+        $context = [
+            'lokasi' => $this->pLokasi($p),
+            'nama_perairan' => $this->pv($p, 'water_name', ''),
+            'has_mangrove' => (bool) $p->has_mangrove,
+            'mangrove_species' => $p->has_mangrove ? (string) $p->mangrove_species : null,
+            'mangrove_cover_percentage' => $p->has_mangrove ? $p->mangrove_cover_percentage : null,
+            'mangrove_condition' => $p->has_mangrove ? (string) $p->mangrove_condition : null,
+            'has_seagrass' => (bool) $p->has_seagrass,
+            'seagrass_species' => $p->has_seagrass ? (string) $p->seagrass_species : null,
+            'seagrass_cover_percentage' => $p->has_seagrass ? $p->seagrass_cover_percentage : null,
+            'seagrass_condition' => $p->has_seagrass ? (string) $p->seagrass_condition : null,
+            'has_coral_reef' => (bool) $p->has_coral_reef,
+            'coral_reef_species' => $p->has_coral_reef ? (string) $p->coral_reef_species : null,
+            'coral_reef_cover_percentage' => $p->has_coral_reef ? $p->coral_reef_cover_percentage : null,
+            'coral_reef_condition' => $p->has_coral_reef ? (string) $p->coral_reef_condition : null,
+        ];
+
+        return $this->ekosistemNarasi = $this->claude()->generateEkosistemNarrative($context);
+    }
+
     private function kkprlChapterThree(Section $s, KkprlProposal $p): void
     {
         $lokasi = $this->pLokasi($p);
         $this->heading($s, 'III. DATA KONDISI TERKINI LOKASI DAN SEKITARNYA', 1);
+        $ai = $this->ekosistemNarasi($p);
 
         $this->heading($s, 'A. Ekosistem Sekitar', 2);
         $this->heading($s, '1. Mangrove', 3);
-        if ($p->has_mangrove === false) {
+        if (filled($ai['mangrove'] ?? null)) {
+            $this->text($s, $ai['mangrove']);
+        } elseif ($p->has_mangrove === false) {
             $this->text($s, 'Berdasarkan hasil pengamatan langsung kondisi pesisir di sekitar lokasi kegiatan, tidak teridentifikasi keberadaan ekosistem mangrove pada area yang dimohonkan.');
         } else {
             $eco = $this->ekosistemTutupan($p->mangrove_species, $p->mangrove_cover_percentage, $p->mangrove_condition);
@@ -386,7 +435,12 @@ class ProposalDocumentGenerator
         $this->figure($s, 'foto_mangrove', 'Gambar 4. Kondisi Tutupan Vegetasi Mangrove di Sekitar Lokasi Kegiatan.');
 
         $this->heading($s, '2. Lamun', 3);
-        if ($p->has_seagrass) {
+        if (filled($ai['lamun'] ?? null)) {
+            $this->text($s, $ai['lamun']);
+            if ($p->has_seagrass) {
+                $this->figure($s, 'foto_lamun', 'Gambar 5. Dokumentasi Ekosistem Lamun di Sekitar Lokasi Kegiatan.');
+            }
+        } elseif ($p->has_seagrass) {
             $eco = $this->ekosistemTutupan($p->seagrass_species, $p->seagrass_cover_percentage, $p->seagrass_condition);
             $this->text($s, "Berdasarkan hasil pengamatan pemohon di lapangan, teridentifikasi ekosistem lamun yang didominasi oleh jenis {$eco['species']}, dengan persentase tutupan mencapai {$eco['percentage']}% pada kondisi {$eco['condition']}.");
             $this->figure($s, 'foto_lamun', 'Gambar 5. Dokumentasi Ekosistem Lamun di Sekitar Lokasi Kegiatan.');
@@ -395,7 +449,9 @@ class ProposalDocumentGenerator
         }
 
         $this->heading($s, '3. Terumbu Karang', 3);
-        if ($p->has_coral_reef) {
+        if (filled($ai['karang'] ?? null)) {
+            $this->text($s, $ai['karang']);
+        } elseif ($p->has_coral_reef) {
             $eco = $this->ekosistemTutupan($p->coral_reef_species, $p->coral_reef_cover_percentage, $p->coral_reef_condition);
             $this->text($s, "Berdasarkan hasil pengamatan pemohon di lapangan, teridentifikasi ekosistem terumbu karang yang didominasi oleh jenis {$eco['species']}, dengan persentase tutupan mencapai {$eco['percentage']}% pada kondisi {$eco['condition']}.");
         } else {
@@ -403,7 +459,22 @@ class ProposalDocumentGenerator
         }
         $this->figure($s, 'foto_karang_insitu', 'Gambar 6. Dokumentasi Survei In-Situ Koloni Terumbu Karang di Perairan Sekitar Lokasi Kegiatan.');
         $this->figure($s, 'peta_ekosistem', 'Gambar 7. Peta Sebaran Spasial Ekosistem Pesisir di Sekitar Titik Pusat Rencana Kegiatan.');
-        $this->text($s, 'Jarak ekosistem terdekat dari titik pusat rencana kegiatan adalah '.self::MISSING.' km, sehingga mitigasi dampak perlu difokuskan pada upaya penghindaran (avoidance) terhadap area terumbu karang, pengendalian sedimen, serta pengelolaan kualitas air.');
+        if (filled($ai['ringkasan'] ?? null)) {
+            $this->text($s, $ai['ringkasan']);
+        } else {
+            $this->text($s, 'Jarak ekosistem terdekat dari titik pusat rencana kegiatan adalah '.self::MISSING.' km, sehingga mitigasi dampak perlu difokuskan pada upaya penghindaran (avoidance) terhadap area terumbu karang, pengendalian sedimen, serta pengelolaan kualitas air.');
+        }
+
+        $sumber = $ai['sumber'] ?? [];
+        if (! empty($sumber)) {
+            $this->heading($s, '4. Sumber Referensi Konteks Ekosistem', 3);
+            $this->text($s, 'Narasi kondisi ekosistem pesisir di atas disusun dengan mempertimbangkan konteks ekologis regional dari sumber daring resmi/ilmiah berikut, yang diakses secara langsung oleh asisten AI pada saat penyusunan dokumen ini:');
+            foreach ($sumber as $ref) {
+                $title = $ref['title'] ?? $ref['url'] ?? '';
+                $url = $ref['url'] ?? '';
+                $s->addListItem(trim($title.' — '.$url, ' —'), 0, ['name' => 'Arial', 'size' => 10, 'color' => '1F4E79']);
+            }
+        }
 
         $this->heading($s, 'B. Hidro-Oseanografi', 2);
         $this->heading($s, '1. Gelombang', 3);
@@ -559,8 +630,8 @@ class ProposalDocumentGenerator
 
             return;
         }
-        $s->addText("[GAMBAR '$label' TIDAK DITEMUKAN DI DOKUMEN SUMBER]", ['name' => 'Arial', 'size' => 10, 'italic' => true, 'color' => 'AA0000'], ['alignment' => Jc::CENTER]);
-        $this->caption($s, $caption);
+        // No image available — omit both the placeholder and its caption entirely
+        // instead of leaving a dangling/orphaned "Gambar X. ..." label.
     }
 
     private function cover(Section $s, array $d): void
