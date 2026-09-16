@@ -38,6 +38,11 @@
                 "label": "Berita Acara Report",
                 "url": "/reports/berita-acara",
                 "icon": "FileSpreadsheet"
+            },
+            {
+                "label": "Proposal KKPRL Report",
+                "url": "/reports/kkprl-proposal",
+                "icon": "FileBarChart"
             }
         ]
     }

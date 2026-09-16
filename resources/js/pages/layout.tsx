@@ -407,16 +407,16 @@ export default function HomeLayout({ children }: { children: ReactNode }) {
             <div className="pointer-events-none absolute top-0 left-0 -z-10 h-[600px] w-full bg-gradient-to-b from-blue-100/70 via-sky-50/40 to-transparent" />
             <div className="pointer-events-none absolute top-0 right-0 -z-10 h-[550px] w-[550px] translate-x-1/3 -translate-y-1/3 rounded-full bg-cyan-200/30 blur-3xl" />
 
-            <Navbar scrolled={scrolled} />
+            <Navbar scrolled={scrolled} />reports
 
             {/* Floating "Tanya AI" Button */}
             {showAIButton && (
                 <Link
                     href="/asisten"
-                    className="group fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-full bg-gradient-to-r from-[#0A2557] via-[#12468C] to-[#1AA6E0] px-5 py-3 text-sm font-bold text-white shadow-lg shadow-blue-600/30 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-600/40 md:bottom-8 md:right-8 md:w-auto md:h-auto justify-center md:justify-start overflow-hidden"
+                    className="group fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-full bg-linear-to-br from-emerald-500 via-amber-400 to-blue-600 hover:scale-110 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-blue-600/30 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-600/40 md:bottom-8 md:right-8 md:w-auto md:h-auto justify-center md:justify-start overflow-hidden"
                 >
                     <MessageCircle  />
-                    <span className="hidden sm:inline">Tanya AI</span>
+                    <span className="hidden sm:inline">Tanya Navi</span>
                     <div className="absolute -top-1 -right-1 h-3 w-3 animate-ping rounded-full bg-[#F2A83B] opacity-75" />
                     <div className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-[#F2A83B]" />
                 </Link>

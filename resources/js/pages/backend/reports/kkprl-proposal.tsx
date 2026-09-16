@@ -1,17 +1,20 @@
 import { Link, router } from '@inertiajs/react';
 import ApexCharts from 'apexcharts';
 import {
-    CheckCircle2,
-    Clock,
+    Banknote,
+    Building2,
     Download,
     Eye,
     FileBarChart,
     FileSpreadsheet,
     Filter,
+    Leaf,
+    MapPin,
     RotateCcw,
     Search,
     TrendingUp,
-    XCircle,
+    Users,
+    Waves,
 } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import Heading from '@/components/backend/heading';
@@ -21,23 +24,22 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import MainLayout from '../layout';
 
-type SubmissionItem = {
+type ProposalItem = {
     id: number;
-    nama_pemohon: string;
-    jabatan_pemohon?: string;
-    instansi?: string;
-    email: string;
-    nomor_telepon?: string;
-    rencana_kegiatan?: string;
-    status: string;
+    applicant_name?: string;
+    company_name?: string;
+    email?: string;
+    activity_type?: string;
+    province?: string;
+    regency?: string;
+    is_reclamation?: boolean;
+    is_business_activity?: boolean;
+    investment_value?: number | string;
     created_at: string;
-    provinsi?: { name: string };
-    kabupaten?: { name: string };
-    jadwal?: { lokasi?: { nama_lokasi: string } };
 };
 
-type PaginatedSubmissions = {
-    data: SubmissionItem[];
+type PaginatedProposals = {
+    data: ProposalItem[];
     current_page: number;
     last_page: number;
     per_page: number;
@@ -48,51 +50,80 @@ type PaginatedSubmissions = {
 };
 
 type ReportProps = {
-    submissions: PaginatedSubmissions;
+    submissions: PaginatedProposals;
     filters: {
         year: number;
         date_from?: string;
         date_to?: string;
-        status?: string;
         search?: string;
+        province?: string;
     };
     stats: {
         total: number;
-        approved: number;
-        pending: number;
-        rejected: number;
-        berita_acara: number;
+        investment_total: number;
+        local_workers_total: number;
+        foreign_workers_total: number;
+        reclamation_count: number;
+        business_count: number;
     };
     charts: {
         monthly: {
             categories: string[];
             series: { name: string; data: number[] }[];
         };
-        status: Record<string, number>;
+        activityStatus: Record<string, number>;
+        ecosystem: Record<string, number>;
+        topProvinces: Record<string, number>;
     };
     availableYears: number[];
+    provinces: string[];
 };
 
 const inputCls =
     'w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-700 outline-none transition-all focus:border-indigo-300 focus:bg-white focus:ring-2 focus:ring-indigo-200';
 
-export default function PermohonanKonsultasiReport({
+const formatRupiah = (value: number | string | undefined) => {
+    const n = Number(value ?? 0);
+
+    return 'Rp' + n.toLocaleString('id-ID', { maximumFractionDigits: 0 });
+};
+
+// Compact form for tight KPI cards, e.g. "Rp2,4 M" / "Rp850 Jt" instead of the
+// full "Rp2.400.000.000" which overflows/truncates in a narrow 6-column card.
+const formatCompactRupiah = (value: number | string | undefined) => {
+    const n = Number(value ?? 0);
+
+    if (n >= 1_000_000_000) {
+return 'Rp' + (n / 1_000_000_000).toFixed(1).replace('.', ',') + ' M';
+}
+
+    if (n >= 1_000_000) {
+return 'Rp' + (n / 1_000_000).toFixed(1).replace('.', ',') + ' Jt';
+}
+
+    return formatRupiah(n);
+};
+
+export default function KkprlProposalReport({
     submissions,
     filters,
     stats,
     charts,
     availableYears,
+    provinces,
 }: ReportProps) {
     const [search, setSearch] = useState(filters.search || '');
     const [year, setYear] = useState(filters.year || new Date().getFullYear());
     const [dateFrom, setDateFrom] = useState(filters.date_from || '');
     const [dateTo, setDateTo] = useState(filters.date_to || '');
-    const [status, setStatus] = useState(filters.status || 'all');
+    const [province, setProvince] = useState(filters.province || 'all');
 
     const monthlyChartRef = useRef<HTMLDivElement>(null);
-    const statusChartRef = useRef<HTMLDivElement>(null);
+    const activityStatusChartRef = useRef<HTMLDivElement>(null);
+    const ecosystemChartRef = useRef<HTMLDivElement>(null);
+    const provincesChartRef = useRef<HTMLDivElement>(null);
 
-    // Initialize monthly trend chart
+    // Monthly submission trend
     useEffect(() => {
         if (!monthlyChartRef.current) {
 return;
@@ -131,14 +162,14 @@ return;
         return () => chart.destroy();
     }, [charts.monthly]);
 
-    // Initialize status breakdown chart
+    // Activity status breakdown (Eksisting / Rencana / Eksisting dan Pengembangan)
     useEffect(() => {
-        if (!statusChartRef.current) {
+        if (!activityStatusChartRef.current) {
 return;
 }
 
-        const labels = Object.keys(charts.status);
-        const series = Object.values(charts.status);
+        const labels = Object.keys(charts.activityStatus);
+        const series = Object.values(charts.activityStatus);
 
         const options: ApexCharts.ApexOptions = {
             chart: {
@@ -146,19 +177,93 @@ return;
                 height: 280,
                 fontFamily: 'Inter, system-ui, sans-serif',
             },
-            labels: labels,
-            series: series,
-            colors: ['#eab308', '#22c55e', '#6366f1', '#ef4444'],
+            labels,
+            series,
+            colors: ['#6366f1', '#eab308', '#22c55e', '#94a3b8'],
             legend: { position: 'bottom', fontSize: '12px', labels: { colors: '#334155' } },
             dataLabels: { enabled: true },
             stroke: { width: 2, colors: ['#fff'] },
         };
 
-        const chart = new ApexCharts(statusChartRef.current, options);
+        const chart = new ApexCharts(activityStatusChartRef.current, options);
         chart.render();
 
         return () => chart.destroy();
-    }, [charts.status]);
+    }, [charts.activityStatus]);
+
+    // Ecosystem presence counts
+    useEffect(() => {
+        if (!ecosystemChartRef.current) {
+return;
+}
+
+        const labels = Object.keys(charts.ecosystem);
+        const series = Object.values(charts.ecosystem);
+
+        const options: ApexCharts.ApexOptions = {
+            chart: {
+                type: 'bar',
+                height: 240,
+                toolbar: { show: false },
+                fontFamily: 'Inter, system-ui, sans-serif',
+            },
+            plotOptions: {
+                bar: { horizontal: true, borderRadius: 6, barHeight: '55%' },
+            },
+            series: [{ name: 'Jumlah Proposal', data: series }],
+            xaxis: {
+                categories: labels,
+                labels: { style: { colors: '#94a3b8', fontSize: '12px', fontWeight: 600 } },
+                axisBorder: { show: false },
+                axisTicks: { show: false },
+            },
+            colors: ['#16a34a'],
+            grid: { borderColor: '#f1f5f9', strokeDashArray: 4 },
+            dataLabels: { enabled: true, style: { colors: ['#fff'] } },
+        };
+
+        const chart = new ApexCharts(ecosystemChartRef.current, options);
+        chart.render();
+
+        return () => chart.destroy();
+    }, [charts.ecosystem]);
+
+    // Top 5 provinces by proposal count
+    useEffect(() => {
+        if (!provincesChartRef.current) {
+return;
+}
+
+        const labels = Object.keys(charts.topProvinces);
+        const series = Object.values(charts.topProvinces);
+
+        const options: ApexCharts.ApexOptions = {
+            chart: {
+                type: 'bar',
+                height: 240,
+                toolbar: { show: false },
+                fontFamily: 'Inter, system-ui, sans-serif',
+            },
+            plotOptions: {
+                bar: { horizontal: true, borderRadius: 6, barHeight: '55%' },
+            },
+            series: [{ name: 'Jumlah Proposal', data: series }],
+            xaxis: {
+                categories: labels,
+                labels: { style: { colors: '#94a3b8', fontSize: '12px', fontWeight: 600 } },
+                axisBorder: { show: false },
+                axisTicks: { show: false },
+            },
+            colors: ['#6366f1'],
+            grid: { borderColor: '#f1f5f9', strokeDashArray: 4 },
+            dataLabels: { enabled: true, style: { colors: ['#fff'] } },
+        };
+
+        const chart = new ApexCharts(provincesChartRef.current, options);
+        chart.render();
+
+        return () => chart.destroy();
+    }, [charts.topProvinces]);
 
     const handleFilter = (e?: React.FormEvent) => {
         if (e) {
@@ -166,13 +271,13 @@ e.preventDefault();
 }
 
         router.get(
-            '/reports/permohonan-konsultasi',
+            '/reports/kkprl-proposal',
             {
                 year,
                 date_from: dateFrom,
                 date_to: dateTo,
-                status,
                 search,
+                province,
             },
             { preserveState: true, replace: true }
         );
@@ -183,8 +288,8 @@ e.preventDefault();
         setYear(new Date().getFullYear());
         setDateFrom('');
         setDateTo('');
-        setStatus('all');
-        router.get('/reports/permohonan-konsultasi');
+        setProvince('all');
+        router.get('/reports/kkprl-proposal');
     };
 
     const handleExportCsv = () => {
@@ -192,70 +297,45 @@ e.preventDefault();
             year: String(year),
             date_from: dateFrom,
             date_to: dateTo,
-            status: status,
             search: search,
+            province: province,
         });
-        window.location.href = `/reports/permohonan-konsultasi/export-csv?${params.toString()}`;
+        window.location.href = `/reports/kkprl-proposal/export-csv?${params.toString()}`;
     };
 
-    const getStatusBadge = (st: string) => {
-        const lower = st.toLowerCase();
-
-        if (['disetujui', 'approved', 'selesai'].includes(lower)) {
-            return (
-                <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
-                    <CheckCircle2 className="h-3 w-3" /> Disetujui
-                </span>
-            );
-        }
-
-        if (['menunggu', 'pending'].includes(lower)) {
-            return (
-                <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">
-                    <Clock className="h-3 w-3" /> Menunggu
-                </span>
-            );
-        }
-
-        if (['ditolak', 'rejected'].includes(lower)) {
-            return (
-                <span className="inline-flex items-center gap-1 rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700">
-                    <XCircle className="h-3 w-3" /> Ditolak
-                </span>
-            );
-        }
-
-        if (lower === 'berita_acara') {
-            return (
-                <span className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700">
-                    <FileSpreadsheet className="h-3 w-3" /> Berita Acara
-                </span>
-            );
-        }
-
-        return (
+    const yesNoBadge = (value?: boolean) =>
+        value ? (
+            <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                Ya
+            </span>
+        ) : (
             <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
-                {st}
+                Tidak
             </span>
         );
-    };
 
     const statCards = [
-        { label: 'Total Permohonan', value: stats.total, icon: FileBarChart, gradient: 'from-indigo-500 to-indigo-700' },
-        { label: 'Menunggu', value: stats.pending, icon: Clock, gradient: 'from-amber-400 to-amber-600' },
-        { label: 'Disetujui', value: stats.approved, icon: CheckCircle2, gradient: 'from-emerald-500 to-emerald-700' },
-        { label: 'Berita Acara', value: stats.berita_acara, icon: FileSpreadsheet, gradient: 'from-blue-500 to-blue-700' },
-        { label: 'Ditolak', value: stats.rejected, icon: XCircle, gradient: 'from-rose-500 to-rose-700' },
+        { label: 'Total Proposal', value: stats.total, icon: FileBarChart, gradient: 'from-indigo-500 to-indigo-700' },
+        { label: 'Total Investasi', value: formatCompactRupiah(stats.investment_total), icon: Banknote, gradient: 'from-emerald-500 to-emerald-700' },
+        {
+            label: 'TK Lokal / Asing',
+            value: `${stats.local_workers_total} / ${stats.foreign_workers_total}`,
+            icon: Users,
+            gradient: 'from-blue-500 to-blue-700',
+        },
+        { label: 'Reklamasi', value: stats.reclamation_count, icon: Waves, gradient: 'from-cyan-500 to-cyan-700' },
+        { label: 'Kegiatan Berusaha', value: stats.business_count, icon: Building2, gradient: 'from-amber-400 to-amber-600' },
+        { label: 'Provinsi Terlibat', value: provinces.length, icon: MapPin, gradient: 'from-rose-500 to-rose-700' },
     ];
 
     const baseNumber = submissions.from ?? 0;
 
     return (
-        <MainLayout pageTitle="Laporan Permohonan Konsultasi">
+        <MainLayout pageTitle="Laporan Proposal KKPRL">
             <Heading
                 icon={FileBarChart}
-                title="Laporan Permohonan Konsultasi"
-                description="Ringkasan analitik dan rekapitulasi data permohonan konsultasi penataan ruang laut."
+                title="Laporan Proposal KKPRL"
+                description="Ringkasan analitik dan rekapitulasi data proposal Kesesuaian Kegiatan Pemanfaatan Ruang Laut."
             >
                 <Button onClick={handleExportCsv} variant="outline" className="gap-2 text-xs font-bold">
                     <Download className="h-3.5 w-3.5" />
@@ -265,20 +345,21 @@ e.preventDefault();
 
             <div className="space-y-6">
                 {/* KPI Metrics */}
-                <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-5">
+                <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6">
                     {statCards.map((item, idx) => {
                         const Icon = item.icon;
 
                         return (
                             <div
                                 key={idx}
+                                title={typeof item.value === 'string' ? item.value : undefined}
                                 className="group relative overflow-hidden rounded-2xl border border-slate-200/70 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg"
                             >
                                 <div className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${item.gradient}`} />
                                 <div className="flex items-start justify-between gap-3">
                                     <div className="min-w-0 space-y-2">
                                         <p className="text-xs font-medium text-slate-500">{item.label}</p>
-                                        <p className="truncate text-2xl font-extrabold tracking-tight text-slate-900">{item.value}</p>
+                                        <p className="truncate text-xl font-extrabold tracking-tight text-slate-900">{item.value}</p>
                                     </div>
                                     <div
                                         className={`flex-none rounded-xl bg-gradient-to-br ${item.gradient} p-2.5 shadow-md transition-transform duration-300 group-hover:scale-110`}
@@ -298,7 +379,7 @@ e.preventDefault();
                             <Filter className="h-4 w-4 text-indigo-600" />
                             Filter & Pencarian Laporan
                         </CardTitle>
-                        <CardDescription>Persempit data berdasarkan tahun, status, rentang tanggal, atau kata kunci</CardDescription>
+                        <CardDescription>Persempit data berdasarkan tahun, provinsi, rentang tanggal, atau kata kunci</CardDescription>
                     </CardHeader>
                     <CardContent className="pt-4">
                         <form onSubmit={handleFilter} className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-6">
@@ -312,13 +393,12 @@ e.preventDefault();
                             </div>
 
                             <div>
-                                <label className="mb-1 block text-xs font-semibold text-slate-600">Status</label>
-                                <select value={status} onChange={(e) => setStatus(e.target.value)} className={inputCls}>
-                                    <option value="all">Semua Status</option>
-                                    <option value="menunggu">Menunggu</option>
-                                    <option value="disetujui">Disetujui</option>
-                                    <option value="berita_acara">Berita Acara</option>
-                                    <option value="ditolak">Ditolak</option>
+                                <label className="mb-1 block text-xs font-semibold text-slate-600">Provinsi</label>
+                                <select value={province} onChange={(e) => setProvince(e.target.value)} className={inputCls}>
+                                    <option value="all">Semua Provinsi</option>
+                                    {provinces.map((p) => (
+                                        <option key={p} value={p}>{p}</option>
+                                    ))}
                                 </select>
                             </div>
 
@@ -336,7 +416,7 @@ e.preventDefault();
                                 <label className="mb-1 block text-xs font-semibold text-slate-600">Pencarian Kata Kunci</label>
                                 <input
                                     type="text"
-                                    placeholder="Pemohon / Instansi / Email..."
+                                    placeholder="Pemohon / Perusahaan / Email..."
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
                                     className={inputCls}
@@ -361,9 +441,9 @@ e.preventDefault();
                         <CardHeader className="border-b border-slate-100 pb-4">
                             <CardTitle className="flex items-center gap-2 text-base font-bold text-slate-900">
                                 <TrendingUp className="h-4 w-4 text-indigo-600" />
-                                Tren Permohonan Konsultasi per Bulan ({year})
+                                Tren Proposal KKPRL per Bulan ({year})
                             </CardTitle>
-                            <CardDescription>Jumlah permohonan yang masuk setiap bulan pada tahun terpilih</CardDescription>
+                            <CardDescription>Jumlah pengajuan proposal setiap bulan pada tahun terpilih</CardDescription>
                         </CardHeader>
                         <CardContent className="pt-4">
                             <div ref={monthlyChartRef} className="min-h-[280px]" />
@@ -374,17 +454,45 @@ e.preventDefault();
                         <CardHeader className="border-b border-slate-100 pb-4">
                             <CardTitle className="flex items-center gap-2 text-base font-bold text-slate-900">
                                 <FileBarChart className="h-4 w-4 text-indigo-600" />
-                                Proporsi Status
+                                Status Kegiatan
                             </CardTitle>
-                            <CardDescription>Distribusi status seluruh permohonan</CardDescription>
+                            <CardDescription>Eksisting, rencana, atau pengembangan</CardDescription>
                         </CardHeader>
                         <CardContent className="flex items-center justify-center pt-4">
-                            <div ref={statusChartRef} className="min-h-[280px] w-full" />
+                            <div ref={activityStatusChartRef} className="min-h-[280px] w-full" />
                         </CardContent>
                     </Card>
                 </div>
 
-                {/* Submissions Table */}
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                    <Card className="border-slate-200/70 shadow-sm">
+                        <CardHeader className="border-b border-slate-100 pb-4">
+                            <CardTitle className="flex items-center gap-2 text-base font-bold text-slate-900">
+                                <Leaf className="h-4 w-4 text-emerald-600" />
+                                Keberadaan Ekosistem Pesisir
+                            </CardTitle>
+                            <CardDescription>Mangrove, lamun, dan terumbu karang</CardDescription>
+                        </CardHeader>
+                        <CardContent className="pt-4">
+                            <div ref={ecosystemChartRef} className="min-h-[240px]" />
+                        </CardContent>
+                    </Card>
+
+                    <Card className="border-slate-200/70 shadow-sm">
+                        <CardHeader className="border-b border-slate-100 pb-4">
+                            <CardTitle className="flex items-center gap-2 text-base font-bold text-slate-900">
+                                <MapPin className="h-4 w-4 text-indigo-600" />
+                                Top 5 Provinsi
+                            </CardTitle>
+                            <CardDescription>Wilayah dengan proposal terbanyak</CardDescription>
+                        </CardHeader>
+                        <CardContent className="pt-4">
+                            <div ref={provincesChartRef} className="min-h-[240px]" />
+                        </CardContent>
+                    </Card>
+                </div>
+
+                {/* Submissions Data Table */}
                 <PaginatedTable
                     hideSearchInput
                     searchValue=""
@@ -395,27 +503,28 @@ e.preventDefault();
                             <span className="font-semibold text-slate-600">
                                 {submissions.from ?? 0}-{submissions.to ?? 0}
                             </span>{' '}
-                            dari <span className="font-semibold text-slate-600">{submissions.total}</span> permohonan
+                            dari <span className="font-semibold text-slate-600">{submissions.total}</span> proposal
                         </>
                     }
                     tableHead={
                         <tr className="border-b border-slate-100 bg-slate-50/60">
                             <th className="px-5 py-3 text-left text-xs font-semibold tracking-wider whitespace-nowrap text-slate-500 uppercase">#</th>
-                            <th className="px-5 py-3 text-left text-xs font-semibold tracking-wider whitespace-nowrap text-slate-500 uppercase">ID &amp; Tanggal</th>
-                            <th className="px-5 py-3 text-left text-xs font-semibold tracking-wider whitespace-nowrap text-slate-500 uppercase">Pemohon / Instansi</th>
-                            <th className="px-5 py-3 text-left text-xs font-semibold tracking-wider whitespace-nowrap text-slate-500 uppercase">Rencana Kegiatan</th>
+                            <th className="px-5 py-3 text-left text-xs font-semibold tracking-wider whitespace-nowrap text-slate-500 uppercase">Tanggal</th>
+                            <th className="px-5 py-3 text-left text-xs font-semibold tracking-wider whitespace-nowrap text-slate-500 uppercase">Pemohon / Perusahaan</th>
+                            <th className="px-5 py-3 text-left text-xs font-semibold tracking-wider whitespace-nowrap text-slate-500 uppercase">Jenis Kegiatan</th>
                             <th className="px-5 py-3 text-left text-xs font-semibold tracking-wider whitespace-nowrap text-slate-500 uppercase">Lokasi</th>
-                            <th className="px-5 py-3 text-left text-xs font-semibold tracking-wider whitespace-nowrap text-slate-500 uppercase">Status</th>
+                            <th className="px-5 py-3 text-center text-xs font-semibold tracking-wider whitespace-nowrap text-slate-500 uppercase">Reklamasi</th>
+                            <th className="px-5 py-3 text-center text-xs font-semibold tracking-wider whitespace-nowrap text-slate-500 uppercase">Berusaha</th>
+                            <th className="px-5 py-3 text-left text-xs font-semibold tracking-wider whitespace-nowrap text-slate-500 uppercase">Investasi</th>
                             <th className="px-5 py-3 text-center text-xs font-semibold tracking-wider whitespace-nowrap text-slate-500 uppercase">Aksi</th>
                         </tr>
                     }
                     isEmpty={submissions.data.length === 0}
                     emptyState={
                         <tr>
-                            <td colSpan={7} className="py-16 text-center text-slate-400">
+                            <td colSpan={9} className="py-16 text-center text-slate-400">
                                 <Search className="mx-auto mb-3 h-10 w-10 text-slate-200" />
-                                <p className="font-medium">Tidak ada data permohonan.</p>
-                                <p className="mt-1 text-xs">Coba ubah kombinasi filter di atas.</p>
+                                <p className="font-medium">Tidak ada data proposal yang sesuai dengan filter.</p>
                             </td>
                         </tr>
                     }
@@ -433,32 +542,36 @@ e.preventDefault();
                     {submissions.data.map((row, idx) => (
                         <tr key={row.id} className="group transition-colors hover:bg-slate-50/70">
                             <td className="px-5 py-4 font-mono text-xs text-slate-400">{baseNumber + idx}</td>
-                            <td className="px-5 py-4">
-                                <p className="font-semibold text-slate-800">REQ-{String(row.id).padStart(5, '0')}</p>
-                                <p className="mt-0.5 text-[11px] text-slate-400">
-                                    {row.created_at ? new Date(row.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}
-                                </p>
+                            <td className="px-5 py-4 text-[11px] whitespace-nowrap text-slate-400">
+                                {row.created_at ? new Date(row.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}
                             </td>
                             <td className="px-5 py-4">
-                                <p className="font-semibold text-slate-800">{row.nama_pemohon}</p>
-                                <p className="text-xs font-medium text-slate-500">{row.instansi || '-'}</p>
-                                <p className="mt-0.5 text-[11px] text-slate-400">{row.email}</p>
+                                <p className="font-semibold text-slate-800">{row.applicant_name || '-'}</p>
+                                <p className="text-xs font-medium text-slate-500">{row.company_name || '-'}</p>
+                                <p className="mt-0.5 text-[11px] text-slate-400">{row.email || '-'}</p>
                             </td>
                             <td className="max-w-xs px-5 py-4">
-                                <p className="line-clamp-2 text-slate-600">{row.rencana_kegiatan || '-'}</p>
+                                <p className="line-clamp-2 text-slate-600">{row.activity_type || '-'}</p>
                             </td>
                             <td className="px-5 py-4">
-                                <p className="font-medium text-slate-700">{row.kabupaten?.name || '-'}</p>
-                                <p className="text-[11px] text-slate-400">{row.provinsi?.name || '-'}</p>
+                                <p className="font-medium text-slate-700">{row.regency || '-'}</p>
+                                <p className="text-[11px] text-slate-400">{row.province || '-'}</p>
                             </td>
-                            <td className="px-5 py-4">{getStatusBadge(row.status)}</td>
+                            <td className="px-5 py-4 text-center">{yesNoBadge(row.is_reclamation)}</td>
+                            <td className="px-5 py-4 text-center">{yesNoBadge(row.is_business_activity)}</td>
+                            <td className="px-5 py-4 font-medium text-slate-700">{formatRupiah(row.investment_value)}</td>
                             <td className="px-5 py-4">
                                 <div className="flex items-center justify-center gap-1.5">
-                                    <Link href={`/master/permohonan-konsultasi/${row.id}`} title="Lihat Detail">
+                                    <Link href={`/master/kkprl-proposal/${row.id}`} title="Lihat Detail">
                                         <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-slate-400 hover:bg-indigo-50 hover:text-indigo-600">
                                             <Eye className="h-4 w-4" />
                                         </Button>
                                     </Link>
+                                    <a href={`/pkkprl/download-kkprl-proposal/${row.id}`} title="Unduh Dokumen DOCX" target="_blank" rel="noreferrer">
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-slate-400 hover:bg-emerald-50 hover:text-emerald-600">
+                                            <FileSpreadsheet className="h-4 w-4" />
+                                        </Button>
+                                    </a>
                                 </div>
                             </td>
                         </tr>

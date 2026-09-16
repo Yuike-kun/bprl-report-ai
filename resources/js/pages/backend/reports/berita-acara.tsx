@@ -1,26 +1,24 @@
-import React, { useEffect, useRef, useState } from 'react';
-import MainLayout from '../layout';
-import { Head, Link, router } from '@inertiajs/react';
+import { router } from '@inertiajs/react';
+import ApexCharts from 'apexcharts';
 import {
-    BarChart3,
     Calendar,
-    CheckCircle2,
-    Clock,
     Download,
     Eye,
     FileCheck,
     FileSpreadsheet,
-    FileText,
     Filter,
     RotateCcw,
     Search,
     TrendingUp,
     User,
 } from 'lucide-react';
-import ApexCharts from 'apexcharts';
+import React, { useEffect, useRef, useState } from 'react';
+import Heading from '@/components/backend/heading';
+import { PaginatedTable } from '@/components/backend/paginated-table';
 import { Pagination } from '@/components/backend/pagination';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import MainLayout from '../layout';
 
 type BeritaAcaraRecord = {
     id: number;
@@ -70,6 +68,9 @@ type BeritaAcaraReportProps = {
     availableYears: number[];
 };
 
+const inputCls =
+    'w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-700 outline-none transition-all focus:border-indigo-300 focus:bg-white focus:ring-2 focus:ring-indigo-200';
+
 export default function BeritaAcaraReport({
     records,
     filters,
@@ -86,7 +87,9 @@ export default function BeritaAcaraReport({
 
     // Initialize monthly chart
     useEffect(() => {
-        if (!monthlyChartRef.current) return;
+        if (!monthlyChartRef.current) {
+return;
+}
 
         const options: ApexCharts.ApexOptions = {
             chart: {
@@ -98,19 +101,22 @@ export default function BeritaAcaraReport({
             series: charts.monthly.series,
             xaxis: {
                 categories: charts.monthly.categories,
-                labels: { style: { colors: '#64748b', fontSize: '11px' } },
+                labels: { style: { colors: '#94a3b8', fontSize: '12px', fontWeight: 600 } },
+                axisBorder: { show: false },
+                axisTicks: { show: false },
             },
             yaxis: {
-                labels: { style: { colors: '#64748b', fontSize: '11px' } },
+                labels: { style: { colors: '#94a3b8', fontSize: '12px', fontWeight: 600 } },
             },
-            colors: ['#1F4E79'],
+            colors: ['#6366f1'],
             plotOptions: {
                 bar: {
                     borderRadius: 6,
                     columnWidth: '45%',
                 },
             },
-            grid: { borderColor: '#e2e8f0', strokeDashArray: 4 },
+            grid: { borderColor: '#f1f5f9', strokeDashArray: 4, xaxis: { lines: { show: false } } },
+            tooltip: { theme: 'light' },
         };
 
         const chart = new ApexCharts(monthlyChartRef.current, options);
@@ -120,7 +126,10 @@ export default function BeritaAcaraReport({
     }, [charts.monthly]);
 
     const handleFilter = (e?: React.FormEvent) => {
-        if (e) e.preventDefault();
+        if (e) {
+e.preventDefault();
+}
+
         router.get(
             '/reports/berita-acara',
             {
@@ -151,89 +160,69 @@ export default function BeritaAcaraReport({
         window.location.href = `/reports/berita-acara/export-csv?${params.toString()}`;
     };
 
+    const statCards = [
+        { label: 'Total Berita Acara Diterbitkan', value: stats.total, icon: FileCheck, gradient: 'from-indigo-500 to-indigo-700' },
+        { label: 'Diterbitkan Bulan Ini', value: stats.this_month, icon: Calendar, gradient: 'from-emerald-500 to-emerald-700' },
+        { label: `Total Tahun Ini (${new Date().getFullYear()})`, value: stats.this_year, icon: TrendingUp, gradient: 'from-blue-500 to-blue-700' },
+    ];
+
+    const baseNumber = records.from ?? 0;
+
     return (
         <MainLayout pageTitle="Laporan Berita Acara Konsultasi">
-            <Head title="Laporan Berita Acara Konsultasi" />
+            <Heading
+                icon={FileSpreadsheet}
+                title="Laporan Berita Acara Konsultasi"
+                description="Rekapitulasi penerbitan Berita Acara hasil pendampingan & konsultasi KKPRL."
+            >
+                <Button onClick={handleExportCsv} variant="outline" className="gap-2 text-xs font-bold">
+                    <Download className="h-3.5 w-3.5" />
+                    Ekspor CSV
+                </Button>
+            </Heading>
 
             <div className="space-y-6">
-                {/* Header Banner */}
-                <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-gradient-to-r from-[#123A63] to-[#1E63C7] p-6 text-white shadow-lg">
-                    <div>
-                        <div className="flex items-center gap-2 text-xs font-semibold text-blue-200 uppercase tracking-wider">
-                            <FileSpreadsheet className="h-4 w-4" />
-                            <span>Executive Report</span>
-                        </div>
-                        <h1 className="mt-1 text-2xl font-extrabold tracking-tight">Laporan Berita Acara Konsultasi</h1>
-                        <p className="mt-1 text-xs text-blue-100">
-                            Rekapitulasi penerbitan Berita Acara hasil pendampingan & konsultasi KKPRL.
-                        </p>
-                    </div>
+                {/* KPI Metrics */}
+                <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
+                    {statCards.map((item, idx) => {
+                        const Icon = item.icon;
 
-                    <Button
-                        onClick={handleExportCsv}
-                        className="bg-white/10 hover:bg-white/20 text-white border border-white/20 gap-2 shadow-sm font-bold"
-                    >
-                        <Download className="h-4 w-4" />
-                        Ekspor CSV / Excel
-                    </Button>
-                </div>
-
-                {/* KPI Metrics Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <Card className="border-slate-200 shadow-xs">
-                        <CardContent className="p-4 flex items-center justify-between">
-                            <div>
-                                <p className="text-xs font-medium text-slate-500">Total Berita Acara Diterbitkan</p>
-                                <h3 className="text-2xl font-bold text-slate-900 mt-1">{stats.total}</h3>
+                        return (
+                            <div
+                                key={idx}
+                                className="group relative overflow-hidden rounded-2xl border border-slate-200/70 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg"
+                            >
+                                <div className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${item.gradient}`} />
+                                <div className="flex items-center justify-between">
+                                    <div className="space-y-1">
+                                        <p className="text-xs font-medium text-slate-500">{item.label}</p>
+                                        <p className="text-3xl font-extrabold tracking-tight text-slate-900">{item.value}</p>
+                                    </div>
+                                    <div
+                                        className={`rounded-xl bg-gradient-to-br ${item.gradient} p-3 shadow-md transition-transform duration-300 group-hover:scale-110`}
+                                    >
+                                        <Icon className="h-5 w-5 text-white" />
+                                    </div>
+                                </div>
                             </div>
-                            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
-                                <FileCheck className="h-6 w-6" />
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="border-slate-200 shadow-xs">
-                        <CardContent className="p-4 flex items-center justify-between">
-                            <div>
-                                <p className="text-xs font-medium text-slate-500">Diterbitkan Bulan Ini</p>
-                                <h3 className="text-2xl font-bold text-emerald-600 mt-1">{stats.this_month}</h3>
-                            </div>
-                            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
-                                <Calendar className="h-6 w-6" />
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="border-slate-200 shadow-xs">
-                        <CardContent className="p-4 flex items-center justify-between">
-                            <div>
-                                <p className="text-xs font-medium text-slate-500">Total Tahun Ini ({new Date().getFullYear()})</p>
-                                <h3 className="text-2xl font-bold text-blue-600 mt-1">{stats.this_year}</h3>
-                            </div>
-                            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
-                                <TrendingUp className="h-6 w-6" />
-                            </div>
-                        </CardContent>
-                    </Card>
+                        );
+                    })}
                 </div>
 
                 {/* Filter Toolbar */}
-                <Card className="border-slate-200 shadow-xs">
-                    <CardHeader className="pb-3 border-b border-slate-100">
-                        <CardTitle className="text-sm font-bold text-slate-800 flex items-center gap-2">
-                            <Filter className="h-4 w-4 text-blue-600" />
+                <Card className="border-slate-200/70 shadow-sm">
+                    <CardHeader className="border-b border-slate-100 pb-4">
+                        <CardTitle className="flex items-center gap-2 text-base font-bold text-slate-900">
+                            <Filter className="h-4 w-4 text-indigo-600" />
                             Filter & Pencarian Laporan
                         </CardTitle>
+                        <CardDescription>Persempit data berdasarkan tahun, rentang tanggal, atau kata kunci</CardDescription>
                     </CardHeader>
                     <CardContent className="pt-4">
-                        <form onSubmit={handleFilter} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                        <form onSubmit={handleFilter} className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
                             <div>
-                                <label className="block text-xs font-semibold text-slate-600 mb-1">Tahun</label>
-                                <select
-                                    value={year}
-                                    onChange={(e) => setYear(Number(e.target.value))}
-                                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-800 focus:border-blue-500 focus:outline-none"
-                                >
+                                <label className="mb-1 block text-xs font-semibold text-slate-600">Tahun</label>
+                                <select value={year} onChange={(e) => setYear(Number(e.target.value))} className={inputCls}>
                                     {availableYears.map((y) => (
                                         <option key={y} value={y}>Tahun {y}</option>
                                     ))}
@@ -241,41 +230,31 @@ export default function BeritaAcaraReport({
                             </div>
 
                             <div>
-                                <label className="block text-xs font-semibold text-slate-600 mb-1">Dari Tanggal</label>
-                                <input
-                                    type="date"
-                                    value={dateFrom}
-                                    onChange={(e) => setDateFrom(e.target.value)}
-                                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-800 focus:border-blue-500 focus:outline-none"
-                                />
+                                <label className="mb-1 block text-xs font-semibold text-slate-600">Dari Tanggal</label>
+                                <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className={inputCls} />
                             </div>
 
                             <div>
-                                <label className="block text-xs font-semibold text-slate-600 mb-1">Sampai Tanggal</label>
-                                <input
-                                    type="date"
-                                    value={dateTo}
-                                    onChange={(e) => setDateTo(e.target.value)}
-                                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-800 focus:border-blue-500 focus:outline-none"
-                                />
+                                <label className="mb-1 block text-xs font-semibold text-slate-600">Sampai Tanggal</label>
+                                <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className={inputCls} />
                             </div>
 
                             <div>
-                                <label className="block text-xs font-semibold text-slate-600 mb-1">Pencarian Kata Kunci</label>
+                                <label className="mb-1 block text-xs font-semibold text-slate-600">Pencarian Kata Kunci</label>
                                 <input
                                     type="text"
                                     placeholder="No BA / Pemohon / Perusahaan..."
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
-                                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-800 focus:border-blue-500 focus:outline-none"
+                                    className={inputCls}
                                 />
                             </div>
 
                             <div className="flex items-end gap-2">
-                                <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold gap-1 py-2">
+                                <Button type="submit" className="flex-1 gap-1 bg-indigo-600 text-xs font-bold text-white hover:bg-indigo-700">
                                     <Search className="h-3.5 w-3.5" /> Filter
                                 </Button>
-                                <Button type="button" onClick={handleReset} variant="outline" className="text-xs font-medium py-2">
+                                <Button type="button" onClick={handleReset} variant="outline" size="icon" title="Reset filter">
                                     <RotateCcw className="h-3.5 w-3.5" />
                                 </Button>
                             </div>
@@ -284,102 +263,106 @@ export default function BeritaAcaraReport({
                 </Card>
 
                 {/* Monthly Issuance Volume Chart */}
-                <Card className="border-slate-200 shadow-xs">
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-bold text-slate-800 flex items-center gap-2">
-                            <BarChart3 className="h-4 w-4 text-blue-600" />
+                <Card className="border-slate-200/70 shadow-sm">
+                    <CardHeader className="border-b border-slate-100 pb-4">
+                        <CardTitle className="flex items-center gap-2 text-base font-bold text-slate-900">
+                            <TrendingUp className="h-4 w-4 text-indigo-600" />
                             Jumlah Penerbitan Berita Acara per Bulan ({year})
                         </CardTitle>
+                        <CardDescription>Volume dokumen Berita Acara yang diterbitkan setiap bulan</CardDescription>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="pt-4">
                         <div ref={monthlyChartRef} className="min-h-[280px]" />
                     </CardContent>
                 </Card>
 
                 {/* Data Table */}
-                <Card className="border-slate-200 shadow-xs overflow-hidden">
-                    <CardHeader className="bg-slate-50/50 border-b border-slate-100 flex flex-row items-center justify-between">
-                        <CardTitle className="text-sm font-bold text-slate-800">
-                            Rekap Berita Acara Konsultasi ({records.total} Dokumen)
-                        </CardTitle>
-                        <Button
-                            onClick={handleExportCsv}
-                            variant="outline"
-                            size="sm"
-                            className="text-xs font-bold gap-1 text-slate-700"
-                        >
-                            <Download className="h-3.5 w-3.5" /> Unduh Data CSV
-                        </Button>
-                    </CardHeader>
-
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left text-xs border-collapse">
-                            <thead>
-                                <tr className="border-b border-slate-200 bg-slate-100/70 text-slate-600 uppercase font-semibold">
-                                    <th className="p-3 w-12 text-center">No</th>
-                                    <th className="p-3">Nomor & Tanggal BA</th>
-                                    <th className="p-3">Pemohon & Perusahaan</th>
-                                    <th className="p-3">Jenis Kegiatan</th>
-                                    <th className="p-3">Lokasi / Perairan</th>
-                                    <th className="p-3">Petugas Pendamping</th>
-                                    <th className="p-3 text-right">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100 text-slate-700">
-                                {records.data.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={7} className="p-8 text-center text-slate-400 italic">
-                                            Tidak ada Berita Acara yang sesuai dengan filter.
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    records.data.map((row, idx) => (
-                                        <tr key={row.id} className="hover:bg-slate-50/80 transition-colors">
-                                            <td className="p-3 text-center font-medium text-slate-400">
-                                                {(records.current_page - 1) * records.per_page + idx + 1}
-                                            </td>
-                                            <td className="p-3">
-                                                <div className="font-bold text-slate-900">{row.berita_acara_number || `BA-${row.id}`}</div>
-                                                <div className="text-[11px] text-slate-400 mt-0.5">
-                                                    {row.consultation_date ? new Date(row.consultation_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}
-                                                </div>
-                                            </td>
-                                            <td className="p-3">
-                                                <div className="font-bold text-slate-800">{row.requester_name || '-'}</div>
-                                                <div className="text-[11px] text-slate-500">{row.legal_entity_name || '-'}</div>
-                                                <div className="text-[10.5px] text-slate-400">{row.contact_email || '-'}</div>
-                                            </td>
-                                            <td className="p-3">
-                                                <div className="text-slate-800 font-medium">{row.activity_type || '-'}</div>
-                                            </td>
-                                            <td className="p-3">
-                                                <div className="text-slate-700 font-medium">{row.water_name || row.location || '-'}</div>
-                                            </td>
-                                            <td className="p-3">
-                                                <div className="flex items-center gap-1.5 text-slate-700 font-medium">
-                                                    <User className="h-3.5 w-3.5 text-slate-400" />
-                                                    <span>{row.staff1?.user?.name || '-'}</span>
-                                                </div>
-                                            </td>
-                                            <td className="p-3 text-right">
-                                                <Link
-                                                    href={`/berita-acara`}
-                                                    className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-bold text-slate-700 hover:bg-slate-50 hover:text-blue-600"
-                                                >
-                                                    <Eye className="h-3 w-3" /> Lihat
-                                                </Link>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <div className="p-4 border-t border-slate-100">
-                        <Pagination links={records.links} />
-                    </div>
-                </Card>
+                <PaginatedTable
+                    hideSearchInput
+                    searchValue=""
+                    onSearchChange={() => {}}
+                    summary={
+                        <>
+                            Menampilkan{' '}
+                            <span className="font-semibold text-slate-600">
+                                {records.from ?? 0}-{records.to ?? 0}
+                            </span>{' '}
+                            dari <span className="font-semibold text-slate-600">{records.total}</span> dokumen
+                        </>
+                    }
+                    tableHead={
+                        <tr className="border-b border-slate-100 bg-slate-50/60">
+                            <th className="px-5 py-3 text-left text-xs font-semibold tracking-wider whitespace-nowrap text-slate-500 uppercase">#</th>
+                            <th className="px-5 py-3 text-left text-xs font-semibold tracking-wider whitespace-nowrap text-slate-500 uppercase">Nomor &amp; Tanggal BA</th>
+                            <th className="px-5 py-3 text-left text-xs font-semibold tracking-wider whitespace-nowrap text-slate-500 uppercase">Pemohon &amp; Perusahaan</th>
+                            <th className="px-5 py-3 text-left text-xs font-semibold tracking-wider whitespace-nowrap text-slate-500 uppercase">Jenis Kegiatan</th>
+                            <th className="px-5 py-3 text-left text-xs font-semibold tracking-wider whitespace-nowrap text-slate-500 uppercase">Lokasi / Perairan</th>
+                            <th className="px-5 py-3 text-left text-xs font-semibold tracking-wider whitespace-nowrap text-slate-500 uppercase">Petugas Pendamping</th>
+                            <th className="px-5 py-3 text-center text-xs font-semibold tracking-wider whitespace-nowrap text-slate-500 uppercase">Aksi</th>
+                        </tr>
+                    }
+                    isEmpty={records.data.length === 0}
+                    emptyState={
+                        <tr>
+                            <td colSpan={7} className="py-16 text-center text-slate-400">
+                                <Search className="mx-auto mb-3 h-10 w-10 text-slate-200" />
+                                <p className="font-medium">Tidak ada Berita Acara yang sesuai dengan filter.</p>
+                            </td>
+                        </tr>
+                    }
+                    pagination={
+                        records.last_page > 1 ? (
+                            <Pagination
+                                links={records.links}
+                                currentPage={records.current_page}
+                                lastPage={records.last_page}
+                                onNavigate={(url) => router.get(url)}
+                            />
+                        ) : null
+                    }
+                >
+                    {records.data.map((row, idx) => (
+                        <tr key={row.id} className="group transition-colors hover:bg-slate-50/70">
+                            <td className="px-5 py-4 font-mono text-xs text-slate-400">{baseNumber + idx}</td>
+                            <td className="px-5 py-4">
+                                <p className="font-semibold text-slate-800">{row.berita_acara_number || `BA-${row.id}`}</p>
+                                <p className="mt-0.5 text-[11px] text-slate-400">
+                                    {row.consultation_date ? new Date(row.consultation_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}
+                                </p>
+                            </td>
+                            <td className="px-5 py-4">
+                                <p className="font-semibold text-slate-800">{row.requester_name || '-'}</p>
+                                <p className="text-xs font-medium text-slate-500">{row.legal_entity_name || '-'}</p>
+                                <p className="mt-0.5 text-[11px] text-slate-400">{row.contact_email || '-'}</p>
+                            </td>
+                            <td className="px-5 py-4">
+                                <p className="font-medium text-slate-700">{row.activity_type || '-'}</p>
+                            </td>
+                            <td className="px-5 py-4">
+                                <p className="font-medium text-slate-700">{row.water_name || row.location || '-'}</p>
+                            </td>
+                            <td className="px-5 py-4">
+                                <div className="flex items-center gap-1.5 font-medium text-slate-700">
+                                    <User className="h-3.5 w-3.5 text-slate-400" />
+                                    <span>{row.staff1?.user?.name || '-'}</span>
+                                </div>
+                            </td>
+                            <td className="px-5 py-4">
+                                <div className="flex items-center justify-center gap-1.5">
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        title="Lihat Berita Acara"
+                                        className="h-8 w-8 rounded-lg text-slate-400 hover:bg-indigo-50 hover:text-indigo-600"
+                                        onClick={() => router.visit('/berita-acara')}
+                                    >
+                                        <Eye className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            </td>
+                        </tr>
+                    ))}
+                </PaginatedTable>
             </div>
         </MainLayout>
     );
