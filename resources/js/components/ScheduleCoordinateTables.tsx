@@ -43,7 +43,7 @@ const emptyJadwalRow = (): JadwalRow => ({
     minggu_selesai: '',
 });
 
-const EXAMPLE_JADWAL: JadwalRow[] = (() => {
+export const EXAMPLE_JADWAL: JadwalRow[] = (() => {
     const year = String(new Date().getFullYear());
 
     return [
@@ -312,7 +312,7 @@ export const emptyJadwalRows = (): JadwalRow[] => [emptyJadwalRow()];
 
 export type KoordinatRow = [string, string, string]; // [longitude, latitude, keterangan]
 
-const EXAMPLE_KOORDINAT: KoordinatRow[] = [
+export const EXAMPLE_KOORDINAT: KoordinatRow[] = [
     ['122.650194', '-3.934945', 'Dermaga'],
     ['122.649197', '-3.935361', 'Intake'],
     ['122.649261', '-3.935530', 'Outlet'],

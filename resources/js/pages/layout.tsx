@@ -50,13 +50,6 @@ const services = [
         badge: 'User',
     },
     {
-        href: '/egerai',
-        icon: FileUp,
-        title: 'Penggabung Proposal PKKPRL',
-        desc: 'Unggah Draft Proposal & Laporan Hidro-Oseanografi, sistem ekstrak & susun dokumen otomatis.',
-        badge: 'Otomatis',
-    },
-    {
         href: '/login',
         icon: FileCheck2,
         title: 'Portal Petugas BPRL',
@@ -247,12 +240,12 @@ function Navbar({ scrolled }: { scrolled: boolean }) {
 
                             <div className="grid gap-0 lg:grid-cols-12">
                                 <div className="grid gap-4 p-6 sm:grid-cols-3 lg:col-span-8">
-                                    {services.map((s) => (
+                                    {services.map((s, index) => (
                                         <Link
                                             key={s.title}
                                             href={s.href}
                                             onClick={close}
-                                            className="group/item flex flex-col justify-between rounded-2xl border border-slate-100 bg-slate-50/50 p-4 transition-all duration-300 hover:border-blue-200/80 hover:bg-blue-50/60"
+                                            className={'group/item flex flex-col justify-between rounded-2xl border border-slate-100 bg-slate-50/50 p-4 transition-all duration-300 hover:border-blue-200/80 hover:bg-blue-50/60 ' + (services.length - 1 === index ? (index % 3 === 0 ? ' sm:col-span-3' : index % 3 === 1 ? ' sm:col-span-2' : ' sm:col-span-1') : '')}
                                         >
                                             <div>
                                                 <div className="mb-3 flex items-center justify-between">

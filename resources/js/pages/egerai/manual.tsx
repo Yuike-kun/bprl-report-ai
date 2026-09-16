@@ -1,5 +1,6 @@
 import { Head, router, usePage } from '@inertiajs/react';
 import {
+    ArrowLeft,
     Banknote,
     Check,
     CheckCircle2,
@@ -13,6 +14,8 @@ import {
     MapPin,
     MapPinned,
     Route,
+    Sparkles,
+    UploadCloud,
     UserRound,
     Users,
     Waves,
@@ -21,6 +24,8 @@ import { useState } from 'react';
 import type { ComponentType, FormEvent, ReactNode } from 'react';
 import { ImageField } from '@/components/ImageField';
 import {
+    EXAMPLE_JADWAL,
+    EXAMPLE_KOORDINAT,
     JadwalTable,
     KoordinatTable,
     emptyJadwalRows,
@@ -39,6 +44,7 @@ import {
     DecimalField,
     DigitsField,
     draftButtonClass,
+    DUKUNG_ITEMS,
     DukungDocuments,
     emptyDukungState,
     fieldHintClass,
@@ -331,22 +337,48 @@ export default function EgeraiManual() {
         <AppLayout>
             <Head title="Isi Formulir Draft Proposal — e-GeRAI KKPRL" />
             <div className="bg-[#eef3f8] text-[#1c2b3a]">
-                <section className="bg-gradient-to-r from-[#eaf2fb] via-[#cfe1f6] to-[#a9cdec] px-8 py-7">
-                    <div className="mx-auto">
-                        <h1 className="text-2xl font-extrabold text-[#123A63]">
-                            📝 Isi Formulir Draft Proposal PKKPRL
-                        </h1>
-                        <p className="mt-1.5 max-w-[640px] text-[13.5px] leading-relaxed text-[#33495e]">
-                            Belum punya file Draft Proposal PKKPRL siap pakai?
-                            Isi data di bawah ini secara manual, lalu unggah
-                            Laporan Kondisi Eksisting / Hidro-Oseanografi (PDF).
-                            Sistem akan menggabungkan otomatis menjadi 1 dokumen
-                            Word final — sama seperti alur unggah 2 PDF.
-                        </p>
+                <section
+                    className="relative -mx-6 -mt-20 overflow-hidden px-8 pt-24 pb-9 lg:-mx-8"
+                    style={{
+                        background:
+                            'linear-gradient(135deg,#eaf2fb 0%,#cfe1f6 55%,#a9cdec 100%)',
+                    }}
+                >
+                    <div
+                        className="pointer-events-none absolute -top-16 -right-16 h-[260px] w-[260px] rounded-full"
+                        style={{
+                            background:
+                                'radial-gradient(circle, rgba(30,99,199,.16), transparent 70%)',
+                        }}
+                    />
+                    <div className="relative mx-auto max-w-[1400px]">
+                        <a
+                            href="/egerai"
+                            className="mb-3 inline-flex items-center gap-1.5 text-[12.5px] font-bold text-[#1E63C7] hover:text-[#123A63]"
+                        >
+                            <ArrowLeft className="h-3.5 w-3.5" /> Kembali ke
+                            e-GeRAI
+                        </a>
+                        <div className="flex flex-wrap items-center gap-3.5">
+                            <div>
+                                <h1 className="text-2xl font-extrabold text-[#123A63]">
+                                    Isi Formulir Draft Proposal PKKPRL
+                                </h1>
+                                <p className="mt-1 max-w-[640px] text-[13.5px] leading-relaxed text-[#33495e]">
+                                    Belum punya file Draft Proposal PKKPRL siap
+                                    pakai? Isi data di bawah ini secara manual,
+                                    lalu unggah Laporan Kondisi Eksisting /
+                                    Hidro-Oseanografi (PDF). Sistem akan
+                                    menggabungkan otomatis menjadi 1 dokumen
+                                    Word final — sama seperti alur unggah 2
+                                    PDF.
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 </section>
 
-                <div className="mx-auto max-w-[1400px] px-8 pt-4 pb-10">
+                <div className="mx-auto max-w-[1400px] px-8 pt-6 pb-10">
                     <form onSubmit={(e) => submit('/proposal-manual', e)}>
                         <div className="mb-[18px] rounded-2xl bg-white p-6 shadow-[0_6px_24px_rgba(18,58,99,0.08)]">
                             <h3 className="mb-3.5 text-[14.5px] font-extrabold text-[#123A63]">
@@ -364,14 +396,55 @@ export default function EgeraiManual() {
                                 mengunduh draft Proposal saja terlebih dulu,
                                 lengkapi Laporannya nanti.
                             </p>
-                            <input
-                                type="file"
-                                accept="application/pdf,.docx"
-                                onChange={(e) =>
-                                    setLaporanFile(e.target.files?.[0] ?? null)
+                            <label
+                                className={
+                                    'mt-1 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-6 py-7 text-center transition-colors ' +
+                                    (laporanFile
+                                        ? 'border-[#1E63C7] bg-[#eaf3fd]'
+                                        : 'border-[#cfe0f5] bg-[#f7fafd] hover:border-[#aac6e8] hover:bg-[#eef5fc]')
                                 }
-                                className={fieldInputClass}
-                            />
+                            >
+                                <input
+                                    type="file"
+                                    accept="application/pdf,.docx"
+                                    onChange={(e) =>
+                                        setLaporanFile(
+                                            e.target.files?.[0] ?? null,
+                                        )
+                                    }
+                                    className="hidden"
+                                />
+                                <span
+                                    className={
+                                        'flex h-10 w-10 items-center justify-center rounded-full ' +
+                                        (laporanFile
+                                            ? 'bg-[#1E63C7] text-white'
+                                            : 'bg-white text-[#1E63C7] shadow-[0_2px_8px_rgba(18,58,99,0.12)]')
+                                    }
+                                >
+                                    <UploadCloud className="h-5 w-5" />
+                                </span>
+                                {laporanFile ? (
+                                    <div>
+                                        <div className="text-[13.5px] font-bold text-[#123A63]">
+                                            {laporanFile.name}
+                                        </div>
+                                        <div className="mt-0.5 text-[11px] text-[#5b6b7c]">
+                                            Klik untuk mengganti file
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div>
+                                        <div className="text-[13.5px] font-bold text-[#123A63]">
+                                            Klik untuk pilih file, atau seret
+                                            ke sini
+                                        </div>
+                                        <div className="mt-0.5 text-[11px] text-[#5b6b7c]">
+                                            PDF atau .docx
+                                        </div>
+                                    </div>
+                                )}
+                            </label>
                             {errors.laporan && (
                                 <p className="mt-1 text-sm text-red-600">
                                     {errors.laporan}
@@ -379,29 +452,139 @@ export default function EgeraiManual() {
                             )}
                         </div>
 
-                        <div className="mb-[18px] flex items-center gap-2.5">
-                            <button
-                                type="submit"
-                                disabled={processing}
-                                className={draftButtonClass}
-                            >
-                                Simpan
-                            </button>
-                            <button
-                                type="submit"
-                                disabled={processing}
-                                className={primaryButtonClass}
-                            >
-                                Proses &amp; Lanjut ke Tinjau Data
-                            </button>
-                            <button
-                                type="button"
-                                disabled={processing}
-                                onClick={() => submit('/proposal-manual/draft')}
-                                className={draftButtonClass}
-                            >
-                                Unduh Draft
-                            </button>
+                        <div className="mb-[18px] flex flex-wrap items-center gap-2.5 rounded-2xl border border-[#e7eef6] bg-white/95 p-3 shadow-[0_8px_24px_rgba(18,58,99,0.10)] backdrop-blur-sm">
+                            <div className="flex items-center justify-center w-full gap-2.5">
+                                <button
+                                    type="button"
+                                    className={draftButtonClass}
+                                    onClick={() => {
+                                        setValues((prev) => ({
+                                            ...prev,
+                                            prop__Nama_Pemohon:
+                                                'Andi Wijaya, S.T., M.M.',
+                                            prop__Jabatan_Pemohon: 'Direktur Utama',
+                                            prop__Nama_Perusahaan_Instansi:
+                                                'PT. Bahari Sejahtera Makassar',
+                                            prop__NIB: '1234567890123',
+                                            prop__NPWP: '01.234.567.8-901.000',
+                                            prop__Nomor_Telepon_Selular:
+                                                '081234567890',
+                                            prop__Surat_Elektronik:
+                                                'pemohon@baharisejahtera.co.id',
+                                            prop__Jenis_Kegiatan:
+                                                'Pemanfaatan Air Laut untuk Budi Daya',
+                                            prop__Nama_Perairan: 'Laut Banda',
+                                            prop__Luas_Kebutuhan_Ruang: '2.5',
+                                            prop__KBLI:
+                                                '03211 - Pembudidayaan Ikan Bersirip (Selain Ikan Hias) dan Biota Air Laut Lainnya yang Tidak Dilindungi',
+                                            prop__Tanggal_Penyusunan:
+                                                '2026-08-18',
+                                            prop__investasi: '500000000',
+                                            prop__tenaga_kerja: '10',
+                                            prop__tenaga_kerja_asing: '0',
+                                            prop__desa_luas_ha: '150',
+                                            prop__desa_penduduk: '2500',
+                                            deskripsi_kegiatan:
+                                                'Kegiatan usaha yang diusulkan adalah pembesaran biota laut budidaya, melalui pengoperasian keramba jaring apung (KJA) sebagai sarana penampungan dan pemeliharaan sementara ikan hidup sebelum dipasarkan.',
+                                            manfaat_kegiatan:
+                                                'Meningkatkan taraf hidup masyarakat pesisir dan mendorong perekonomian daerah melalui pemanfaatan ruang laut yang optimal.',
+                                            tujuan_kegiatan:
+                                                'Pembangunan sarana dan prasarana pendukung budidaya air laut berupa keramba jaring apung beserta fasilitas penunjangnya.',
+                                            instalasi_bangunan:
+                                                'Saluran Inlet dan Outlet',
+                                            kegiatan_status: 'Rencana',
+                                            batas_utara: 'Perairan laut lepas',
+                                            batas_timur: 'Daratan desa pesisir',
+                                            batas_selatan:
+                                                'Kawasan budidaya nelayan',
+                                            batas_barat: 'Perairan terbuka',
+                                            deskripsi_pemanfaatan_sekitar:
+                                                'Selain keempat arah tersebut, tidak terdapat pemanfaatan ruang laut lain yang berpotensi menimbulkan konflik dengan rencana kegiatan yang dimohonkan.',
+                                            mata_pencaharian:
+                                                'Mata pencaharian utama masyarakat desa adalah nelayan dan pembudidaya, didukung oleh potensi perairan yang memiliki sumber daya ikan, biota laut, padang lamun, mangrove, dan terumbu karang.',
+                                            sumber_data_sosek: 'BPS Kabupaten',
+                                            tahun_data_sosek: '2025',
+                                            aksesibilitas_lokasi:
+                                                'Dapat diakses melalui jalan darat utama dan dilanjutkan dengan perahu motor menuju lokasi kegiatan.',
+                                            sumber_peta:
+                                                'Citra Satelit Google Earth & Survei Lapangan',
+                                            mangrove_ada:
+                                                'Terdapat ekosistem mangrove',
+                                            prop__mangrove_persen: '65',
+                                            prop__mangrove_kondisi: 'Sedang',
+                                            lamun_ada_manual:
+                                                'Terdapat ekosistem lamun',
+                                            lamun_persen: '70',
+                                            lamun_kondisi: 'Baik (Kaya/Sehat)',
+                                            karang_ada:
+                                                'Terdapat ekosistem terumbu karang',
+                                            karang_persen_manual: '80',
+                                            karang_kondisi: 'Baik Sekali',
+                                        }));
+                                        setWilayah({
+                                            provinsi: 'SUAWESI SELATAN',
+                                            kabupaten: 'KOTA MAKASSAR',
+                                            kecamatan: 'TAMALANREA',
+                                            desa: 'BUNTUSU',
+                                        });
+                                        setNonReklamasi(true);
+                                        setReklamasi(false);
+                                        setKegiatanBerusaha(true);
+                                        setNonBerusaha(false);
+                                        setStrategis(false);
+                                        setNonStrategis(true);
+                                        setInstalasiPosisi([
+                                            'Kolom Laut',
+                                            'Dasar Laut',
+                                        ]);
+                                        setMangroveSpecies([
+                                            'Rhizophora apiculata',
+                                        ]);
+                                        setLamunSpecies(['Enhalus acoroides']);
+                                        setKarangSpecies(['Acropora hyacinthus']);
+                                        setJadwalRows(EXAMPLE_JADWAL);
+                                        setKoordinatRows(EXAMPLE_KOORDINAT);
+                                        setDukung((prev) => {
+                                            const next = { ...prev };
+                                            DUKUNG_ITEMS.forEach((item) => {
+                                                next[item.key] = {
+                                                    ...next[item.key],
+                                                    checked: true,
+                                                    drive: 'https://drive.google.com/drive/folders/contoh-dokumen-pendukung',
+                                                };
+                                            });
+
+                                            return next;
+                                        });
+                                    }}
+                                >
+                                    Isi Contoh Data
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={processing}
+                                    className={primaryButtonClass}
+                                >
+                                    Proses &amp; Lanjut ke Tinjau Data
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={processing}
+                                    className={draftButtonClass}
+                                >
+                                    Simpan
+                                </button>
+                                <button
+                                    type="button"
+                                    disabled={processing}
+                                    onClick={() =>
+                                        submit('/proposal-manual/draft')
+                                    }
+                                    className={draftButtonClass}
+                                >
+                                    Unduh Draft
+                                </button>
+                            </div>
                         </div>
 
                         <div className="mb-[18px] rounded-2xl border border-[#e7eef6] bg-white p-6 shadow-[0_8px_26px_rgba(18,58,99,0.10)]">
@@ -462,8 +645,8 @@ export default function EgeraiManual() {
                                                     jenisPermohonan === opt
                                                         ? 'bg-[#1E63C7] text-white'
                                                         : opt === 'Persetujuan'
-                                                          ? 'bg-[#eaf1fc] text-[#1E63C7]'
-                                                          : 'bg-[#fef3c7] text-[#d97706]'
+                                                            ? 'bg-[#eaf1fc] text-[#1E63C7]'
+                                                            : 'bg-[#fef3c7] text-[#d97706]'
                                                 }
                                             />
                                             <div>
@@ -731,18 +914,21 @@ export default function EgeraiManual() {
                                     <TextAreaField
                                         name="deskripsi_kegiatan"
                                         label="Deskripsi Kegiatan"
+                                        example="Kegiatan usaha yang diusulkan adalah pembesaran biota laut budidaya, melalui pengoperasian keramba jaring apung (KJA) sebagai sarana penampungan dan pemeliharaan sementara ikan hidup sebelum dipasarkan. Biota Laut memiliki nilai ekonomi tinggi dengan peluang pasar yang masih terbuka, sehingga kegiatan ini berpotensi memberikan nilai tambah hasil perikanan serta menjadi alternatif diversifikasi usaha bagi nelayan setempat. Pelaksanaan kegiatan diharapkan dapat meningkatkan pendapatan dan kesejahteraan masyarakat pesisir serta mengurangi ketergantungan terhadap jenis ikan lainnya."
                                         value={values.deskripsi_kegiatan ?? ''}
                                         onChange={setValue}
                                     />
                                     <TextAreaField
                                         name="manfaat_kegiatan"
                                         label="Manfaat Kegiatan"
+                                        example="Kegiatan pembangunan dan operasional fasilitas budidaya udang vannamei bertujuan untuk mendukung peningkatan produksi perikanan budidaya secara berkelanjutan melalui pemanfaatan ruang laut yang optimal dan sesuai dengan ketentuan yang berlaku. Selain memberikan nilai tambah bagi sektor perikanan, kegiatan ini juga diharapkan dapat mendorong pertumbuhan ekonomi daerah, membuka peluang kerja bagi masyarakat sekitar, serta mendukung penerapan budidaya yang produktif dan berwawasan lingkungan."
                                         value={values.manfaat_kegiatan ?? ''}
                                         onChange={setValue}
                                     />
                                     <TextAreaField
                                         name="tujuan_kegiatan"
                                         label="Tujuan Kegiatan"
+                                        example="Tujuan pemanfaatan ruang laut yang diajukan adalah untuk pembangunan fasilitas pemanfaatan air laut bagi kegiatan budidaya, yang berfungsi sebagai sarana penunjang usaha pembudidayaan ikan bersirip (selain ikan hias) serta biota air payau lainnya yang tidak dilindungi. Kegiatan utama perusahaan adalah budidaya udang vannamei. Dalam mendukung pelaksanaan kegiatan utama tersebut, direncanakan pembangunan fasilitas pendukung yang meliputi Instalasi Pengolahan Air Limbah (IPAL), instalasi penyediaan air bersih, dan instalasi kelistrikan."
                                         value={values.tujuan_kegiatan ?? ''}
                                         onChange={setValue}
                                     />
@@ -750,6 +936,7 @@ export default function EgeraiManual() {
                                         name="instalasi_bangunan"
                                         label="Instalasi Bangunan Menetap Di Laut"
                                         hint="Contoh: Saluran Inlet atau Outlet"
+                                        example="Saluran Inlet dan Outlet"
                                         value={values.instalasi_bangunan ?? ''}
                                         onChange={setValue}
                                     />
@@ -1012,10 +1199,10 @@ export default function EgeraiManual() {
                                                         (prev) =>
                                                             prev.includes(sp)
                                                                 ? prev.filter(
-                                                                      (s) =>
-                                                                          s !==
-                                                                          sp,
-                                                                  )
+                                                                    (s) =>
+                                                                        s !==
+                                                                        sp,
+                                                                )
                                                                 : [...prev, sp],
                                                     )
                                                 }
@@ -1028,6 +1215,7 @@ export default function EgeraiManual() {
                                         <DecimalField
                                             name="prop__mangrove_persen"
                                             label="Persentase Tutupan Mangrove (%)"
+                                            example="65"
                                             value={
                                                 values.prop__mangrove_persen ??
                                                 ''
@@ -1125,9 +1313,9 @@ export default function EgeraiManual() {
                                                     setLamunSpecies((prev) =>
                                                         prev.includes(sp)
                                                             ? prev.filter(
-                                                                  (s) =>
-                                                                      s !== sp,
-                                                              )
+                                                                (s) =>
+                                                                    s !== sp,
+                                                            )
                                                             : [...prev, sp],
                                                     )
                                                 }
@@ -1140,6 +1328,7 @@ export default function EgeraiManual() {
                                         <DecimalField
                                             name="lamun_persen"
                                             label="Persentase Tutupan Lamun"
+                                            example="70"
                                             value={values.lamun_persen ?? ''}
                                             onChange={(n, v) => {
                                                 setValue(n, v);
@@ -1236,9 +1425,9 @@ export default function EgeraiManual() {
                                                     setKarangSpecies((prev) =>
                                                         prev.includes(sp)
                                                             ? prev.filter(
-                                                                  (s) =>
-                                                                      s !== sp,
-                                                              )
+                                                                (s) =>
+                                                                    s !== sp,
+                                                            )
                                                             : [...prev, sp],
                                                     )
                                                 }
@@ -1251,6 +1440,7 @@ export default function EgeraiManual() {
                                         <DecimalField
                                             name="karang_persen_manual"
                                             label="Persentase Tutupan Terumbu Karang"
+                                            example="80"
                                             value={
                                                 values.karang_persen_manual ??
                                                 ''
@@ -1350,6 +1540,8 @@ export default function EgeraiManual() {
                                         name="deskripsi_pemanfaatan_sekitar"
                                         label="Deskripsi Tambahan (Opsional)"
                                         rows={3}
+                                        hint="Kalau ada info tambahan di luar 4 arah mata angin di atas, isi di sini — akan ditambahkan setelah kalimat otomatis."
+                                        example="Selain keempat arah tersebut, tidak terdapat pemanfaatan ruang laut lain yang berpotensi menimbulkan konflik dengan rencana kegiatan yang dimohonkan."
                                         value={
                                             values.deskripsi_pemanfaatan_sekitar ??
                                             ''
@@ -1373,6 +1565,7 @@ export default function EgeraiManual() {
                                     <TextAreaField
                                         name="mata_pencaharian"
                                         label="Mata Pencaharian Masyarakat Desa"
+                                        example="Mata pencaharian masyarakat desa didominasi oleh aktivitas yang berkaitan dengan karakter pesisir. Nelayan menjadi salah satu pekerjaan utama, didukung oleh potensi perairan yang memiliki sumber daya ikan, biota laut, padang lamun, mangrove, dan terumbu karang."
                                         value={values.mata_pencaharian ?? ''}
                                         onChange={setValue}
                                     />
@@ -1386,12 +1579,15 @@ export default function EgeraiManual() {
                                     <DigitsField
                                         name="tahun_data_sosek"
                                         label="Tahun Data Sosek"
+                                        example="2025"
                                         value={values.tahun_data_sosek ?? ''}
                                         onChange={setValue}
                                     />
                                     <TextAreaField
                                         name="aksesibilitas_lokasi"
                                         label="Aksesibilitas Lokasi"
+                                        hint="Deskripsi aksesibilitas dari titik poin lokasi yang mudah dikenali ke lokasi area yang dimohonkan, termasuk jarak dan waktu tempuh."
+                                        example="Aksesibilitas menuju Desa Tapulaga, Kecamatan Soropia, Kabupaten Konawe, dari Bandara Haluoleo Kendari dapat ditempuh melalui jalur darat. Titik awal perjalanan adalah Bandara Haluoleo yang berada di Desa Ambaipua, Kecamatan Ranomeeto, Kabupaten Konawe Selatan, dengan akses utama melalui Jalan Wolter Monginsidi/poros bandara menuju Kota Kendari."
                                         value={
                                             values.aksesibilitas_lokasi ?? ''
                                         }
