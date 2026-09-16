@@ -90,9 +90,14 @@ class ProposalExtractionController extends Controller
 
     public function assistant(Request $request, KkprlAssistantService $assistant)
     {
-        $validated = $request->validate(['question' => ['required', 'string', 'max:2000']]);
+        $validated = $request->validate([
+            'question' => ['required', 'string', 'max:2000'],
+            'history' => ['nullable', 'array', 'max:20'],
+            'history.*.role' => ['required_with:history', 'string', 'in:user,assistant'],
+            'history.*.content' => ['required_with:history', 'string', 'max:4000'],
+        ]);
 
-        $result = $assistant->reply($validated['question']);
+        $result = $assistant->reply($validated['question'], $validated['history'] ?? []);
 
         return response()->json([
             'answer' => $result['answer'] ?? '',

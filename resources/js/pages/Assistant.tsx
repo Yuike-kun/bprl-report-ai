@@ -122,10 +122,13 @@ export default function Assistant() {
     const makeId = () =>
         `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
-    const askAsisten = async (question: string) => {
+    const askAsisten = async (question: string, priorMessages: Message[]) => {
         setSending(true);
 
         try {
+            const conversationHistory = priorMessages
+                .slice(-20)
+                .map((m) => ({ role: m.role, content: m.content }));
             const res = await fetch('/kkprl/assistant', {
                 method: 'POST',
                 headers: {
@@ -137,7 +140,10 @@ export default function Assistant() {
                             ) as HTMLMetaElement
                         )?.content ?? '',
                 },
-                body: JSON.stringify({ question }),
+                body: JSON.stringify({
+                    question,
+                    history: conversationHistory,
+                }),
             });
             const data = await res.json().catch(() => null);
             const text =
@@ -147,12 +153,12 @@ export default function Assistant() {
             const sources: Source[] =
                 res.ok && Array.isArray(data?.sources)
                     ? data.sources.filter(
-                          (s: unknown): s is Source =>
-                              !!s &&
-                              typeof s === 'object' &&
-                              typeof (s as Source).url === 'string' &&
-                              (s as Source).url.length > 0,
-                      )
+                        (s: unknown): s is Source =>
+                            !!s &&
+                            typeof s === 'object' &&
+                            typeof (s as Source).url === 'string' &&
+                            (s as Source).url.length > 0,
+                    )
                     : [];
             const newId = makeId();
             setHistory((prev) => [
@@ -184,12 +190,13 @@ export default function Assistant() {
             return;
         }
 
+        const priorMessages = history;
         const nextHistory: Message[] = [
             ...history,
             { id: makeId(), role: 'user', content: question },
         ];
         setHistory(nextHistory);
-        askAsisten(question);
+        askAsisten(question, priorMessages);
     };
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -364,36 +371,34 @@ export default function Assistant() {
 
                         {/* .chat-chips — scrollable row, only before the conversation starts */}
                         <AnimatePresence>
-                            {isEmpty && (
-                                <motion.div
-                                    initial={{ height: 0, opacity: 0 }}
-                                    animate={{ height: 'auto', opacity: 1 }}
-                                    exit={{ height: 0, opacity: 0 }}
-                                    transition={{ duration: 0.25, ease: 'easeInOut' }}
-                                    className="flex-none overflow-hidden border-b bg-[#EAF6FC]"
-                                    style={{ borderColor: 'rgba(10,37,87,0.13)' }}
-                                >
-                                    <div className="flex flex-wrap gap-2 overflow-x-auto px-3 py-2.5 sm:px-3.5 sm:py-3 lg:flex-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                                        {CHIPS.map((chip, i) => (
-                                            <motion.button
-                                                key={chip.question}
-                                                initial={{ opacity: 0, y: 8 }}
-                                                animate={{ opacity: 1, y: 0 }}
-                                                transition={{
-                                                    delay: 0.15 + i * 0.05,
-                                                    duration: 0.25,
-                                                }}
-                                                type="button"
-                                                onClick={() => sendMessage(chip.question)}
-                                                className="flex-none rounded-full border bg-white px-2.5 py-1.25 text-[11px] font-semibold whitespace-nowrap text-[#12468C] transition-transform duration-150 hover:-translate-y-px hover:border-[#F2A83B] hover:bg-[#FFF9EF] hover:text-[#D6821A] hover:shadow-[0_4px_10px_rgba(242,168,59,.22)] sm:px-3 sm:py-1.5 sm:text-xs"
-                                                style={{ borderColor: 'rgba(10,37,87,0.13)' }}
-                                            >
-                                                {chip.label}
-                                            </motion.button>
-                                        ))}
-                                    </div>
-                                </motion.div>
-                            )}
+                            <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: 'auto', opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                transition={{ duration: 0.25, ease: 'easeInOut' }}
+                                className="flex-none overflow-hidden border-b bg-[#EAF6FC]"
+                                style={{ borderColor: 'rgba(10,37,87,0.13)' }}
+                            >
+                                <div className="flex flex-wrap gap-2 overflow-x-auto px-3 py-2.5 sm:px-3.5 sm:py-3 lg:flex-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                                    {CHIPS.map((chip, i) => (
+                                        <motion.button
+                                            key={chip.question}
+                                            initial={{ opacity: 0, y: 8 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{
+                                                delay: 0.15 + i * 0.05,
+                                                duration: 0.25,
+                                            }}
+                                            type="button"
+                                            onClick={() => sendMessage(chip.question)}
+                                            className="flex-none rounded-full border bg-white px-2.5 py-1.25 text-[11px] font-semibold whitespace-nowrap text-[#12468C] transition-transform duration-150 hover:-translate-y-px hover:border-[#F2A83B] hover:bg-[#FFF9EF] hover:text-[#D6821A] hover:shadow-[0_4px_10px_rgba(242,168,59,.22)] sm:px-3 sm:py-1.5 sm:text-xs"
+                                            style={{ borderColor: 'rgba(10,37,87,0.13)' }}
+                                        >
+                                            {chip.label}
+                                        </motion.button>
+                                    ))}
+                                </div>
+                            </motion.div>
                         </AnimatePresence>
 
                         {/* .chat-thread */}
@@ -412,13 +417,13 @@ export default function Assistant() {
                                     overflowWrap: 'anywhere',
                                 }}
                             >
-                                    <div className="mb-1 text-[9.5px] font-bold tracking-[.08em] text-[#D6821A] uppercase opacity-85">
-                                        e-GerAI BPRL Makassar
-                                    </div>
-                                    Selamat datang. Silakan tanyakan hal seputar{' '}
-                                    <b>KKPRL</b> &mdash; persyaratan, prosedur OSS,
-                                    reklamasi, biaya, atau tracking permohonan.
-                                    Jawaban akan diberikan singkat dan jelas.
+                                <div className="mb-1 text-[9.5px] font-bold tracking-[.08em] text-[#D6821A] uppercase opacity-85">
+                                    e-GerAI BPRL Makassar
+                                </div>
+                                Selamat datang. Silakan tanyakan hal seputar{' '}
+                                <b>KKPRL</b> &mdash; persyaratan, prosedur OSS,
+                                reklamasi, biaya, atau tracking permohonan.
+                                Jawaban akan diberikan singkat dan jelas.
                             </motion.div>
 
                             {!isEmpty && (
@@ -511,9 +516,9 @@ export default function Assistant() {
                                                                     <span className="flex h-3.5 w-3.5 flex-none items-center justify-center rounded-full bg-[#EAF6FC] text-[8px] font-bold text-[#1AA6E0]">
                                                                         {i + 1}
                                                                     </span>
-                                                    <span className="truncate">
-                                                        {src.title || hostnameOf(src.url)}
-                                                    </span>
+                                                                    <span className="truncate">
+                                                                        {src.title || hostnameOf(src.url)}
+                                                                    </span>
                                                                 </a>
                                                             ))}
                                                         </div>
