@@ -28,6 +28,37 @@ class ProposalDocumentGenerator
     /** Cached result of the AI ecosystem narrative for the proposal currently being rendered. */
     private ?array $ekosistemNarasi = null;
 
+    /** Cached result of the AI hydro-oceanography estimate for the proposal currently being rendered. */
+    private ?array $hidroEstimasi = null;
+
+    /** Cached result of the AI ecosystem narrative for the egerai (docChapterThree) pipeline currently being rendered. */
+    private ?array $ekosistemNarasiDoc = null;
+
+    /**
+     * AI-sourced reference blocks (ecosystem narrative sources, hydro-oceanography
+     * estimate sources/disclaimer) queued while rendering Chapter III, so they can
+     * be printed together on the literal last page of the document (a dedicated
+     * "LAMPIRAN: SUMBER REFERENSI" section after Chapter IV) instead of interrupting
+     * the middle of the report. See queueReference() / renderPendingReferences().
+     *
+     * @var array<int, array{heading: string, intro: ?string, introItalic: bool, items: array}>
+     */
+    private array $pendingReferences = [];
+
+    /**
+     * The subset of LaporanTextExtractor::FIELD_HINTS keys this generator can
+     * ask the AI to estimate when the (optional) hydro-oceanography survey
+     * report was never uploaded or left these gaps unextracted. Excludes
+     * lokasi_studi, which is not a numeric/technical parameter.
+     */
+    private const HIDRO_ESTIMABLE_KEYS = [
+        'batimetri_titik_pusat', 'batimetri_panjang_lintasan', 'batimetri_terdalam',
+        'hs_rata', 'hs_maks', 'hs_arah', 'arus_rata', 'arus_maks', 'arus_arah',
+        'hat', 'msl', 'lat', 'tidal_range', 'formzahl',
+        'eko_total_ha', 'eko_karang_ha', 'eko_karang_pct', 'eko_lainnya_ha',
+        'eko_lainnya_pct', 'eko_terbuka_ha', 'eko_terbuka_pct', 'eko_jarak_terdekat_km',
+    ];
+
     public function __construct(?ClaudeService $claude = null)
     {
         $this->claude = $claude;
@@ -66,6 +97,7 @@ class ProposalDocumentGenerator
     public function buildKkprlWord(KkprlProposal $p, array $images): PhpWord
     {
         $this->images = $images;
+        $this->pendingReferences = [];
         $word = new PhpWord;
         $word->getSettings()->setThemeFontLang(new Language('id-ID'));
         $section = $word->addSection([
@@ -84,6 +116,7 @@ class ProposalDocumentGenerator
         $this->kkprlChapterThree($section, $p);
         $section->addPageBreak();
         $this->kkprlChapterFour($section, $p);
+        $this->renderPendingReferences($section);
 
         return $word;
     }
@@ -142,6 +175,12 @@ class ProposalDocumentGenerator
     }
 
     /** Parse the free-text "lon lat" per line coordinate box into numbered rows. */
+    /**
+     * Parses the free-text "lon lat [keterangan]" per-line coordinate box into
+     * numbered rows. Any text after the longitude/latitude pair on the same
+     * line is kept verbatim as the point's "Keterangan" (e.g. "Dermaga",
+     * "Intake") instead of being discarded.
+     */
     private function parseCoordinates(string $raw): array
     {
         $rows = [];
@@ -151,9 +190,10 @@ class ProposalDocumentGenerator
             if ($line === '') {
                 continue;
             }
-            $parts = preg_split('/[\s,]+/', $line);
+            $parts = preg_split('/[\s,]+/', $line, 3);
             if (count($parts) >= 2 && is_numeric($parts[0]) && is_numeric($parts[1])) {
-                $rows[] = [(string) $no, $parts[0], $parts[1]];
+                $keterangan = isset($parts[2]) ? trim($parts[2]) : '';
+                $rows[] = [(string) $no, $parts[0], $parts[1], $keterangan];
                 $no++;
             }
         }
@@ -161,11 +201,105 @@ class ProposalDocumentGenerator
         return $rows;
     }
 
+    /**
+     * PhpWord does NOT auto-escape text written via addText()/addListItem()
+     * (Settings::isOutputEscapingEnabled() defaults to false — see
+     * vendor/phpoffice/phpword/src/PhpWord/Settings.php), so every dynamic
+     * string (user input, uploaded-document extraction, AI narrative) MUST be
+     * escaped here before being handed to PhpWord. Skipping this produces
+     * invalid word/document.xml (e.g. a raw "&" breaks XML parsing) which
+     * Word/LibreOffice reports as a corrupted .docx.
+     */
+    private function esc(string $text): string
+    {
+        return htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
+    }
+
+    /**
+     * Single source of truth for "does this ecosystem actually have data",
+     * shared by docChapterThree() below (mangrove/lamun/karang) and by
+     * EgeraiProposalController::createKkprlProposalFromJob(). Presence of the
+     * species text is the primary signal (set by manual entry, regex
+     * extraction, or the AI fallback); the "ada" flag string is only reliably
+     * set by the manual-entry form, so it's treated as a secondary signal
+     * rather than the sole gate. Centralized here so a future change to this
+     * rule doesn't need to be repeated at every call site.
+     */
+    public static function hasEcosystemData(array $prop, string $speciesKey, string $adaKey, string $presentValue): bool
+    {
+        return filled($prop[$speciesKey] ?? null) || ($prop[$adaKey] ?? null) === $presentValue;
+    }
+
+    /**
+     * Normalizes one coordinate row for the "D. Peta Lokasi" table, adding the
+     * "Keterangan" column with a "-" fallback when empty. Shared by
+     * kkprlChapterOne(), chapterOne(), and docChapterOne() so the fallback
+     * formatting can't drift between the three parallel implementations.
+     */
+    private function formatCoordRow(string $no, string $longitude, string $latitude, ?string $keterangan): array
+    {
+        $keterangan = trim((string) $keterangan);
+
+        return [$no, $longitude, $latitude, $keterangan !== '' ? $keterangan : '-'];
+    }
+
+    /**
+     * Queues one AI-sourced reference block (heading + optional intro/disclaimer
+     * text + cited source list) to be printed on the document's literal last
+     * page by renderPendingReferences(), instead of rendering it immediately
+     * where it's collected (mid Chapter III). No-op when there is nothing worth
+     * printing (no intro and no items).
+     */
+    private function queueReference(string $heading, ?string $intro, array $items, bool $introItalic = false): void
+    {
+        if (blank($intro) && ! $items) {
+            return;
+        }
+
+        $this->pendingReferences[] = [
+            'heading' => $heading,
+            'intro' => $intro,
+            'introItalic' => $introItalic,
+            'items' => $items,
+        ];
+    }
+
+    /**
+     * Prints every block queued via queueReference() on a dedicated final
+     * "LAMPIRAN: SUMBER REFERENSI" page — called once, after the last chapter,
+     * from buildWord()/buildKkprlWord(). No-op (no extra page added) when
+     * nothing was queued.
+     */
+    private function renderPendingReferences(Section $s): void
+    {
+        if (! $this->pendingReferences) {
+            return;
+        }
+
+        $s->addPageBreak();
+        $this->heading($s, 'LAMPIRAN: SUMBER REFERENSI', 1);
+        $this->text($s, 'Bagian berikut mencantumkan sumber referensi dan/atau catatan dari asisten AI yang digunakan untuk melengkapi narasi kondisi lapangan pada dokumen ini, sebagaimana dirujuk pada bagian-bagian terkait di atas.', true);
+
+        foreach ($this->pendingReferences as $ref) {
+            $this->heading($s, $ref['heading'], 2);
+            if (filled($ref['intro'])) {
+                $this->text($s, $ref['intro'], $ref['introItalic']);
+            }
+            foreach ($ref['items'] as $item) {
+                $title = $item['title'] ?? $item['url'] ?? '';
+                $url = $item['url'] ?? '';
+                $s->addListItem($this->esc(trim($title.' — '.$url, ' —')), 0, ['name' => 'Arial', 'size' => 10, 'color' => '1F4E79']);
+            }
+        }
+
+        $this->pendingReferences = [];
+    }
+
     private function labeled(Section $s, string $label, string $text): void
     {
         $run = $s->addTextRun(['alignment' => Jc::BOTH, 'spaceAfter' => 160, 'lineHeight' => 1.25]);
-        $run->addText($label.': ', ['name' => 'Arial', 'size' => 11, 'bold' => true]);
-        $run->addText(htmlspecialchars($text, ENT_QUOTES, 'UTF-8'), ['name' => 'Arial', 'size' => 11]);
+        $run->addText($this->esc($label.': '), ['name' => 'Arial', 'size' => 11, 'bold' => true]);
+        $run->addText($this->esc($text), ['name' => 'Arial', 'size' => 11]);
     }
 
     /** Insert every image found for a tag (0..n), or a red "not found" notice + caption when absent. */
@@ -215,7 +349,7 @@ class ProposalDocumentGenerator
                 $span++;
             }
             $cell = $table->addCell(Converter::cmToTwip(1.0) * $span, ['bgColor' => self::NAVY, 'gridSpan' => $span, 'valign' => VerticalJc::CENTER]);
-            $cell->addText((string) $year, ['name' => 'Arial', 'size' => 10, 'bold' => true, 'color' => 'FFFFFF'], ['alignment' => Jc::CENTER]);
+            $cell->addText($this->esc((string) $year), ['name' => 'Arial', 'size' => 10, 'bold' => true, 'color' => 'FFFFFF'], ['alignment' => Jc::CENTER]);
             $i += $span;
         }
 
@@ -225,14 +359,14 @@ class ProposalDocumentGenerator
         $head->addText('Kegiatan', ['name' => 'Arial', 'size' => 10, 'bold' => true, 'color' => 'FFFFFF']);
         foreach ($kalender as [$bulan]) {
             $cell = $table->addCell(Converter::cmToTwip(1.0), ['bgColor' => self::NAVY, 'valign' => VerticalJc::CENTER]);
-            $cell->addText($bulan, ['name' => 'Arial', 'size' => 9.5, 'bold' => true, 'color' => 'FFFFFF'], ['alignment' => Jc::CENTER]);
+            $cell->addText($this->esc($bulan), ['name' => 'Arial', 'size' => 9.5, 'bold' => true, 'color' => 'FFFFFF'], ['alignment' => Jc::CENTER]);
         }
 
         // Activity rows, shaded across their active month range
         foreach ($activities as [$nama, $mulai, $selesai]) {
             $table->addRow();
             $labelCell = $table->addCell(Converter::cmToTwip(3.6), ['valign' => VerticalJc::CENTER]);
-            $labelCell->addText($nama, ['name' => 'Arial', 'size' => 9.5, 'bold' => true]);
+            $labelCell->addText($this->esc($nama), ['name' => 'Arial', 'size' => 9.5, 'bold' => true]);
             for ($bulanKe = 1; $bulanKe <= $maxBulan; $bulanKe++) {
                 $active = $bulanKe >= $mulai && $bulanKe <= $selesai;
                 $table->addCell(Converter::cmToTwip(1.0), $active ? ['bgColor' => self::NAVY, 'valign' => VerticalJc::CENTER] : ['valign' => VerticalJc::CENTER]);
@@ -345,7 +479,10 @@ class ProposalDocumentGenerator
         $coords = $this->parseCoordinates((string) $p->coordinates);
         if ($coords) {
             $this->text($s, 'Peta lokasi/plotting batas-batas area yang dimohonkan PKKPRL ditunjukkan oleh titik koordinat berikut:');
-            $this->dataTable($s, ['Nomor Titik', 'Longitude', 'Latitude'], $coords);
+            $this->dataTable($s, ['Nomor Titik', 'Longitude', 'Latitude', 'Keterangan'], array_map(
+                fn ($row) => $this->formatCoordRow($row[0], $row[1], $row[2], $row[3] ?? ''),
+                $coords
+            ));
             $this->caption($s, 'Tabel 1. Titik Koordinat Batas Area Permohonan PKKPRL.');
         } else {
             $this->text($s, self::MISSING);
@@ -416,6 +553,96 @@ class ProposalDocumentGenerator
         return $this->ekosistemNarasi = $this->claude()->generateEkosistemNarrative($context);
     }
 
+    /**
+     * The (optional) "Laporan Hidro-Oseanografi" survey document is frequently
+     * never uploaded, leaving every gelombang/arus/pasut/batimetri/luas-ekosistem
+     * field in $lap blank — docChapterThree() then rendered a raw "[data tidak
+     * terdeteksi otomatis]" placeholder for each one. This asks the AI to
+     * research real regional oceanographic reference data (web search) for
+     * whichever of those fields are still missing once per document render
+     * (cached in $this->hidroEstimasi), so the draft shows a plausible,
+     * source-cited regional estimate instead of a bare placeholder. Returns []
+     * (handled by callers via the existing self::MISSING fallback) on any AI
+     * failure or when nothing is actually missing, so generation never blocks.
+     */
+    private function hidroOseanografiEstimasi(array $prop, array $lap, string $lokasi): array
+    {
+        if ($this->hidroEstimasi !== null) {
+            return $this->hidroEstimasi;
+        }
+
+        $missing = array_values(array_filter(
+            self::HIDRO_ESTIMABLE_KEYS,
+            fn ($key) => blank($lap[$key] ?? null)
+        ));
+
+        if (! $missing) {
+            return $this->hidroEstimasi = [];
+        }
+
+        $context = [
+            'lokasi' => $lokasi,
+            'nama_perairan' => (string) ($prop['Nama Perairan'] ?? ''),
+            'jenis_kegiatan' => (string) ($prop['Jenis Kegiatan'] ?? ''),
+            // Whatever the survey report/extraction DID already provide, so the
+            // AI stays consistent with it instead of estimating in isolation.
+            'data_terukur_tersedia' => collect($lap)
+                ->only(self::HIDRO_ESTIMABLE_KEYS)
+                ->filter(fn ($v) => filled($v))
+                ->all(),
+        ];
+
+        return $this->hidroEstimasi = $this->claude()->estimateHidroOseanografi($context, $missing);
+    }
+
+    /**
+     * Same detailed, source-cited AI ecosystem narrative as ekosistemNarasi()
+     * (used by the KkprlProposal-based kkprlChapterThree() flow), adapted for
+     * docChapterThree()'s array-based $prop data (egerai upload/manual
+     * pipeline). Reuses ClaudeService::generateEkosistemNarrative() as-is —
+     * same strict "only real DATA FAKTUAL, no fabricated species/percentages,
+     * web-search for regional context only" rules — so both pipelines produce
+     * the same long-form (3-4 paragraph per subsection), cited quality
+     * instead of docChapterThree()'s previous one-sentence template text.
+     *
+     * Deliberately NOT gated by the "isi dengan AI" checkbox
+     * ($aiFillEnabled): unlike hidroOseanografiEstimasi() — which invents
+     * numbers for parameters that are genuinely absent — this only elaborates
+     * on ecosystem data that already exists (or explains a genuinely absent
+     * ecosystem using existing has_mangrove/has_seagrass/has_coral_reef
+     * signals), so it always runs. Returns [] (falls back to the static
+     * one-sentence text) only on an AI failure.
+     */
+    private function ekosistemNarasiDoc(array $prop, string $lokasi): array
+    {
+        if ($this->ekosistemNarasiDoc !== null) {
+            return $this->ekosistemNarasiDoc;
+        }
+
+        $hasMangrove = self::hasEcosystemData($prop, 'mangrove_spesies', 'mangrove_ada', 'Terdapat ekosistem mangrove');
+        $hasLamun = self::hasEcosystemData($prop, 'lamun_spesies', 'lamun_ada_manual', 'Terdapat ekosistem lamun');
+        $hasKarang = self::hasEcosystemData($prop, 'karang_spesies', 'karang_ada', 'Terdapat ekosistem terumbu karang');
+
+        $context = [
+            'lokasi' => $lokasi,
+            'nama_perairan' => (string) ($prop['Nama Perairan'] ?? ''),
+            'has_mangrove' => $hasMangrove,
+            'mangrove_species' => $hasMangrove ? (string) ($prop['mangrove_spesies'] ?? '') : null,
+            'mangrove_cover_percentage' => $hasMangrove ? ($prop['mangrove_persen'] ?? null) : null,
+            'mangrove_condition' => $hasMangrove ? (string) ($prop['mangrove_kondisi'] ?? '') : null,
+            'has_seagrass' => $hasLamun,
+            'seagrass_species' => $hasLamun ? (string) ($prop['lamun_spesies'] ?? '') : null,
+            'seagrass_cover_percentage' => $hasLamun ? ($prop['lamun_persen'] ?? null) : null,
+            'seagrass_condition' => $hasLamun ? (string) ($prop['lamun_kondisi'] ?? '') : null,
+            'has_coral_reef' => $hasKarang,
+            'coral_reef_species' => $hasKarang ? (string) ($prop['karang_spesies'] ?? '') : null,
+            'coral_reef_cover_percentage' => $hasKarang ? ($prop['karang_persen_manual'] ?? null) : null,
+            'coral_reef_condition' => $hasKarang ? (string) ($prop['karang_kondisi'] ?? '') : null,
+        ];
+
+        return $this->ekosistemNarasiDoc = $this->claude()->generateEkosistemNarrative($context);
+    }
+
     private function kkprlChapterThree(Section $s, KkprlProposal $p): void
     {
         $lokasi = $this->pLokasi($p);
@@ -465,16 +692,13 @@ class ProposalDocumentGenerator
             $this->text($s, 'Jarak ekosistem terdekat dari titik pusat rencana kegiatan adalah '.self::MISSING.' km, sehingga mitigasi dampak perlu difokuskan pada upaya penghindaran (avoidance) terhadap area terumbu karang, pengendalian sedimen, serta pengelolaan kualitas air.');
         }
 
-        $sumber = $ai['sumber'] ?? [];
-        if (! empty($sumber)) {
-            $this->heading($s, '4. Sumber Referensi Konteks Ekosistem', 3);
-            $this->text($s, 'Narasi kondisi ekosistem pesisir di atas disusun dengan mempertimbangkan konteks ekologis regional dari sumber daring resmi/ilmiah berikut, yang diakses secara langsung oleh asisten AI pada saat penyusunan dokumen ini:');
-            foreach ($sumber as $ref) {
-                $title = $ref['title'] ?? $ref['url'] ?? '';
-                $url = $ref['url'] ?? '';
-                $s->addListItem(trim($title.' — '.$url, ' —'), 0, ['name' => 'Arial', 'size' => 10, 'color' => '1F4E79']);
-            }
-        }
+        // Printed on the document's literal last page (LAMPIRAN: SUMBER
+        // REFERENSI, after Chapter IV) instead of here — see queueReference().
+        $this->queueReference(
+            'Sumber Referensi Konteks Ekosistem',
+            'Narasi kondisi ekosistem pesisir pada Bab III di atas disusun dengan mempertimbangkan konteks ekologis regional dari sumber daring resmi/ilmiah berikut, yang diakses secara langsung oleh asisten AI pada saat penyusunan dokumen ini:',
+            $ai['sumber'] ?? []
+        );
 
         $this->heading($s, 'B. Hidro-Oseanografi', 2);
         $this->heading($s, '1. Gelombang', 3);
@@ -534,7 +758,7 @@ class ProposalDocumentGenerator
         if ($checked) {
             foreach ($checked as $key) {
                 $label = self::DUKUNG_LABELS[$key] ?? ucfirst(str_replace('_', ' ', (string) $key));
-                $s->addListItem($label.'.', 0, ['name' => 'Arial', 'size' => 11]);
+                $s->addListItem($this->esc($label.'.'), 0, ['name' => 'Arial', 'size' => 11]);
             }
         } else {
             foreach ([
@@ -543,7 +767,7 @@ class ProposalDocumentGenerator
                 'Dokumentasi survei lapangan kondisi eksisting lokasi.',
                 'Peta pendukung (peta lokasi, peta site plan, dan peta pola ruang wilayah).',
             ] as $item) {
-                $s->addListItem($item, 0, ['name' => 'Arial', 'size' => 11]);
+                $s->addListItem($this->esc($item), 0, ['name' => 'Arial', 'size' => 11]);
             }
         }
 
@@ -607,18 +831,18 @@ class ProposalDocumentGenerator
 
     private function text(Section $s, string $text, bool $italic = false): void
     {
-        $s->addText($text, ['name' => 'Arial', 'size' => 11, 'italic' => $italic], ['alignment' => Jc::BOTH, 'spaceAfter' => 160, 'lineHeight' => 1.25]);
+        $s->addText($this->esc($text), ['name' => 'Arial', 'size' => 11, 'italic' => $italic], ['alignment' => Jc::BOTH, 'spaceAfter' => 160, 'lineHeight' => 1.25]);
     }
 
     private function heading(Section $s, string $text, int $level): void
     {
         $sizes = [1 => 15, 2 => 13, 3 => 12];
-        $s->addText($text, ['name' => 'Arial', 'size' => $sizes[$level], 'bold' => true, 'color' => $level < 3 ? self::NAVY : '000000'], ['spaceBefore' => $level === 1 ? 280 : 200, 'spaceAfter' => $level === 1 ? 160 : 120]);
+        $s->addText($this->esc($text), ['name' => 'Arial', 'size' => $sizes[$level], 'bold' => true, 'color' => $level < 3 ? self::NAVY : '000000'], ['spaceBefore' => $level === 1 ? 280 : 200, 'spaceAfter' => $level === 1 ? 160 : 120]);
     }
 
     private function caption(Section $s, string $text): void
     {
-        $s->addText($text, ['name' => 'Arial', 'size' => 10, 'italic' => true], ['alignment' => Jc::CENTER, 'spaceAfter' => 220]);
+        $s->addText($this->esc($text), ['name' => 'Arial', 'size' => 10, 'italic' => true], ['alignment' => Jc::CENTER, 'spaceAfter' => 220]);
     }
 
     private function missingImage(Section $s, string $label, string $caption): void
@@ -691,12 +915,17 @@ class ProposalDocumentGenerator
         }
         $formattedCoords = array_map(function ($r, $index) {
             if (is_array($r)) {
-                return [(string) ($r['no'] ?? $index + 1), (string) ($r['longitude'] ?? $r['lng'] ?? ''), (string) ($r['latitude'] ?? $r['lat'] ?? '')];
+                return $this->formatCoordRow(
+                    (string) ($r['no'] ?? $index + 1),
+                    (string) ($r['longitude'] ?? $r['lng'] ?? ''),
+                    (string) ($r['latitude'] ?? $r['lat'] ?? ''),
+                    (string) ($r['keterangan'] ?? $r['note'] ?? '')
+                );
             }
 
-            return [(string) ($index + 1), '', ''];
+            return $this->formatCoordRow((string) ($index + 1), '', '', '');
         }, $coords, array_keys($coords));
-        $this->dataTable($s, ['Nomor Titik', 'Longitude', 'Latitude'], $formattedCoords);
+        $this->dataTable($s, ['Nomor Titik', 'Longitude', 'Latitude', 'Keterangan'], $formattedCoords);
         $this->caption($s, 'Tabel 1. Titik Koordinat Batas Area Permohonan PKKPRL.');
         $this->missingImage($s, 'peta_lokasi', 'Gambar 2. Peta Lokasi dan Sebaran Titik Koordinat Rencana Kegiatan.');
         $this->heading($s, 'E. Deskripsi Luas/Panjang yang Dibutuhkan', 2);
@@ -767,7 +996,7 @@ class ProposalDocumentGenerator
             'Dokumentasi survei lapangan kondisi eksisting lokasi.',
             'Peta pendukung (peta lokasi, peta site plan, dan peta pola ruang wilayah).',
         ] as $item) {
-            $s->addListItem($item, 0, ['name' => 'Arial', 'size' => 11]);
+            $s->addListItem($this->esc($item), 0, ['name' => 'Arial', 'size' => 11]);
         }
         $this->text($s, "Demikian proposal teknis ini disusun sebagai bagian dari kelengkapan administrasi dan teknis permohonan PKKPRL atas nama {$this->company($d)}.", true);
         $this->text($s, 'Catatan: Dokumen ini dibangkitkan otomatis oleh aplikasi e-GeRAI. Mohon verifikasi kembali seluruh data dan gambar sebelum digunakan untuk pengajuan resmi.', true);
@@ -779,9 +1008,9 @@ class ProposalDocumentGenerator
         foreach ($rows as [$key, $value]) {
             $table->addRow();
             $left = $table->addCell(3600, ['bgColor' => self::LIGHT_BLUE, 'valign' => VerticalJc::CENTER]);
-            $left->addText($key, ['name' => 'Arial', 'size' => 10.5, 'bold' => true]);
+            $left->addText($this->esc($key), ['name' => 'Arial', 'size' => 10.5, 'bold' => true]);
             $right = $table->addCell(5760, ['valign' => VerticalJc::CENTER]);
-            $right->addText($value, ['name' => 'Arial', 'size' => 10.5]);
+            $right->addText($this->esc($value), ['name' => 'Arial', 'size' => 10.5]);
         }
     }
 
@@ -791,13 +1020,13 @@ class ProposalDocumentGenerator
         $table->addRow();
         foreach ($headers as $header) {
             $cell = $table->addCell(null, ['bgColor' => self::NAVY, 'valign' => VerticalJc::CENTER]);
-            $cell->addText($header, ['name' => 'Arial', 'size' => 10, 'bold' => true, 'color' => 'FFFFFF'], ['alignment' => Jc::CENTER]);
+            $cell->addText($this->esc($header), ['name' => 'Arial', 'size' => 10, 'bold' => true, 'color' => 'FFFFFF'], ['alignment' => Jc::CENTER]);
         }
         foreach ($rows as $row) {
             $table->addRow();
             foreach ($row as $i => $value) {
                 $cell = $table->addCell(null, ['valign' => VerticalJc::CENTER]);
-                $cell->addText($value, ['name' => 'Arial', 'size' => 10], ['alignment' => $i ? Jc::CENTER : Jc::START]);
+                $cell->addText($this->esc($value), ['name' => 'Arial', 'size' => 10], ['alignment' => $i ? Jc::CENTER : Jc::START]);
             }
         }
     }
@@ -810,9 +1039,17 @@ class ProposalDocumentGenerator
      * the generator for the upload-PDF -> review -> finalize pipeline
      * (App\Http\Controllers\EgeraiProposalController).
      * ════════════════════════════════════════════════════════════════ */
-    public function buildDocument(array $prop, array $propImages, array $lap, array $lapImages, string $outputPath): void
+    /**
+     * $aiFillEnabled controls whether docChapterThree() may call the AI to
+     * estimate missing hydro-oceanography/ecosystem-area fields (see
+     * hidroOseanografiEstimasi()) — the user-facing "isi dengan AI" checkbox.
+     * When false, the AI call is skipped entirely (not just its result
+     * discarded) and the existing "[data tidak terdeteksi otomatis]"
+     * placeholder is left as-is.
+     */
+    public function buildDocument(array $prop, array $propImages, array $lap, array $lapImages, string $outputPath, bool $aiFillEnabled = true): void
     {
-        $word = $this->buildWord($prop, $propImages, $lap, $lapImages);
+        $word = $this->buildWord($prop, $propImages, $lap, $lapImages, $aiFillEnabled);
         (new Word2007($word))->save($outputPath);
     }
 
@@ -822,9 +1059,9 @@ class ProposalDocumentGenerator
      * mirrors the reference Python app's /review page, which builds the real
      * .docx once and converts it with mammoth for a "what you'll get" preview.
      */
-    public function renderPreviewHtml(array $prop, array $propImages, array $lap, array $lapImages): string
+    public function renderPreviewHtml(array $prop, array $propImages, array $lap, array $lapImages, bool $aiFillEnabled = true): string
     {
-        $word = $this->buildWord($prop, $propImages, $lap, $lapImages);
+        $word = $this->buildWord($prop, $propImages, $lap, $lapImages, $aiFillEnabled);
 
         return $this->formatWordHtmlToA4Document((new HTML($word))->getContent());
     }
@@ -1097,9 +1334,10 @@ img {
 </html>';
     }
 
-    private function buildWord(array $prop, array $propImages, array $lap, array $lapImages): PhpWord
+    private function buildWord(array $prop, array $propImages, array $lap, array $lapImages, bool $aiFillEnabled = true): PhpWord
     {
         $this->images = $propImages + $lapImages;
+        $this->pendingReferences = [];
 
         $word = new PhpWord;
         $word->getSettings()->setThemeFontLang(new Language('id-ID'));
@@ -1128,9 +1366,10 @@ img {
         $section->addPageBreak();
         $this->docChapterTwo($section, $prop, $lokasi, $perusahaan, $perairan, $jenis);
         $section->addPageBreak();
-        $this->docChapterThree($section, $prop, $lap, $lokasi, $desa);
+        $this->docChapterThree($section, $prop, $lap, $lokasi, $desa, $aiFillEnabled);
         $section->addPageBreak();
         $this->docChapterFour($section, $perusahaan, $prop);
+        $this->renderPendingReferences($section);
 
         return $word;
     }
@@ -1142,6 +1381,46 @@ img {
         $value = is_bool($value) ? ($value ? '1' : '') : trim((string) $value);
 
         return $value !== '' ? $value : ($default ?? self::MISSING);
+    }
+
+    /**
+     * Same lookup as g(), but returns null instead of the self::MISSING
+     * placeholder when the value is absent. Used when building a narrative
+     * sentence out of several optional data points: a missing point should
+     * simply be omitted from the sentence (never leave a "[data tidak
+     * terdeteksi otomatis]" placeholder embedded in running prose) — unlike
+     * data TABLES, which intentionally keep the placeholder in each cell as a
+     * visible "needs manual completion" flag.
+     */
+    private function gOrNull(array $d, string $key): ?string
+    {
+        $value = $d[$key] ?? null;
+        $value = is_bool($value) ? ($value ? '1' : '') : trim((string) $value);
+
+        return $value !== '' ? $value : null;
+    }
+
+    /**
+     * Joins present (non-null/non-empty) descriptive clause fragments into one
+     * natural Indonesian sentence fragment — comma-separated, with "serta"
+     * before the final clause when there is more than one — so a sentence
+     * built from several optional data points reads naturally regardless of
+     * which points are actually available. Returns '' when every clause was
+     * missing, so the caller can omit the whole sentence instead of showing
+     * an empty/nonsensical one.
+     */
+    private function joinFacts(array $clauses, string $lastConnector = 'serta'): string
+    {
+        $clauses = array_values(array_filter($clauses, fn ($c) => filled($c)));
+        if (! $clauses) {
+            return '';
+        }
+        if (count($clauses) === 1) {
+            return $clauses[0];
+        }
+        $last = array_pop($clauses);
+
+        return implode(', ', $clauses).' '.$lastConnector.' '.$last;
     }
 
     /** Mirrors generate_docx.py's `format_luas_ha()`. */
@@ -1290,7 +1569,10 @@ img {
         $koordinat = $prop['koordinat'] ?? [];
         if ($koordinat) {
             $this->text($s, 'Peta lokasi/plotting batas-batas area yang dimohonkan PKKPRL ditunjukkan oleh titik koordinat berikut:');
-            $this->dataTable($s, ['Nomor Titik', 'Longitude', 'Latitude'], $koordinat);
+            $this->dataTable($s, ['Nomor Titik', 'Longitude', 'Latitude', 'Keterangan'], array_map(
+                fn ($row) => $this->formatCoordRow($row[0] ?? '', $row[1] ?? '', $row[2] ?? '', $row[3] ?? ''),
+                $koordinat
+            ));
             $this->caption($s, 'Tabel 1. Titik Koordinat Batas Area Permohonan PKKPRL.');
         } else {
             $this->text($s, self::MISSING);
@@ -1342,19 +1624,59 @@ img {
         $this->figure($s, 'foto_pantai', 'Gambar 3. Kondisi Eksisting Perairan dan Garis Pantai di Sekitar Lokasi Permohonan.', 11);
     }
 
-    private function docChapterThree(Section $s, array $prop, array $lap, string $lokasi, string $desa): void
+    private function docChapterThree(Section $s, array $prop, array $lap, string $lokasi, string $desa, bool $aiFillEnabled = true): void
     {
         $this->heading($s, 'III. DATA KONDISI TERKINI LOKASI DAN SEKITARNYA', 1);
 
+        // The "Laporan Hidro-Oseanografi" survey document is optional and often
+        // never uploaded — fill whichever gelombang/arus/pasut/batimetri/luas-
+        // ekosistem fields are still missing with an AI-researched, source-cited
+        // regional estimate instead of leaving a bare "data tidak terdeteksi"
+        // placeholder. Only ever fills gaps; real extracted/measured values in
+        // $lap always take precedence and are never overwritten. Skipped
+        // entirely (no AI call at all) when the user unchecks "isi dengan AI".
+        $hidro = $aiFillEnabled ? $this->hidroOseanografiEstimasi($prop, $lap, $lokasi) : [];
+        $hidroUsedKeys = [];
+        foreach (($hidro['values'] ?? []) as $key => $value) {
+            if (filled($value) && blank($lap[$key] ?? null)) {
+                $lap[$key] = $value;
+                $hidroUsedKeys[] = $key;
+            }
+        }
+
+        // Detailed, source-cited AI narrative (3-4 paragraphs per subsection)
+        // grounded strictly in the DATA FAKTUAL below — replaces the short
+        // one-sentence template text when available. See ekosistemNarasiDoc().
+        $ai = $this->ekosistemNarasiDoc($prop, $lokasi);
+
         $this->heading($s, 'A. Ekosistem Sekitar', 2);
         $this->heading($s, '1. Mangrove', 3);
-        if (($prop['mangrove_ada'] ?? null) === 'Tidak terdapat ekosistem mangrove') {
+        // Detect "has data" from the actual extracted/filled species value first —
+        // the companion mangrove_ada flag is only reliably set by the manual-entry
+        // form; automatic PDF/DOCX extraction rarely populates it, so gating solely
+        // on that flag hid real, already-extracted species data ("not detected
+        // despite data being present").
+        $mangroveHasData = self::hasEcosystemData($prop, 'mangrove_spesies', 'mangrove_ada', 'Terdapat ekosistem mangrove');
+        $mangroveExplicitlyAbsent = ($prop['mangrove_ada'] ?? null) === 'Tidak terdapat ekosistem mangrove';
+        if (filled($ai['mangrove'] ?? null)) {
+            $this->text($s, $ai['mangrove']);
+        } elseif ($mangroveExplicitlyAbsent && ! $mangroveHasData) {
             $this->text($s, 'Berdasarkan hasil pengamatan langsung kondisi pesisir di sekitar lokasi kegiatan, tidak teridentifikasi keberadaan ekosistem mangrove pada area yang dimohonkan.');
         } else {
-            $spesies = $this->g($prop, 'mangrove_spesies');
-            $persen = $this->g($prop, 'mangrove_persen');
-            $kondisi = $this->g($prop, 'mangrove_kondisi');
-            $this->text($s, "Berdasarkan hasil pengamatan langsung kondisi pesisir di sekitar lokasi kegiatan, terdapat ekosistem mangrove yang didominasi oleh jenis $spesies, dengan persentase tutupan mencapai $persen% pada kondisi $kondisi.");
+            // Omit whichever of species/persen/kondisi wasn't actually supplied,
+            // instead of embedding a "[data tidak terdeteksi otomatis]"
+            // placeholder in the middle of the sentence.
+            $spesies = $this->gOrNull($prop, 'mangrove_spesies');
+            $persen = $this->gOrNull($prop, 'mangrove_persen');
+            $kondisi = $this->gOrNull($prop, 'mangrove_kondisi');
+            $facts = $this->joinFacts([
+                $spesies ? "didominasi oleh jenis $spesies" : null,
+                $persen ? "persentase tutupan mencapai $persen%" : null,
+                $kondisi ? "berada pada kondisi $kondisi" : null,
+            ]);
+            $this->text($s, $facts !== ''
+                ? "Berdasarkan hasil pengamatan langsung kondisi pesisir di sekitar lokasi kegiatan, terdapat ekosistem mangrove yang $facts."
+                : 'Berdasarkan hasil pengamatan langsung kondisi pesisir di sekitar lokasi kegiatan, terdapat ekosistem mangrove pada area yang dimohonkan.');
         }
         $this->figure($s, 'foto_mangrove', 'Gambar 4. Kondisi Tutupan Vegetasi Mangrove di Sekitar Lokasi Kegiatan.', 11);
 
@@ -1366,15 +1688,63 @@ img {
         } else {
             $this->text($s, 'Berdasarkan data sekunder perairan di sekitar lokasi kegiatan, tidak teridentifikasi keberadaan ekosistem lamun (seagrass) pada area yang dimohonkan.');
         }
-        if (($prop['lamun_ada_manual'] ?? null) === 'Terdapat ekosistem lamun') {
-            $lSpesies = $this->g($prop, 'lamun_spesies');
-            $lPersen = $this->g($prop, 'lamun_persen');
-            $lKondisi = $this->g($prop, 'lamun_kondisi');
-            $this->text($s, "Berdasarkan hasil pengamatan pemohon di lapangan, teridentifikasi ekosistem lamun yang didominasi oleh jenis $lSpesies, dengan persentase tutupan mencapai $lPersen% pada kondisi $lKondisi.");
+        // Same fix as mangrove above: show real lamun data whenever species text is
+        // actually present, instead of requiring the exact lamun_ada_manual string
+        // (which automatic extraction never sets).
+        $lamunHasData = self::hasEcosystemData($prop, 'lamun_spesies', 'lamun_ada_manual', 'Terdapat ekosistem lamun');
+        if (filled($ai['lamun'] ?? null)) {
+            $this->text($s, $ai['lamun']);
+            if ($lamunHasData) {
+                $this->figure($s, 'foto_lamun', 'Gambar 5. Dokumentasi Ekosistem Lamun di Sekitar Lokasi Kegiatan.', 11);
+            }
+        } elseif ($lamunHasData) {
+            $lSpesies = $this->gOrNull($prop, 'lamun_spesies');
+            $lPersen = $this->gOrNull($prop, 'lamun_persen');
+            $lKondisi = $this->gOrNull($prop, 'lamun_kondisi');
+            $lFacts = $this->joinFacts([
+                $lSpesies ? "didominasi oleh jenis $lSpesies" : null,
+                $lPersen ? "persentase tutupan mencapai $lPersen%" : null,
+                $lKondisi ? "berada pada kondisi $lKondisi" : null,
+            ]);
+            $this->text($s, $lFacts !== ''
+                ? "Berdasarkan hasil pengamatan pemohon di lapangan, teridentifikasi ekosistem lamun yang $lFacts."
+                : 'Berdasarkan hasil pengamatan pemohon di lapangan, teridentifikasi ekosistem lamun pada area yang dimohonkan.');
             $this->figure($s, 'foto_lamun', 'Gambar 5. Dokumentasi Ekosistem Lamun di Sekitar Lokasi Kegiatan.', 11);
         }
 
         $this->heading($s, '3. Terumbu Karang', 3);
+        // For the narrative paragraph: pull raw (possibly-null) values so any
+        // still-missing area/percentage is simply left out of the sentence.
+        // $karangHa/$karangPct/etc. below (self::MISSING-defaulted) are kept
+        // separately for Tabel 2, which must still show the placeholder in
+        // its cells.
+        $karangHaN = $this->gOrNull($lap, 'eko_karang_ha');
+        $karangPctN = $this->gOrNull($lap, 'eko_karang_pct');
+        $lainnyaHaN = $this->gOrNull($lap, 'eko_lainnya_ha');
+        $lainnyaPctN = $this->gOrNull($lap, 'eko_lainnya_pct');
+        $terbukaHaN = $this->gOrNull($lap, 'eko_terbuka_ha');
+        $terbukaPctN = $this->gOrNull($lap, 'eko_terbuka_pct');
+        $totalHaN = $this->gOrNull($lap, 'eko_total_ha');
+        $areaClause = function (?string $ha, ?string $pct, string $label): ?string {
+            if ($ha === null && $pct === null) {
+                return null;
+            }
+            $amount = trim(($ha !== null ? "$ha Ha" : '').($pct !== null ? " ($pct%)" : ''));
+
+            return "$label seluas $amount";
+        };
+        $areaFacts = $this->joinFacts([
+            $areaClause($karangHaN, $karangPctN, 'tutupan terumbu karang tercatat'),
+            $areaClause($lainnyaHaN, $lainnyaPctN, 'substrat dasar non-terumbu'),
+            $areaClause($terbukaHaN, $terbukaPctN, 'area laut terbuka tanpa ekosistem'),
+        ]);
+        $intro = 'Hasil survei in-situ pada perairan di sekitar lokasi menunjukkan dijumpainya koloni terumbu karang pada beberapa titik substrat berbatu.';
+        if ($areaFacts !== '') {
+            $totalClause = $totalHaN !== null ? " dari total area kajian seluas $totalHaN Ha," : '';
+            $this->text($s, "$intro Berdasarkan analisis spasial basis data ekosistem,$totalClause $areaFacts.");
+        } else {
+            $this->text($s, $intro);
+        }
         $karangHa = $this->g($lap, 'eko_karang_ha');
         $karangPct = $this->g($lap, 'eko_karang_pct');
         $lainnyaHa = $this->g($lap, 'eko_lainnya_ha');
@@ -1382,7 +1752,6 @@ img {
         $terbukaHa = $this->g($lap, 'eko_terbuka_ha');
         $terbukaPct = $this->g($lap, 'eko_terbuka_pct');
         $totalHa = $this->g($lap, 'eko_total_ha');
-        $this->text($s, "Hasil survei in-situ pada perairan di sekitar lokasi menunjukkan dijumpainya koloni terumbu karang pada beberapa titik substrat berbatu. Berdasarkan analisis spasial basis data ekosistem, dari total area kajian seluas $totalHa Ha, tutupan terumbu karang tercatat seluas $karangHa Ha ($karangPct%), diikuti substrat dasar non-terumbu seluas $lainnyaHa Ha ($lainnyaPct%), dan area laut terbuka tanpa ekosistem seluas $terbukaHa Ha ($terbukaPct%).");
         $kondisiKarangLap = $this->klasifikasiKarang($karangPct);
         if ($kondisiKarangLap !== '') {
             $this->text($s, "Berdasarkan kriteria baku kerusakan terumbu karang, persentase tutupan sebesar $karangPct% tersebut tergolong pada kategori kondisi \u{201c}$kondisiKarangLap\u{201d}.");
@@ -1395,37 +1764,96 @@ img {
         ]);
         $this->caption($s, 'Tabel 2. Rincian Tutupan Ekosistem pada Area Kajian Spasial di Sekitar Titik Pusat Rencana Kegiatan.');
 
-        if (($prop['karang_ada'] ?? null) === 'Terdapat ekosistem terumbu karang') {
-            $kSpesies = $this->g($prop, 'karang_spesies');
-            $kPersen = $this->g($prop, 'karang_persen_manual');
-            $kKondisi = $this->g($prop, 'karang_kondisi');
-            $this->text($s, "Berdasarkan hasil pengamatan pemohon di lapangan, teridentifikasi ekosistem terumbu karang yang didominasi oleh jenis $kSpesies, dengan persentase tutupan mencapai $kPersen% pada kondisi $kKondisi.");
+        // Same fix as mangrove/lamun: prefer the actual extracted species data over
+        // the exact karang_ada string, which automatic extraction never sets.
+        $karangHasData = self::hasEcosystemData($prop, 'karang_spesies', 'karang_ada', 'Terdapat ekosistem terumbu karang');
+        if (filled($ai['karang'] ?? null)) {
+            $this->text($s, $ai['karang']);
+        } elseif ($karangHasData) {
+            $kSpesies = $this->gOrNull($prop, 'karang_spesies');
+            $kPersen = $this->gOrNull($prop, 'karang_persen_manual');
+            $kKondisi = $this->gOrNull($prop, 'karang_kondisi');
+            $kFacts = $this->joinFacts([
+                $kSpesies ? "didominasi oleh jenis $kSpesies" : null,
+                $kPersen ? "persentase tutupan mencapai $kPersen%" : null,
+                $kKondisi ? "berada pada kondisi $kKondisi" : null,
+            ]);
+            $this->text($s, $kFacts !== ''
+                ? "Berdasarkan hasil pengamatan pemohon di lapangan, teridentifikasi ekosistem terumbu karang yang $kFacts."
+                : 'Berdasarkan hasil pengamatan pemohon di lapangan, teridentifikasi ekosistem terumbu karang pada area yang dimohonkan.');
         } elseif (($prop['karang_ada'] ?? null) === 'Tidak terdapat ekosistem terumbu karang') {
             $this->text($s, 'Berdasarkan hasil pengamatan pemohon di lapangan, tidak teridentifikasi keberadaan ekosistem terumbu karang secara langsung pada area yang dimohonkan.');
         }
         $this->figure($s, 'foto_karang_insitu', 'Gambar 6. Dokumentasi Survei In-Situ Koloni Terumbu Karang di Perairan Sekitar Lokasi Kegiatan.', 11);
         $this->figure($s, 'peta_ekosistem', 'Gambar 7. Peta Sebaran Spasial Ekosistem Pesisir di Sekitar Titik Pusat Rencana Kegiatan.', 11);
-        $this->text($s, "Jarak ekosistem terdekat dari titik pusat rencana kegiatan adalah $jarakEko km, sehingga mitigasi dampak perlu difokuskan pada upaya penghindaran (avoidance) terhadap area terumbu karang, pengendalian sedimen, serta pengelolaan kualitas air.");
+        $jarakEkoN = $this->gOrNull($lap, 'eko_jarak_terdekat_km');
+        if (filled($ai['ringkasan'] ?? null)) {
+            $this->text($s, $ai['ringkasan']);
+        } else {
+            $jarakClause = $jarakEkoN !== null ? "Jarak ekosistem terdekat dari titik pusat rencana kegiatan adalah $jarakEkoN km, sehingga mitigasi" : 'Mitigasi';
+            $this->text($s, "$jarakClause dampak perlu difokuskan pada upaya penghindaran (avoidance) terhadap area terumbu karang, pengendalian sedimen, serta pengelolaan kualitas air.");
+        }
         $narasiEko = $lap['_narasi']['ekosistem'] ?? null;
         if ($narasiEko) {
             $this->text($s, $narasiEko);
         }
 
+        // Printed on the document's literal last page (LAMPIRAN: SUMBER
+        // REFERENSI, after Chapter IV) instead of here — see queueReference().
+        $this->queueReference(
+            'Sumber Referensi Konteks Ekosistem',
+            'Narasi kondisi ekosistem pesisir pada Bab III di atas disusun dengan mempertimbangkan konteks ekologis regional dari sumber daring resmi/ilmiah berikut, yang diakses secara langsung oleh asisten AI pada saat penyusunan dokumen ini:',
+            $ai['sumber'] ?? []
+        );
+
         $this->heading($s, 'B. Hidro-Oseanografi', 2);
         $narasi = $lap['_narasi'] ?? [];
         $this->heading($s, '1. Gelombang', 3);
-        $this->text($s, "Tinggi gelombang signifikan (Hs) rata-rata tercatat sebesar {$this->g($lap, 'hs_rata')} meter, sedangkan Hs maksimum ekstrem tercatat sebesar {$this->g($lap, 'hs_maks')} meter dengan arah dominan dari {$this->g($lap, 'hs_arah')}°. Parameter ini menjadi acuan utama dalam desain ketahanan struktur bangunan laut terhadap beban gelombang ekstrem.");
+        // Below: gOrNull()-sourced facts are only assembled into a sentence when
+        // at least one is actually present, so a still-missing parameter is
+        // simply left out of the narrative (never shown as a placeholder in
+        // running prose) — Tabel 3 further down still shows every parameter's
+        // cell, placeholder included, since tables must stay complete.
+        $hsRata = $this->gOrNull($lap, 'hs_rata');
+        $hsMaks = $this->gOrNull($lap, 'hs_maks');
+        $hsArah = $this->gOrNull($lap, 'hs_arah');
+        $gelombangFacts = $this->joinFacts([
+            $hsRata ? "tinggi gelombang signifikan (Hs) rata-rata tercatat sebesar $hsRata meter" : null,
+            $hsMaks ? "Hs maksimum ekstrem tercatat sebesar $hsMaks meter" : null,
+            $hsArah ? "arah dominan dari {$hsArah}°" : null,
+        ]);
+        if ($gelombangFacts !== '') {
+            $this->text($s, ucfirst($gelombangFacts).'.');
+        }
+        $this->text($s, 'Parameter ini menjadi acuan utama dalam desain ketahanan struktur bangunan laut terhadap beban gelombang ekstrem.');
         if (! empty($narasi['gelombang'])) {
             $this->text($s, $narasi['gelombang']);
         }
-        $this->figure($s, 'mawar_gelombang', "Gambar 8. Mawar Gelombang Ekstrem pada Titik Pusat Rencana Kegiatan (Arah Dominan {$this->g($lap, 'hs_arah')}°).", 9);
+        $mawarGelombangCaption = $hsArah !== null
+            ? "Gambar 8. Mawar Gelombang Ekstrem pada Titik Pusat Rencana Kegiatan (Arah Dominan {$hsArah}°)."
+            : 'Gambar 8. Mawar Gelombang Ekstrem pada Titik Pusat Rencana Kegiatan.';
+        $this->figure($s, 'mawar_gelombang', $mawarGelombangCaption, 9);
 
         $this->heading($s, '2. Arus', 3);
-        $this->text($s, "Kecepatan arus rata-rata tercatat sebesar {$this->g($lap, 'arus_rata')} m/detik, dengan kecepatan maksimum ekstrem sebesar {$this->g($lap, 'arus_maks')} m/detik dan arah dominan dari {$this->g($lap, 'arus_arah')}°. Parameter ini menjadi indikator potensi gerusan (scouring) di sekitar struktur bangunan laut.");
+        $arusRata = $this->gOrNull($lap, 'arus_rata');
+        $arusMaks = $this->gOrNull($lap, 'arus_maks');
+        $arusArah = $this->gOrNull($lap, 'arus_arah');
+        $arusFacts = $this->joinFacts([
+            $arusRata ? "kecepatan arus rata-rata tercatat sebesar $arusRata m/detik" : null,
+            $arusMaks ? "kecepatan maksimum ekstrem sebesar $arusMaks m/detik" : null,
+            $arusArah ? "arah dominan dari {$arusArah}°" : null,
+        ]);
+        if ($arusFacts !== '') {
+            $this->text($s, ucfirst($arusFacts).'.');
+        }
+        $this->text($s, 'Parameter ini menjadi indikator potensi gerusan (scouring) di sekitar struktur bangunan laut.');
         if (! empty($narasi['arus'])) {
             $this->text($s, $narasi['arus']);
         }
-        $this->figure($s, 'mawar_arus', "Gambar 9. Mawar Arus pada Titik Pusat Rencana Kegiatan (Arah Dominan {$this->g($lap, 'arus_arah')}°).", 9);
+        $mawarArusCaption = $arusArah !== null
+            ? "Gambar 9. Mawar Arus pada Titik Pusat Rencana Kegiatan (Arah Dominan {$arusArah}°)."
+            : 'Gambar 9. Mawar Arus pada Titik Pusat Rencana Kegiatan.';
+        $this->figure($s, 'mawar_arus', $mawarArusCaption, 9);
 
         $this->dataTable($s, ['Parameter', 'Nilai Rata-rata', 'Nilai Ekstrem', 'Arah Dominan'], [
             ['Tinggi Gelombang Signifikan (Hs)', "{$this->g($lap, 'hs_rata')} m", "{$this->g($lap, 'hs_maks')} m", "{$this->g($lap, 'hs_arah')}°"],
@@ -1434,7 +1862,21 @@ img {
         $this->caption($s, 'Tabel 3. Ringkasan Parameter Gelombang dan Arus pada Titik Pusat Rencana Kegiatan.');
 
         $this->heading($s, '3. Pasang Surut', 3);
-        $this->text($s, "Perairan ini memiliki tipe pasang surut {$this->g($lap, 'tipe_pasut')} (Bilangan Formzahl {$this->g($lap, 'formzahl')}), dengan tunggang air (tidal range) sebesar {$this->g($lap, 'tidal_range')} meter, elevasi tertinggi (HAT) sebesar +{$this->g($lap, 'hat')} meter, dan elevasi terendah (LAT) sebesar {$this->g($lap, 'lat')} meter.");
+        $tipePasut = $this->gOrNull($lap, 'tipe_pasut');
+        $formzahl = $this->gOrNull($lap, 'formzahl');
+        $tidalRange = $this->gOrNull($lap, 'tidal_range');
+        $hat = $this->gOrNull($lap, 'hat');
+        $latN = $this->gOrNull($lap, 'lat');
+        $pasutFacts = $this->joinFacts([
+            $tipePasut ? "memiliki tipe pasang surut $tipePasut" : null,
+            $formzahl ? "Bilangan Formzahl sebesar $formzahl" : null,
+            $tidalRange ? "tunggang air (tidal range) sebesar $tidalRange meter" : null,
+            $hat ? "elevasi tertinggi (HAT) sebesar +$hat meter" : null,
+            $latN ? "elevasi terendah (LAT) sebesar $latN meter" : null,
+        ]);
+        if ($pasutFacts !== '') {
+            $this->text($s, "Perairan ini $pasutFacts.");
+        }
         if (! empty($narasi['pasut'])) {
             $this->text($s, $narasi['pasut']);
         }
@@ -1446,20 +1888,53 @@ img {
             ['Bilangan Formzahl', "{$this->g($lap, 'formzahl')} ({$this->g($lap, 'tipe_pasut')})"],
         ]);
         $this->caption($s, 'Tabel 4. Parameter Pasang Surut pada Lokasi Kegiatan.');
-        $this->figure($s, 'siklus_pasut', "Gambar 10. Grafik Fluktuasi Pasang Surut Selama 14 Hari (Tipe {$this->g($lap, 'tipe_pasut')}).", 13);
+        $siklusPasutCaption = $tipePasut !== null
+            ? "Gambar 10. Grafik Fluktuasi Pasang Surut Selama 14 Hari (Tipe {$tipePasut})."
+            : 'Gambar 10. Grafik Fluktuasi Pasang Surut Selama 14 Hari.';
+        $this->figure($s, 'siklus_pasut', $siklusPasutCaption, 13);
 
         $this->heading($s, 'C. Profil Dasar Laut', 2);
-        $this->text($s, "Kedalaman pada titik pusat lokasi kegiatan tercatat sebesar {$this->g($lap, 'batimetri_titik_pusat')} meter terhadap Lowest Water Spring (LWS). Hasil pemeruman pada profil garis batimetri sepanjang lintasan {$this->g($lap, 'batimetri_panjang_lintasan')} km menunjukkan kedalaman terdalam mencapai {$this->g($lap, 'batimetri_terdalam')} meter.");
+        $titikPusat = $this->gOrNull($lap, 'batimetri_titik_pusat');
+        $panjangLintasan = $this->gOrNull($lap, 'batimetri_panjang_lintasan');
+        $terdalam = $this->gOrNull($lap, 'batimetri_terdalam');
+        if ($titikPusat !== null) {
+            $this->text($s, "Kedalaman pada titik pusat lokasi kegiatan tercatat sebesar $titikPusat meter terhadap Lowest Water Spring (LWS).");
+        }
+        if ($panjangLintasan !== null || $terdalam !== null) {
+            $lintasanClause = $panjangLintasan !== null ? " sepanjang lintasan $panjangLintasan km" : '';
+            $terdalamClause = $terdalam !== null ? " menunjukkan kedalaman terdalam mencapai $terdalam meter" : '';
+            $this->text($s, "Hasil pemeruman pada profil garis batimetri{$lintasanClause}{$terdalamClause}.");
+        }
         if (! empty($narasi['batimetri'])) {
             $this->text($s, $narasi['batimetri']);
         }
         $this->figure($s, 'profil_batimetri', 'Gambar 11. Profil Garis Batimetri pada Lintasan Pemeruman Titik Pusat Rencana Kegiatan.', 13);
 
+        // Printed on the document's literal last page (LAMPIRAN: SUMBER
+        // REFERENSI, after Chapter IV) instead of here — see queueReference().
+        if ($hidroUsedKeys) {
+            $this->queueReference(
+                'Catatan Estimasi Data Hidro-Oseanografi (AI)',
+                $hidro['catatan'] ?: 'Sebagian nilai gelombang, arus, pasang surut, dan/atau batimetri pada Bab III di atas merupakan estimasi regional preliminer berdasarkan referensi publik (bukan hasil survei lapangan) karena Laporan Hidro-Oseanografi belum diunggah/lengkap, dan wajib diverifikasi dengan survei hidro-oseanografi sesungguhnya sebelum pengajuan resmi.',
+                $hidro['sumber'] ?? [],
+                introItalic: true
+            );
+        }
+
         $this->heading($s, 'D. Kondisi Sosial Ekonomi Masyarakat', 2);
         $sumberSosek = (string) ($prop['sumber_data_sosek'] ?? '') ?: 'Badan Pusat Statistik';
         $tahunSosek = (string) ($prop['tahun_data_sosek'] ?? '');
         $tahunTxt = $tahunSosek !== '' ? ' tahun '.$tahunSosek : '';
-        $this->text($s, "Berdasarkan data sekunder $sumberSosek$tahunTxt, $desa memiliki luas wilayah {$this->g($prop, 'desa_luas_ha')} Ha dengan jumlah penduduk sebanyak {$this->g($prop, 'desa_penduduk')} jiwa. Kehadiran rencana kegiatan ini diharapkan dapat mendukung struktur sosial-ekonomi kawasan secara harmonis dan melibatkan konsultasi publik dengan kelompok nelayan setempat sebelum pelaksanaan konstruksi.");
+        $desaLuas = $this->gOrNull($prop, 'desa_luas_ha');
+        $desaPenduduk = $this->gOrNull($prop, 'desa_penduduk');
+        $sosekFacts = $this->joinFacts([
+            $desaLuas ? "memiliki luas wilayah $desaLuas Ha" : null,
+            $desaPenduduk ? "jumlah penduduk sebanyak $desaPenduduk jiwa" : null,
+        ]);
+        if ($sosekFacts !== '') {
+            $this->text($s, "Berdasarkan data sekunder $sumberSosek$tahunTxt, $desa $sosekFacts.");
+        }
+        $this->text($s, 'Kehadiran rencana kegiatan ini diharapkan dapat mendukung struktur sosial-ekonomi kawasan secara harmonis dan melibatkan konsultasi publik dengan kelompok nelayan setempat sebelum pelaksanaan konstruksi.');
         $mataPencaharian = (string) ($prop['mata_pencaharian'] ?? '');
         if ($mataPencaharian !== '') {
             $this->labeled($s, 'Mata Pencaharian Masyarakat Desa', $mataPencaharian);
@@ -1487,7 +1962,7 @@ img {
             'Peta pendukung (peta lokasi, peta site plan, dan peta pola ruang wilayah).',
         ];
         foreach ($items as $item) {
-            $s->addListItem(rtrim($item, '.').'.', 0, ['name' => 'Arial', 'size' => 11]);
+            $s->addListItem($this->esc(rtrim($item, '.').'.'), 0, ['name' => 'Arial', 'size' => 11]);
         }
         $this->figure($s, 'dukung_dokumen', 'Gambar 13. Dokumen Data Dukung Terlampir.', 13);
 

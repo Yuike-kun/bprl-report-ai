@@ -146,8 +146,14 @@ const KBLI_OPTIONS = [
     '03234 - Pengembangbiakan Biota Air Payau yang Dilindungi',
 ].map((v) => ({ value: v, label: v }));
 
+// Default shown in the "Tanggal Penyusunan" date picker when the user hasn't
+// picked one yet; the backend also independently defaults to today if this
+// is ever submitted blank (see EgeraiManualController::mapPropFields()).
+const todayIso = new Date().toISOString().split('T')[0];
+
 export default function EgeraiManual() {
     const [values, setValues] = useState<Record<string, string>>({});
+    const [aiFillEnabled, setAiFillEnabled] = useState(false);
     const setValue = (name: string, value: string) =>
         setValues((prev) => ({ ...prev, [name]: value }));
 
@@ -246,7 +252,8 @@ export default function EgeraiManual() {
                 values.prop__KBLI ?? '',
                 otherValues.prop__KBLI ?? '',
             ),
-            prop__Tanggal_Penyusunan: values.prop__Tanggal_Penyusunan ?? '',
+            prop__Tanggal_Penyusunan:
+                values.prop__Tanggal_Penyusunan ?? todayIso,
             prop_loc__3: wilayah.provinsi,
             prop_loc__2: wilayah.kabupaten,
             prop_loc__1: wilayah.kecamatan,
@@ -295,6 +302,7 @@ export default function EgeraiManual() {
 
         instalasiPosisi.forEach((v) => fd.append('instalasi_posisi[]', v));
 
+        fd.append('ai_fill_enabled', aiFillEnabled ? '1' : '0');
         fd.append('non_reklamasi', nonReklamasi ? '1' : '0');
         fd.append('reklamasi', reklamasi ? '1' : '0');
         fd.append('kegiatan_berusaha', kegiatanBerusaha ? '1' : '0');
@@ -585,6 +593,32 @@ export default function EgeraiManual() {
                                     Unduh Draft
                                 </button>
                             </div>
+                            <label className="mt-2.5 flex w-full cursor-pointer items-start gap-3 rounded-xl bg-[#f7fafd] p-3 text-[13px] text-[#33495e]">
+                                <input
+                                    type="checkbox"
+                                    checked={aiFillEnabled}
+                                    onChange={(e) =>
+                                        setAiFillEnabled(e.target.checked)
+                                    }
+                                    className="mt-0.5 h-4 w-4 shrink-0 accent-[#1E63C7]"
+                                />
+                                <span>
+                                    <span className="font-bold text-[#123A63]">
+                                        Isi data hidro-oseanografi kosong dengan estimasi AI
+                                    </span>
+                                    <br />
+                                    Untuk data gelombang/arus/pasang surut/
+                                    batimetri/luas ekosistem yang belum
+                                    terisi, AI akan mencari referensi regional
+                                    dan mengisi estimasi sementara beserta
+                                    sumbernya. Matikan untuk membiarkan kolom
+                                    tersebut kosong dan diisi manual. (Narasi
+                                    detail ekosistem mangrove/lamun/karang
+                                    beserta sumbernya tetap selalu dibuat AI
+                                    dari data yang sudah ada, terlepas dari
+                                    status kotak centang ini.)
+                                </span>
+                            </label>
                         </div>
 
                         <div className="mb-[18px] rounded-2xl border border-[#e7eef6] bg-white p-6 shadow-[0_8px_26px_rgba(18,58,99,0.10)]">
@@ -822,10 +856,11 @@ export default function EgeraiManual() {
                                     <TextField
                                         name="prop__Tanggal_Penyusunan"
                                         label="Tanggal Penyusunan"
-                                        example="14 September 2026"
+                                        type="date"
+                                        hint="Kosongkan untuk memakai tanggal hari ini secara otomatis."
                                         value={
                                             values.prop__Tanggal_Penyusunan ??
-                                            ''
+                                            todayIso
                                         }
                                         onChange={setValue}
                                     />

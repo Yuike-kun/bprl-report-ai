@@ -80,6 +80,7 @@ class EgeraiManualController extends Controller
     {
         $prop = $this->mapPropFields($request);
         $lap = [];
+        $aiFillEnabled = $request->boolean('ai_fill_enabled', true);
 
         $outputPath = storage_path('app/tmp/Draft_Proposal_'.uniqid().'.docx');
         if (! is_dir(dirname($outputPath))) {
@@ -87,7 +88,7 @@ class EgeraiManualController extends Controller
         }
 
         try {
-            (new ProposalDocumentGenerator)->buildDocument($prop, [], $lap, [], $outputPath);
+            (new ProposalDocumentGenerator)->buildDocument($prop, [], $lap, [], $outputPath, $aiFillEnabled);
 
             return response()->download($outputPath, 'Draft_Proposal_'.now()->format('Ymd_His').'.docx')
                 ->deleteFileAfterSend(true);
@@ -121,6 +122,7 @@ class EgeraiManualController extends Controller
         }
 
         $propImages = $this->storeImages($request, $dir);
+        $aiFillEnabled = $request->boolean('ai_fill_enabled', true);
 
         $job->update([
             'user_id' => $request->user()?->id,
@@ -131,17 +133,38 @@ class EgeraiManualController extends Controller
             'lap_fields' => $lapFields,
             'prop_images' => $this->manifest($propImages, $dir),
             'lap_images' => [],
+            'ai_fill_enabled' => $aiFillEnabled,
         ]);
 
         $preview = null;
         try {
-            $preview = (new ProposalDocumentGenerator)->renderPreviewHtml($prop, $propImages, $lapFields, []);
+            $preview = (new ProposalDocumentGenerator)->renderPreviewHtml($prop, $propImages, $lapFields, [], $aiFillEnabled);
         } catch (\Throwable $exception) {
             Log::warning('Gagal membuat pratinjau dokumen manual: '.$exception->getMessage());
         }
         $job->update(['preview_html' => $preview]);
 
         return [$job, $dir];
+    }
+
+    /**
+     * Converts the "Tanggal Penyusunan" date-input value (Y-m-d, or blank) into
+     * the Indonesian long-form display string ("17 September 2026"), defaulting
+     * to today when blank or unparseable so the field is never left empty.
+     */
+    private function formatTanggalPenyusunan(string $raw): string
+    {
+        $raw = trim($raw);
+
+        if ($raw === '') {
+            return now()->translatedFormat('j F Y');
+        }
+
+        try {
+            return \Carbon\Carbon::parse($raw)->translatedFormat('j F Y');
+        } catch (\Throwable $exception) {
+            return now()->translatedFormat('j F Y');
+        }
     }
 
     private function mapPropFields(Request $request): array
@@ -151,6 +174,12 @@ class EgeraiManualController extends Controller
         foreach (self::PROP_LABEL_MAP as $requestKey => $propKey) {
             $prop[$propKey] = (string) $request->input($requestKey, '');
         }
+        // The form submits this as a native HTML date input (Y-m-d); convert it to
+        // the Indonesian long-form string ("17 September 2026") the generator
+        // expects everywhere it renders/parses this field (docChapterOne()'s
+        // identity table, parseTanggalIndonesia()'s Gantt-chart start date), and
+        // default to today when left blank instead of leaving it empty.
+        $prop['Tanggal Penyusunan'] = $this->formatTanggalPenyusunan((string) $request->input('prop__Tanggal_Penyusunan', ''));
         foreach (self::PROP_DIRECT_KEYS as $requestKey => $propKey) {
             $prop[$propKey] = (string) $request->input($requestKey, '');
         }
@@ -225,7 +254,10 @@ class EgeraiManualController extends Controller
         $rows = $decoded['rows'] ?? [];
         $rows = array_values(array_filter($rows, fn ($r) => filled($r[0] ?? null) && filled($r[1] ?? null)));
 
-        return collect($rows)->values()->map(fn ($r, $i) => [(string) ($i + 1), (string) $r[0], (string) $r[1]])->all();
+        // $r[2] is the row's "Keterangan" (KoordinatRow = [longitude, latitude,
+        // keterangan] on the frontend) — keep it instead of discarding it, so it
+        // reaches the generated docx's coordinate table.
+        return collect($rows)->values()->map(fn ($r, $i) => [(string) ($i + 1), (string) $r[0], (string) $r[1], (string) ($r[2] ?? '')])->all();
     }
 
     /** @return array{0: string, 1: string[]} [sentence for chapter I, checked labels for chapter IV] */

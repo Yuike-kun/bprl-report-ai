@@ -20,6 +20,7 @@ class EgeraiJob extends Model
         'prop_source_path', 'prop_source_filename',
         'lap_source_path', 'lap_source_filename',
         'prop_fields', 'lap_fields', 'prop_images', 'lap_images', 'preview_html',
+        'ai_fill_enabled',
     ];
 
     protected function casts(): array
@@ -29,6 +30,7 @@ class EgeraiJob extends Model
             'lap_fields' => 'array',
             'prop_images' => 'array',
             'lap_images' => 'array',
+            'ai_fill_enabled' => 'boolean',
         ];
     }
 

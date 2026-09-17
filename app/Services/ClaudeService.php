@@ -347,10 +347,12 @@ ATURAN MUTLAK — WAJIB DIPATUHI:
 5. Gunakan gaya bahasa teknis-formal Bahasa Indonesia sebagaimana lazim pada dokumen proposal PKKPRL/AMDAL resmi. WAJIB tulis 3-4 paragraf yang cukup panjang dan padat informasi untuk SETIAP subbagian ekosistem (mangrove, lamun, terumbu karang) — bukan 1-2 paragraf singkat, dan bukan poin-poin.
 6. Setiap subbagian ekosistem WAJIB membahas seluruh aspek berikut secara berurutan dan mengalir sebagai narasi (bukan daftar bernomor), sepanjang relevan dengan data/hasil pencarian yang ada:
    a. Deskripsi kondisi eksisting di lokasi berdasarkan DATA FAKTUAL (spesies, persentase tutupan, kondisi) — jika ekosistem tidak ada, jelaskan hal ini secara eksplisit dengan penjelasan yang tetap informatif (mis. kemungkinan penyebab ekologis/geomorfologis ketiadaan ekosistem tersebut, bila didukung konteks pencarian web).
+   a2. KHUSUS untuk angka PERSENTASE TUTUPAN pada DATA FAKTUAL (bila tersedia): bahas secara KHUSUS dan LEBIH MENDALAM (bukan hanya menyebut angkanya sekilas) — jelaskan apa arti persentase tersebut menurut kriteria baku kerusakan/kesehatan ekosistem pesisir yang relevan (mis. untuk terumbu karang: kategori Rusak/Sedang/Baik/Baik Sekali berdasarkan kriteria baku kerusakan terumbu karang KepMenLH; untuk mangrove/lamun: kategori jarang/sedang/padat atau rusak/baik menurut kriteria kerapatan tutupan yang berlaku), bandingkan dengan kondisi rata-rata/tipikal ekosistem sejenis di wilayah tersebut menurut hasil pencarian web (lebih tinggi/rendah/sebanding), dan jelaskan implikasinya terhadap fungsi ekologis serta tingkat kehati-hatian mitigasi yang diperlukan.
    b. Signifikansi ekologis jenis/kondisi yang disebutkan: peran fungsional ekosistem tersebut (mis. mangrove sebagai penahan abrasi & nursery ground, lamun sebagai habitat dugong/penyu & penyerap karbon biru, terumbu karang sebagai pemecah gelombang alami & habitat biota laut).
    c. Konteks regional/wilayah dari hasil pencarian web (karakteristik kawasan, status konservasi, tekanan/ancaman lingkungan yang umum di wilayah tersebut, upaya pengelolaan yang diketahui ada).
    d. Implikasi terhadap rencana kegiatan dan arahan mitigasi spesifik untuk ekosistem tersebut (mis. metode konstruksi yang meminimalkan gangguan, buffer zone, pengendalian sedimentasi, larangan penambatan pada substrat vegetasi, dsb.).
 7. DILARANG mengulang kalimat yang sama persis antar subbagian; setiap subbagian harus punya narasi unik dan spesifik terhadap ekosistemnya masing-masing.
+7b. JANGAN sertakan tag/markup sitasi apa pun di dalam teks narasi (mis. "<cite>...</cite>", "<cite index=\"...\">...</cite>", catatan kaki bernomor, atau kutipan mentah hasil pencarian yang ditempel apa adanya). Tulis narasi sebagai prosa mengalir yang meringkas/mengintegrasikan informasi tersebut dengan kata-kata sendiri — daftar sumber sudah dan HANYA dicantumkan terpisah di bagian akhir dokumen.
 8. Output HANYA objek JSON valid tanpa markdown, dengan struktur persis:
 {"mangrove": "...", "lamun": "...", "karang": "...", "ringkasan": "..."}
    - "ringkasan" berisi 1-2 paragraf kesimpulan komprehensif kondisi ekosistem pesisir di lokasi kegiatan secara keseluruhan (bukan mengulang isi subbagian) dan arahan mitigasi terpadu (revegetasi, penghindaran/avoidance, pengendalian sedimen, pemantauan berkala, dsb.) HANYA berdasarkan ekosistem yang benar-benar teridentifikasi ada pada DATA FAKTUAL.
@@ -362,7 +364,20 @@ Output HANYA objek JSON valid tanpa markdown atau teks lain di dalam blok teks a
 PROMPT;
 
         try {
-            $json = $this->callClaudeWithWebSearch($prompt, maxTokens: 6000);
+            // Needs generous headroom: the prompt demands 3-4 long paragraphs for
+            // EACH of 3 ecosystem subsections plus a summary (easily 3000-4000+
+            // output tokens on its own), and tokens are also spent on the
+            // web_search tool_use calls/results before the model reaches the
+            // final JSON text. Too low a budget risks hitting max_tokens mid-
+            // search or mid-JSON with no usable (or truncated/invalid) output —
+            // observed in testing with 6000.
+            // Content alone (3-4 long paragraphs x 3 ecosystems + summary) can run
+            // well past 12000 tokens once web_search tool_use/result overhead
+            // (up to several searches, each potentially returning large snippet
+            // text) is added on top — observed intermittently truncating mid-
+            // JSON with 12000. Also cap search usage below the client default
+            // (6) so more of the budget is reserved for the actual narrative.
+            $json = $this->callClaudeWithWebSearch($prompt, maxTokens: 16000, maxSearchUses: 4);
             $text = $this->extractResponseText($json);
 
             if (blank($text)) {
@@ -378,7 +393,7 @@ PROMPT;
             $result = [];
             foreach (['mangrove', 'lamun', 'karang', 'ringkasan'] as $key) {
                 $value = $decoded[$key] ?? '';
-                $result[$key] = is_string($value) ? trim($value) : '';
+                $result[$key] = is_string($value) ? $this->stripInlineCitationTags($value) : '';
             }
 
             $result['sumber'] = $this->extractCitations($json);
@@ -389,8 +404,9 @@ PROMPT;
 
             // Fallback: same instructions, no web search tool (older accounts/models
             // may not support the tool, or the call may have failed transiently).
+            // Same long-output reasoning as above minus the tool-call overhead.
             try {
-                $raw = $this->callClaudeRaw($prompt, maxTokens: 4000);
+                $raw = $this->callClaudeRaw($prompt, maxTokens: 12000);
                 $decoded = $this->parseJson($raw);
 
                 if (! is_array($decoded)) {
@@ -400,7 +416,7 @@ PROMPT;
                 $result = [];
                 foreach (['mangrove', 'lamun', 'karang', 'ringkasan'] as $key) {
                     $value = $decoded[$key] ?? '';
-                    $result[$key] = is_string($value) ? trim($value) : '';
+                    $result[$key] = is_string($value) ? $this->stripInlineCitationTags($value) : '';
                 }
 
                 $result['sumber'] = [];
@@ -411,6 +427,105 @@ PROMPT;
 
                 return [];
             }
+        }
+    }
+
+    /**
+     * Estimates whichever hydro-oceanography / ecosystem-area parameters are
+     * still missing (the "Laporan Hidro-Oseanografi" survey document is
+     * optional and frequently never uploaded, or extraction only recovers
+     * some of its fields) using Anthropic's web_search tool to ground the
+     * estimate in real, publicly available regional oceanographic reference
+     * data (BMKG, BIG, Dishidros, published bathymetry/wave-climate studies,
+     * etc.) for the given water body/region — NOT a substitute for an actual
+     * site survey, and explicitly labeled as such in the returned "catatan".
+     *
+     * $context: ['lokasi' => ..., 'nama_perairan' => ..., 'jenis_kegiatan' => ...,
+     * 'data_terukur_tersedia' => [key => value, ...]] (already-known values, so
+     * the AI stays consistent with them instead of estimating in isolation).
+     * $missingKeys: array of LaporanTextExtractor::FIELD_HINTS keys to estimate.
+     *
+     * Returns ['values' => [key => string, ...], 'catatan' => string, 'sumber' => [...]].
+     * Returns [] on any failure so the caller falls back to the existing
+     * self::MISSING placeholder text.
+     */
+    public function estimateHidroOseanografi(array $context, array $missingKeys): array
+    {
+        if (blank($this->apiKey) || ! $missingKeys) {
+            return [];
+        }
+
+        $hints = \App\Services\Egerai\LaporanTextExtractor::FIELD_HINTS;
+        $daftarField = collect($missingKeys)
+            ->map(fn ($key) => '- '.$key.': '.($hints[$key] ?? $key))
+            ->implode("\n");
+
+        $known = collect($context['data_terukur_tersedia'] ?? [])
+            ->map(fn ($value, $key) => '- '.$key.': '.$value)
+            ->implode("\n");
+        $knownBlock = $known !== '' ? $known : '(tidak ada data terukur lain yang tersedia)';
+
+        $year = now()->year;
+
+        $prompt = <<<PROMPT
+Anda adalah Ahli Hidro-Oseanografi yang membantu menyusun draf awal proposal PKKPRL. Dokumen "Laporan Hidro-Oseanografi" survei lapangan untuk kegiatan ini TIDAK tersedia atau tidak lengkap, sehingga beberapa parameter teknis di bawah ini perlu diisi dengan ESTIMASI REGIONAL sementara (bukan data hasil pengukuran lapangan), agar draf proposal tidak kosong sambil menunggu survei sesungguhnya.
+
+Lokasi kegiatan: "{$context['lokasi']}"
+Perairan: "{$context['nama_perairan']}"
+Jenis kegiatan: "{$context['jenis_kegiatan']}"
+
+DATA TERUKUR YANG SUDAH TERSEDIA (gunakan sebagai konteks agar estimasi Anda konsisten dengannya, JANGAN diubah):
+{$knownBlock}
+
+ATURAN MUTLAK — WAJIB DIPATUHI:
+1. Gunakan alat pencarian web (web_search) secara aktif — lakukan BEBERAPA kali pencarian dengan variasi kata kunci — untuk mencari referensi RESMI/ILMIAH (BMKG, BIG, Dishidros/Pushidrosal, jurnal ilmiah, publikasi KKP, studi AMDAL/oseanografi wilayah tersebut) mengenai karakteristik gelombang, arus, pasang surut, dan batimetri di perairan "{$context['nama_perairan']}" atau wilayah pesisir "{$context['lokasi']}" atau wilayah perairan terdekat/sejenis di Indonesia bila referensi spesifik lokasi tidak ditemukan.
+2. Estimasi HANYA boleh didasarkan pada referensi yang benar-benar ditemukan lewat pencarian (karakteristik regional/wilayah perairan sejenis) — DILARANG KERAS mengarang angka tanpa dasar apa pun.
+3. Jika untuk suatu parameter TIDAK ditemukan referensi yang cukup layak untuk dijadikan dasar estimasi regional, kembalikan string kosong ("") untuk parameter tersebut — JANGAN menebak.
+4. Nilai numerik dikembalikan sebagai angka saja (tanpa satuan, gunakan titik sebagai desimal), kecuali disebutkan lain pada definisi field.
+5. Field eko_* (luas/persentase ekosistem) HANYA diisi bila konsisten satu sama lain (total = karang + lainnya + terbuka, persentase menjumlah ~100%) dan tetap ditandai sebagai estimasi.
+
+PARAMETER YANG PERLU DIESTIMASI (hanya field berikut, field lain jangan disertakan):
+{$daftarField}
+
+Output HANYA objek JSON valid tanpa markdown, dengan struktur persis:
+{"values": {"<key>": "<estimasi atau string kosong>", ...}, "catatan": "1 kalimat singkat yang menyatakan bahwa nilai-nilai ini adalah estimasi regional preliminer berdasarkan referensi publik, bukan hasil survei lapangan, dan wajib diverifikasi dengan survei hidro-oseanografi sesungguhnya sebelum pengajuan resmi."}
+PROMPT;
+
+        try {
+            // Needs headroom beyond the final JSON payload itself: tokens are also
+            // spent on the model's web_search tool_use calls and their results
+            // before it reaches the final text block. Too low a budget here risks
+            // hitting max_tokens mid-search with no text block at all (observed
+            // in testing with 3000, and again intermittently with 6000 when the
+            // model runs several searches across up to 21 parameters).
+            $json = $this->callClaudeWithWebSearch($prompt, maxTokens: 10000);
+            $text = $this->extractResponseText($json);
+
+            if (blank($text)) {
+                throw new Exception('Response Claude (web search) kosong.');
+            }
+
+            $decoded = $this->parseJson($text);
+
+            if (! is_array($decoded) || ! is_array($decoded['values'] ?? null)) {
+                return [];
+            }
+
+            $values = [];
+            foreach ($missingKeys as $key) {
+                $value = $decoded['values'][$key] ?? '';
+                $values[$key] = is_string($value) || is_numeric($value) ? trim((string) $value) : '';
+            }
+
+            return [
+                'values' => $values,
+                'catatan' => is_string($decoded['catatan'] ?? null) ? $this->stripInlineCitationTags($decoded['catatan']) : '',
+                'sumber' => $this->extractCitations($json),
+            ];
+        } catch (Exception $exception) {
+            Log::warning('AI estimasi hidro-oseanografi gagal.', ['error' => $exception->getMessage()]);
+
+            return [];
         }
     }
 
@@ -458,7 +573,11 @@ PROMPT;
             $payload['system'] = $system;
         }
 
-        $response = Http::timeout(180)
+        // 300s: the ecosystem narrative call in particular now asks for very long,
+        // multi-section output (up to 16000 tokens) plus several web_search
+        // round-trips — 180s was observed to time out on that specific call under
+        // normal latency once the higher token budget was needed for detail/length.
+        $response = Http::timeout(300)
             ->withHeaders($this->headers())
             ->post(self::CLAUDE_API_URL, $payload);
 
@@ -608,7 +727,10 @@ PROMPT;
      */
     protected function callClaudeRaw(string $prompt, int $maxTokens = 8192): string
     {
-        $response = Http::timeout(120)
+        // 180s: shared by several callers; raised from 120s since the ecosystem
+        // narrative's no-web-search fallback now requests up to 12000 tokens of
+        // long-form output, which can occasionally run past 120s on its own.
+        $response = Http::timeout(180)
             ->withHeaders($this->headers())
             ->post(self::CLAUDE_API_URL, [
                 'model' => $this->model,
@@ -740,18 +862,125 @@ PROMPT;
     protected function parseJson(string $text): mixed
     {
         $decoded = json_decode($text, true);
-
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            // Strip markdown fences and retry
-            $clean = preg_replace('/^```(?:json)?\s*|\s*```$/s', '', trim($text));
-            $decoded = json_decode($clean, true);
-
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                throw new Exception('Gagal parse JSON dari Claude: '.json_last_error_msg());
-            }
+        if (json_last_error() === JSON_ERROR_NONE) {
+            return $decoded;
         }
 
-        return $decoded;
+        // Strip markdown fences and retry
+        $clean = preg_replace('/^```(?:json)?\s*|\s*```$/s', '', trim($text));
+        $decoded = json_decode($clean, true);
+        if (json_last_error() === JSON_ERROR_NONE) {
+            return $decoded;
+        }
+
+        // Claude frequently emits raw, unescaped newlines/tabs inside long JSON
+        // string values (e.g. multi-paragraph narrative text) instead of the
+        // required \n/\t escapes — technically invalid JSON per RFC 8259, and
+        // the single most common cause of "Control character error" failures
+        // observed here in practice, especially for long free-text fields like
+        // the ecosystem/hydro-oceanography narratives. This is a recoverable,
+        // well-known quirk, so escape any literal control character found
+        // strictly inside a JSON string literal (structural whitespace between
+        // tokens is never touched) and retry once more before giving up.
+        $sanitized = $this->escapeRawControlCharsInJsonStrings($clean);
+        $decoded = json_decode($sanitized, true);
+        if (json_last_error() === JSON_ERROR_NONE) {
+            return $decoded;
+        }
+
+        throw new Exception('Gagal parse JSON dari Claude: '.json_last_error_msg());
+    }
+
+    /**
+     * Defensive cleanup for narrative text fields (mangrove/lamun/karang/
+     * ringkasan/catatan): despite prompt instructions forbidding it, Claude's
+     * web_search-grounded responses sometimes leak its own inline citation
+     * markup — e.g. `<cite index="11-4">quoted excerpt...</cite>` — directly
+     * into the JSON string value instead of keeping citations purely as
+     * separate response metadata (handled by extractCitations()). Left as-is,
+     * this renders as literal, meaningless "<cite ...>" text in the generated
+     * document. Strips any such tag pair (including the quoted excerpt inside,
+     * which is usually a redundant raw source snippet disrupting the
+     * narrative's flow) plus any unpaired/malformed leftover tag fragment, then
+     * tidies up the resulting whitespace/punctuation spacing.
+     */
+    private function stripInlineCitationTags(string $text): string
+    {
+        // Opening delimiter is tolerant of both "<cite ...>" and the malformed
+        // "(cite ...>" variant observed in practice (Claude occasionally emits
+        // "(" instead of "<" for the opening bracket, while still closing with
+        // a proper "</cite>").
+        $text = preg_replace('/[<(]\s*cite\b[^>]*>.*?<\s*\/\s*cite\s*>/is', '', $text) ?? $text;
+        // Catch any leftover unpaired/malformed opening or closing tag fragment.
+        $text = preg_replace('/[<(]\s*\/?\s*cite\b[^>]*>/i', '', $text) ?? $text;
+        $text = preg_replace('/[ \t]{2,}/', ' ', $text) ?? $text;
+        $text = preg_replace('/[ \t]+([.,;:])/', '$1', $text) ?? $text;
+
+        return trim($text);
+    }
+
+    /**
+     * Escapes raw ASCII control bytes (0x00-0x1F) that appear inside a JSON
+     * string literal, leaving everything else (including multi-byte UTF-8
+     * sequences, which use only bytes >= 0x80, and whitespace outside of
+     * strings) completely untouched. Operates byte-by-byte, which is safe for
+     * UTF-8 here because continuation/lead bytes are always >= 0x80 and so
+     * never match the "< 0x20" check.
+     */
+    private function escapeRawControlCharsInJsonStrings(string $json): string
+    {
+        $result = '';
+        $inString = false;
+        $escaped = false;
+
+        for ($i = 0, $len = strlen($json); $i < $len; $i++) {
+            $char = $json[$i];
+
+            if (! $inString) {
+                if ($char === '"') {
+                    $inString = true;
+                }
+                $result .= $char;
+
+                continue;
+            }
+
+            if ($escaped) {
+                $result .= $char;
+                $escaped = false;
+
+                continue;
+            }
+
+            if ($char === '\\') {
+                $result .= $char;
+                $escaped = true;
+
+                continue;
+            }
+
+            if ($char === '"') {
+                $inString = false;
+                $result .= $char;
+
+                continue;
+            }
+
+            if (ord($char) < 0x20) {
+                $result .= match ($char) {
+                    "\n" => '\\n',
+                    "\r" => '\\r',
+                    "\t" => '\\t',
+                    default => sprintf('\\u%04x', ord($char)),
+                };
+
+                continue;
+            }
+
+            $result .= $char;
+        }
+
+        return $result;
     }
 
     protected function formatContext(array $profileContext): string

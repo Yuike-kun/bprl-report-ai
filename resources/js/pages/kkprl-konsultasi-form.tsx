@@ -72,6 +72,7 @@ interface BaseFieldProps {
     onChange: (name: string, value: string) => void;
     placeholder?: string;
     inputMode?: 'numeric' | 'decimal' | 'text';
+    type?: 'text' | 'date';
 }
 
 function Example({
@@ -109,6 +110,7 @@ export function TextField({
     onChange,
     placeholder,
     inputMode,
+    type = 'text',
 }: BaseFieldProps) {
     const { props } = usePage();
     const errors = (props as any).errors || {};
@@ -118,7 +120,7 @@ export function TextField({
             <label className={fieldLabelClass}>{label}</label>
             {hint && <div className={fieldHintClass}>{hint}</div>}
             <input
-                type="text"
+                type={type}
                 name={name}
                 inputMode={inputMode}
                 value={value}

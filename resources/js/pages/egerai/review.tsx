@@ -16,6 +16,7 @@ interface EgeraiJobData {
     prop_images: ImagePreview[];
     lap_images: ImagePreview[];
     preview_html: string | null;
+    ai_fill_enabled: boolean;
 }
 
 export default function EgeraiReview({
@@ -30,6 +31,9 @@ export default function EgeraiReview({
     );
     const [lapData, setLapData] = useState<Record<string, any>>(
         job.lap_fields || {},
+    );
+    const [aiFillEnabled, setAiFillEnabled] = useState(
+        job.ai_fill_enabled ?? true,
     );
     const [processing, setProcessing] = useState(false);
 
@@ -50,7 +54,11 @@ export default function EgeraiReview({
         setProcessing(true);
         router.put(
             `/egerai/${job.job_id}/review`,
-            { prop_fields: propData, lap_fields: lapData },
+            {
+                prop_fields: propData,
+                lap_fields: lapData,
+                ai_fill_enabled: aiFillEnabled,
+            },
             {
                 preserveScroll: true,
                 onSuccess: () => onSuccess?.(),
@@ -119,6 +127,34 @@ export default function EgeraiReview({
                                     Generate Dokumen Final &amp; Unduh
                                 </button>
                             </div>
+
+                            <label className="mb-[18px] flex cursor-pointer items-start gap-3 rounded-2xl bg-white p-4 text-[13px] text-[#33495e] shadow-[0_6px_24px_rgba(18,58,99,0.08)]">
+                                <input
+                                    type="checkbox"
+                                    checked={aiFillEnabled}
+                                    onChange={(e) =>
+                                        setAiFillEnabled(e.target.checked)
+                                    }
+                                    className="mt-0.5 h-4 w-4 shrink-0 accent-[#1E63C7]"
+                                />
+                                <span>
+                                    <span className="font-bold text-[#123A63]">
+                                        Isi data hidro-oseanografi kosong dengan estimasi AI
+                                    </span>
+                                    <br />
+                                    Untuk data gelombang/arus/pasang surut/
+                                    batimetri/luas ekosistem yang belum terisi
+                                    (laporan survei tidak diunggah/tidak
+                                    lengkap), AI akan mencari referensi
+                                    regional dan mengisi estimasi sementara
+                                    beserta sumbernya. Matikan untuk
+                                    membiarkan kolom tersebut kosong dan diisi
+                                    manual. (Narasi detail ekosistem mangrove/
+                                    lamun/karang beserta sumbernya tetap selalu
+                                    dibuat AI dari data yang sudah ada,
+                                    terlepas dari status kotak centang ini.)
+                                </span>
+                            </label>
 
                             <div className="mb-[18px] rounded-2xl bg-white p-6 shadow-[0_6px_24px_rgba(18,58,99,0.08)]">
                                 <h3 className="mb-3.5 text-[14.5px] font-extrabold text-[#123A63]">

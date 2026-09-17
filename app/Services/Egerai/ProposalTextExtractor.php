@@ -34,6 +34,12 @@ class ProposalTextExtractor
         'mangrove_spesies' => 'nama spesies mangrove yang dominan di lokasi',
         'mangrove_persen' => 'persentase tutupan mangrove (angka saja)',
         'mangrove_kondisi' => 'kondisi/kepadatan tutupan mangrove',
+        'lamun_spesies' => 'nama spesies lamun/seagrass yang dominan di lokasi (string kosong jika ekosistem lamun tidak disebutkan sama sekali)',
+        'lamun_persen' => 'persentase tutupan lamun/seagrass (angka saja)',
+        'lamun_kondisi' => 'kondisi/kepadatan tutupan lamun/seagrass',
+        'karang_spesies' => 'nama spesies terumbu karang yang dominan di lokasi (string kosong jika ekosistem terumbu karang tidak disebutkan sama sekali)',
+        'karang_persen_manual' => 'persentase tutupan terumbu karang (angka saja)',
+        'karang_kondisi' => 'kondisi/kepadatan tutupan terumbu karang',
         'desa_luas_ha' => 'luas wilayah desa dalam Hektar (angka saja)',
         'desa_penduduk' => 'jumlah penduduk desa (angka saja)',
     ];

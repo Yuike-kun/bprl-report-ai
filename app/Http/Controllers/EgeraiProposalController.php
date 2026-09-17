@@ -102,10 +102,13 @@ class EgeraiProposalController extends Controller
             'prop_fields.*' => ['nullable'],
             'lap_fields' => ['nullable', 'array'],
             'lap_fields.*' => ['nullable'],
+            'ai_fill_enabled' => ['nullable', 'boolean'],
         ]);
 
         $propFields = array_merge($egeraiJob->prop_fields ?? [], $validated['prop_fields']);
         $lapFields = array_merge($egeraiJob->lap_fields ?? [], $validated['lap_fields'] ?? []);
+        // Default true (keep existing behavior) when the checkbox value isn't sent at all.
+        $aiFillEnabled = array_key_exists('ai_fill_enabled', $validated) ? (bool) $validated['ai_fill_enabled'] : $egeraiJob->ai_fill_enabled;
 
         $dir = $egeraiJob->storageDir();
         $propImages = $this->resolveManifest($egeraiJob->prop_images ?? [], $dir);
@@ -115,7 +118,8 @@ class EgeraiProposalController extends Controller
             'prop_fields' => $propFields,
             'lap_fields' => $lapFields,
             'status' => 'ready',
-            'preview_html' => $this->renderPreview($propFields, $propImages, $lapFields, $lapImages),
+            'ai_fill_enabled' => $aiFillEnabled,
+            'preview_html' => $this->renderPreview($propFields, $propImages, $lapFields, $lapImages, $aiFillEnabled),
         ]);
 
         return back()->with('success', 'Perubahan tersimpan.');
@@ -138,7 +142,8 @@ class EgeraiProposalController extends Controller
                 $propImages,
                 $egeraiJob->lap_fields ?? [],
                 $lapImages,
-                $outputPath
+                $outputPath,
+                $egeraiJob->ai_fill_enabled
             );
 
             $filename = 'Proposal_PKKPRL_'.now()->format('Ymd_His').'.docx';
@@ -184,9 +189,12 @@ class EgeraiProposalController extends Controller
         $isBusiness = ! empty($prop['kegiatan_berusaha']) ? true : (! empty($prop['non_berusaha']) ? false : null);
         $isStrategic = ! empty($prop['non_strategis']) ? false : null;
 
-        $hasMangrove = filled($prop['mangrove_spesies'] ?? null) || ($prop['mangrove_ada'] ?? '') === 'Terdapat ekosistem mangrove';
-        $hasSeagrass = filled($prop['lamun_spesies'] ?? null) || ($prop['lamun_ada_manual'] ?? '') === 'Terdapat ekosistem lamun';
-        $hasCoral = filled($prop['karang_spesies'] ?? null) || ($prop['karang_ada'] ?? '') === 'Terdapat ekosistem terumbu karang';
+        // Shared with ProposalDocumentGenerator::docChapterThree() so the docx
+        // narrative and this KkprlProposal row never disagree on whether an
+        // ecosystem was actually detected.
+        $hasMangrove = ProposalDocumentGenerator::hasEcosystemData($prop, 'mangrove_spesies', 'mangrove_ada', 'Terdapat ekosistem mangrove');
+        $hasSeagrass = ProposalDocumentGenerator::hasEcosystemData($prop, 'lamun_spesies', 'lamun_ada_manual', 'Terdapat ekosistem lamun');
+        $hasCoral = ProposalDocumentGenerator::hasEcosystemData($prop, 'karang_spesies', 'karang_ada', 'Terdapat ekosistem terumbu karang');
 
         $coordinatesText = collect($prop['koordinat'] ?? [])
             ->map(fn ($row) => trim(($row[1] ?? '').' '.($row[2] ?? '')))
@@ -326,10 +334,10 @@ class EgeraiProposalController extends Controller
     }
 
     /** Renders the full "what you'll get" document preview; never fatal if it fails. */
-    private function renderPreview(array $propFields, array $propImages, array $lapFields, array $lapImages): ?string
+    private function renderPreview(array $propFields, array $propImages, array $lapFields, array $lapImages, bool $aiFillEnabled = true): ?string
     {
         try {
-            return (new ProposalDocumentGenerator)->renderPreviewHtml($propFields, $propImages, $lapFields, $lapImages);
+            return (new ProposalDocumentGenerator)->renderPreviewHtml($propFields, $propImages, $lapFields, $lapImages, $aiFillEnabled);
         } catch (\Throwable $exception) {
             Log::warning('Gagal membuat pratinjau dokumen e-GeRAI: '.$exception->getMessage());
 
@@ -373,6 +381,7 @@ class EgeraiProposalController extends Controller
             'lap_source_filename' => $egeraiJob->lap_source_filename,
             'prop_fields' => $egeraiJob->prop_fields ?? [],
             'lap_fields' => $egeraiJob->lap_fields ?? [],
+            'ai_fill_enabled' => (bool) $egeraiJob->ai_fill_enabled,
             'preview_html' => $egeraiJob->preview_html,
             'prop_field_hints' => ProposalTextExtractor::FIELD_HINTS,
             'lap_field_hints' => LaporanTextExtractor::FIELD_HINTS,
