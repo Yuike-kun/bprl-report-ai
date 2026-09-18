@@ -484,11 +484,14 @@ export default function RequestForm() {
                                 <FieldError message={fieldError('email')} />
                             </div>
                             <div className="sm:col-span-2">
-                                <SignaturePad
-                                    value={data.tanda_tangan}
-                                    onChange={(val) => setData('tanda_tangan', val)}
-                                    error={fieldError('tanda_tangan')}
-                                />
+                                <div className="w-100 h-100 space-y-1.5">
+                                    <SignaturePad
+                                        value={data.tanda_tangan}
+                                        onChange={(val) => setData('tanda_tangan', val)}
+                                        error={fieldError('tanda_tangan')}
+                                    />
+                                </div>
+
                             </div>
                         </div>
                     </motion.div>
@@ -643,11 +646,10 @@ export default function RequestForm() {
                                                                 setData('tanggal_konsultasi', card.tanggal);
                                                                 setData('child_schedule_id', '');
                                                             }}
-                                                            className={`relative min-w-[5.25rem] cursor-pointer rounded-xl border px-2.5 py-2.5 text-center transition-colors duration-200 ${
-                                                                active
+                                                            className={`relative min-w-[5.25rem] cursor-pointer rounded-xl border px-2.5 py-2.5 text-center transition-colors duration-200 ${active
                                                                     ? 'border-transparent text-white'
                                                                     : 'border-slate-200/80 bg-slate-50/50 hover:border-blue-300/80 hover:bg-blue-50/20'
-                                                            }`}
+                                                                }`}
                                                         >
                                                             {/* Smooth active background pill animation */}
                                                             {active && (
@@ -735,26 +737,23 @@ export default function RequestForm() {
                                                         whileHover={full ? {} : { scale: 1.02 }}
                                                         whileTap={full ? {} : { scale: 0.98 }}
                                                         onClick={() => setData('child_schedule_id', String(slot.id))}
-                                                        className={`group relative rounded-xl border px-3.5 py-3 text-center transition-colors duration-200 ${
-                                                            full
+                                                        className={`group relative rounded-xl border px-3.5 py-3 text-center transition-colors duration-200 ${full
                                                                 ? 'cursor-not-allowed border-slate-100 bg-slate-50 opacity-40'
                                                                 : active
                                                                     ? 'border-blue-600/20 bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20'
                                                                     : 'cursor-pointer border-slate-200/80 bg-white hover:border-blue-400/60 hover:bg-blue-50/30 hover:shadow-xs'
-                                                        }`}
+                                                            }`}
                                                     >
                                                         <p className={`text-sm font-bold tracking-tight ${active ? 'text-white' : full ? 'text-slate-400' : 'text-slate-800'}`}>
                                                             {slot.waktu}
                                                         </p>
                                                         <div className="mt-1 flex items-center justify-center gap-1.5">
-                                                            <span className={`h-1.5 w-1.5 rounded-full ${
-                                                                full ? 'bg-red-400' : active ? 'bg-emerald-300' : 'bg-emerald-500'
-                                                            }`} />
-                                                            <span className={`text-[11px] font-medium ${
-                                                                active
+                                                            <span className={`h-1.5 w-1.5 rounded-full ${full ? 'bg-red-400' : active ? 'bg-emerald-300' : 'bg-emerald-500'
+                                                                }`} />
+                                                            <span className={`text-[11px] font-medium ${active
                                                                     ? 'text-blue-100'
                                                                     : full ? 'text-red-500' : 'text-slate-500'
-                                                            }`}>
+                                                                }`}>
                                                                 {full ? 'Penuh' : `Sisa ${slot.sisa_kuota}`}
                                                             </span>
                                                         </div>
