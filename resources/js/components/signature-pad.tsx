@@ -19,16 +19,18 @@ export default function SignaturePad({ value, onChange, error, label, required }
     const [fileName, setFileName] = useState<string>("");
     const [localError, setLocalError] = useState<string>("");
 
-    // Setup canvas resolution and drawing context
+    // Setup canvas resolution and drawing context. The canvas is square by
+    // default (its container uses aspect-square), so read the actual
+    // rendered height from the DOM instead of a hardcoded rectangle height.
     useEffect(() => {
         if (mode !== "draw" || !canvasRef.current) return;
         const canvas = canvasRef.current;
         const rect = canvas.getBoundingClientRect();
-        
+
         // Handle high DPI displays
         const dpr = window.devicePixelRatio || 1;
         canvas.width = rect.width * dpr;
-        canvas.height = 160 * dpr;
+        canvas.height = rect.height * dpr;
 
         const ctx = canvas.getContext("2d");
         if (ctx) {
@@ -46,11 +48,12 @@ export default function SignaturePad({ value, onChange, error, label, required }
             const canvas = canvasRef.current;
             const ctx = canvas.getContext("2d");
             if (!ctx) return;
+            const dpr = window.devicePixelRatio || 1;
 
             const img = new Image();
             img.onload = () => {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
-                ctx.drawImage(img, 0, 0, canvas.width / (window.devicePixelRatio || 1), 160);
+                ctx.drawImage(img, 0, 0, canvas.width / dpr, canvas.height / dpr);
                 setHasDrawn(true);
             };
             img.src = value;
@@ -190,7 +193,7 @@ export default function SignaturePad({ value, onChange, error, label, required }
 
             {mode === "draw" ? (
                 <div className="space-y-2">
-                    <div className="relative rounded-xl border border-slate-200 bg-white overflow-hidden shadow-xs hover:border-slate-300 transition-colors">
+                    <div className="relative aspect-square w-full max-w-xs rounded-xl border border-slate-200 bg-white overflow-hidden shadow-xs hover:border-slate-300 transition-colors">
                         <canvas
                             ref={canvasRef}
                             onMouseDown={startDrawing}
@@ -200,7 +203,7 @@ export default function SignaturePad({ value, onChange, error, label, required }
                             onTouchStart={startDrawing}
                             onTouchMove={draw}
                             onTouchEnd={stopDrawing}
-                            className="w-full h-40 cursor-crosshair touch-none block"
+                            className="h-full w-full cursor-crosshair touch-none block"
                         />
                         {!hasDrawn && !value && (
                             <div className="absolute inset-0 pointer-events-none flex items-center justify-center text-slate-300 text-sm select-none">
@@ -250,7 +253,7 @@ export default function SignaturePad({ value, onChange, error, label, required }
                             </Button>
                         </div>
                     ) : (
-                        <label className="flex flex-col items-center justify-center h-40 border-2 border-dashed border-slate-200 rounded-xl bg-slate-50/50 hover:bg-blue-50/30 hover:border-blue-300 transition-all cursor-pointer p-4 group">
+                        <label className="flex aspect-square w-full max-w-xs flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-xl bg-slate-50/50 hover:bg-blue-50/30 hover:border-blue-300 transition-all cursor-pointer p-4 group">
                             <div className="w-10 h-10 rounded-full bg-white border border-slate-200 group-hover:border-blue-200 flex items-center justify-center text-slate-400 group-hover:text-blue-600 shadow-xs transition-colors mb-2">
                                 <ImageIcon className="w-5 h-5" />
                             </div>

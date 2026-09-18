@@ -484,14 +484,11 @@ export default function RequestForm() {
                                 <FieldError message={fieldError('email')} />
                             </div>
                             <div className="sm:col-span-2">
-                                <div className="w-100 h-100 space-y-1.5">
-                                    <SignaturePad
-                                        value={data.tanda_tangan}
-                                        onChange={(val) => setData('tanda_tangan', val)}
-                                        error={fieldError('tanda_tangan')}
-                                    />
-                                </div>
-
+                                <SignaturePad
+                                    value={data.tanda_tangan}
+                                    onChange={(val) => setData('tanda_tangan', val)}
+                                    error={fieldError('tanda_tangan')}
+                                />
                             </div>
                         </div>
                     </motion.div>
