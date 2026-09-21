@@ -25,6 +25,7 @@ export function useBeritaAcaraForm(
     konsultasi: any,
     berita_acara: any,
     adminMode = false,
+    staffList: { id: number }[] = [],
 ) {
     const isEdit = !!berita_acara;
     const storageKey = `berita_acara_form_${konsultasi?.id || berita_acara?.id || 'new'}`;
@@ -90,10 +91,15 @@ export function useBeritaAcaraForm(
     useEffect(() => {
         if (isEdit || !konsultasi) return;
 
+        // `assign_to_staff` comes from a pivot table with no FK constraint, so
+        // it can hold a staff id that's since been deleted. Only pre-fill ids
+        // that are still real, selectable staff to avoid submitting a dead
+        // reference the backend will otherwise have to silently strip.
+        const validStaffIds = new Set(staffList.map((s) => String(s.id)));
         const assignedStaffIds = Array.isArray(konsultasi.assign_to_staff)
             ? konsultasi.assign_to_staff
                   .map((a: any) => String(a.staff ?? a.Staff?.id ?? ''))
-                  .filter(Boolean)
+                  .filter((id: string) => id && validStaffIds.has(id))
             : [];
 
         const defaultStaffId = assignedStaffIds[0] || '';
@@ -111,7 +117,7 @@ export function useBeritaAcaraForm(
             province: prev.province || konsultasi?.provinsi || '',
             regency: prev.regency || konsultasi?.kabupaten || '',
         }));
-    }, [konsultasi, isEdit]);
+    }, [konsultasi, isEdit, staffList]);
 
     const set = useCallback((key: keyof FormData, val: any) => {
         setForm((prev) => ({ ...prev, [key]: val }));

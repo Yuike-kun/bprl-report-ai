@@ -150,14 +150,14 @@ e.preventDefault();
         router.get('/reports/berita-acara');
     };
 
-    const handleExportCsv = () => {
+    const handleExport = (format: 'csv' | 'xlsx') => {
         const params = new URLSearchParams({
             year: String(year),
             date_from: dateFrom,
             date_to: dateTo,
             search: search,
         });
-        window.location.href = `/reports/berita-acara/export-csv?${params.toString()}`;
+        window.location.href = `/reports/berita-acara/export-${format}?${params.toString()}`;
     };
 
     const statCards = [
@@ -175,10 +175,16 @@ e.preventDefault();
                 title="Laporan Berita Acara Konsultasi"
                 description="Rekapitulasi penerbitan Berita Acara hasil pendampingan & konsultasi KKPRL."
             >
-                <Button onClick={handleExportCsv} variant="outline" className="gap-2 text-xs font-bold">
-                    <Download className="h-3.5 w-3.5" />
-                    Ekspor CSV
-                </Button>
+                <div className="flex gap-2">
+                    <Button onClick={() => handleExport('csv')} variant="outline" className="gap-2 text-xs font-bold">
+                        <Download className="h-3.5 w-3.5" />
+                        Ekspor CSV
+                    </Button>
+                    <Button onClick={() => handleExport('xlsx')} variant="outline" className="gap-2 text-xs font-bold">
+                        <FileSpreadsheet className="h-3.5 w-3.5" />
+                        Ekspor XLSX
+                    </Button>
+                </div>
             </Heading>
 
             <div className="space-y-6">

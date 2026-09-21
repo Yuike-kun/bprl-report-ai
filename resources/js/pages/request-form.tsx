@@ -22,6 +22,7 @@ import {
     CheckCircle2,
     Sparkles,
     PenTool,
+    Globe,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useRef, useState } from 'react';
@@ -68,7 +69,6 @@ type Schedule = {
 type PageProps = {
     locations: Location[];
     schedules: Schedule[];
-    provinsi: any[];
     flash?: { success?: string; document_url?: string };
     adminMode?: boolean;
 };
@@ -183,11 +183,11 @@ export default function RequestForm() {
         instansi: '',
         tanggal_konsultasi: '',
         child_schedule_id: '',
-        pelaksanaan: 'Luring' as const,
+        pelaksanaan: 'Luring' as 'Luring' | 'Daring',
         lokasi_konsultasi_id: '',
         rencana_kegiatan: '',
         kabupaten: '',
-        provinsi: 73,
+        provinsi: '73',
         nomor_telepon: '',
         email: '',
         permintaan_khusus: '',
@@ -199,14 +199,26 @@ export default function RequestForm() {
     const [attempted, setAttempted] = useState(false);
     const dateScrollerRef = useRef<HTMLDivElement>(null);
 
-    /* ---------- Schedule logic (Luring only) ---------- */
+    /* ---------- Schedule logic (Daring / Luring) ---------- */
+    const needsLocation = data.pelaksanaan === 'Luring';
+
     const activeSchedules = schedules.filter((s) =>
-        s.pelaksanaan === 'Luring' && s.child_schedules.some((slot) => slot.sisa_kuota > 0),
+        s.pelaksanaan === data.pelaksanaan && s.child_schedules.some((slot) => slot.sisa_kuota > 0),
     );
 
-    const matchingSchedules = activeSchedules.filter(
-        (s) => String(s.lokasi_konsultasi_id ?? '') === data.lokasi_konsultasi_id,
-    );
+    const matchingSchedules = needsLocation
+        ? activeSchedules.filter((s) => String(s.lokasi_konsultasi_id ?? '') === data.lokasi_konsultasi_id)
+        : activeSchedules;
+
+    const handlePelaksanaanChange = (val: 'Luring' | 'Daring') => {
+        setData((prev) => ({
+            ...prev,
+            pelaksanaan: val,
+            lokasi_konsultasi_id: '',
+            tanggal_konsultasi: '',
+            child_schedule_id: '',
+        }));
+    };
 
     const dateCards = Array.from(new Set(matchingSchedules.map((s) => s.tanggal))).map((tanggal) => {
         const sisa = matchingSchedules
@@ -231,26 +243,30 @@ export default function RequestForm() {
     const requiredFields: Array<keyof typeof data> = [
         'nama_pemohon',
         'instansi',
+        'provinsi',
         'kabupaten',
         'nomor_telepon',
         'email',
         'tanda_tangan',
         'rencana_kegiatan',
-        'lokasi_konsultasi_id',
         'tanggal_konsultasi',
         'child_schedule_id',
         'setuju_syarat_ketentuan',
     ];
 
-    const fieldError = (field: keyof typeof data) =>
-        errors[field] || (attempted ? required(data[field]) : undefined);
+    const fieldError = (field: keyof typeof data) => {
+        if (field === 'lokasi_konsultasi_id' && !needsLocation) return undefined;
+        return errors[field] || (attempted ? required(data[field]) : undefined);
+    };
 
     const scrollDates = (dir: number) =>
         dateScrollerRef.current?.scrollBy({ left: dir * 260, behavior: 'smooth' });
 
     const submit = (event: React.FormEvent) => {
         event.preventDefault();
-        const hasMissing = requiredFields.some((f) => required(data[f]));
+        const hasMissing =
+            requiredFields.some((f) => required(data[f])) ||
+            (needsLocation && required(data.lokasi_konsultasi_id) !== undefined);
         if (hasMissing) { setAttempted(true); return; }
         post('/request-form', {
             preserveScroll: true,
@@ -445,15 +461,34 @@ export default function RequestForm() {
                             </div>
                             <div className="space-y-1.5">
                                 <Label className="text-xs font-medium text-slate-700">
+                                    Provinsi <span className="text-red-500">*</span>
+                                </Label>
+                                <ComboboxSearch
+                                    value={data.provinsi}
+                                    onChange={(val) => {
+                                        setData('provinsi', val);
+                                        setData('kabupaten', '');
+                                    }}
+                                    fetchUrl="/api/geolocation/provinces"
+                                    labelKey="name"
+                                    valueKey="id"
+                                    placeholder="Pilih provinsi"
+                                    className="h-10 rounded-xl border-slate-200 bg-slate-50/50 text-sm focus-visible:bg-white focus-visible:ring-2 focus-visible:ring-blue-500/20 focus-visible:border-blue-400"
+                                />
+                                <FieldError message={fieldError('provinsi')} />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-xs font-medium text-slate-700">
                                     Kabupaten / Kota <span className="text-red-500">*</span>
                                 </Label>
                                 <ComboboxSearch
                                     value={data.kabupaten}
                                     onChange={(val) => setData('kabupaten', val)}
-                                    fetchUrl="/api/geolocation/regencies?province_id=73"
+                                    fetchUrl={data.provinsi ? `/api/geolocation/regencies?province_id=${data.provinsi}` : ''}
                                     labelKey="name"
                                     valueKey="id"
-                                    placeholder="Pilih kabupaten/kota"
+                                    placeholder={data.provinsi ? 'Pilih kabupaten/kota' : 'Pilih provinsi terlebih dahulu'}
+                                    disabled={!data.provinsi}
                                     className="h-10 rounded-xl border-slate-200 bg-slate-50/50 text-sm focus-visible:bg-white focus-visible:ring-2 focus-visible:ring-blue-500/20 focus-visible:border-blue-400"
                                 />
                                 <FieldError message={fieldError('kabupaten')} />
@@ -557,27 +592,61 @@ export default function RequestForm() {
                         </div>
                         <div className="space-y-4">
 
-                            {/* --- Lokasi --- */}
+                            {/* --- Metode Konsultasi --- */}
                             <div className="space-y-1.5">
-                                <Label className="text-xs font-medium text-slate-700 flex items-center gap-1.5">
-                                    <MapPin className="h-3.5 w-3.5 text-blue-500" />
-                                    Lokasi Konsultasi <span className="text-red-500">*</span>
+                                <Label className="text-xs font-medium text-slate-700">
+                                    Metode Konsultasi <span className="text-red-500">*</span>
                                 </Label>
-                                <ComboboxSearch
-                                    value={data.lokasi_konsultasi_id}
-                                    onChange={(val) => {
-                                        setData('lokasi_konsultasi_id', val);
-                                        setData('tanggal_konsultasi', '');
-                                        setData('child_schedule_id', '');
-                                    }}
-                                    staticOptions={locations}
-                                    labelKey="nama_lokasi"
-                                    valueKey="id"
-                                    placeholder="Pilih lokasi konsultasi..."
-                                    className="h-10 rounded-xl border-slate-200 bg-slate-50/50 text-sm focus-visible:bg-white focus-visible:ring-2 focus-visible:ring-blue-500/20 focus-visible:border-blue-400"
-                                />
-                                <FieldError message={fieldError('lokasi_konsultasi_id')} />
+                                <div className="grid grid-cols-2 gap-2.5">
+                                    {[
+                                        { value: 'Luring' as const, label: 'Luring', desc: 'Tatap muka', icon: MapPin },
+                                        { value: 'Daring' as const, label: 'Daring', desc: 'Online', icon: Globe },
+                                    ].map(({ value, label, desc, icon: Icon }) => {
+                                        const active = data.pelaksanaan === value;
+                                        return (
+                                            <button
+                                                key={value}
+                                                type="button"
+                                                onClick={() => handlePelaksanaanChange(value)}
+                                                className={`flex items-center gap-2.5 rounded-xl border px-3.5 py-2.5 text-left transition-colors duration-200 ${active
+                                                        ? 'border-transparent bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20'
+                                                        : 'cursor-pointer border-slate-200/80 bg-slate-50/50 hover:border-blue-300/80 hover:bg-blue-50/20'
+                                                    }`}
+                                            >
+                                                <Icon className={`h-4 w-4 shrink-0 ${active ? 'text-white' : 'text-blue-500'}`} />
+                                                <div>
+                                                    <p className={`text-xs font-bold leading-none ${active ? 'text-white' : 'text-slate-800'}`}>{label}</p>
+                                                    <p className={`text-[10px] leading-none mt-0.5 ${active ? 'text-blue-100' : 'text-slate-400'}`}>{desc}</p>
+                                                </div>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
                             </div>
+
+                            {/* --- Lokasi (hanya untuk Luring) --- */}
+                            {needsLocation && (
+                                <div className="space-y-1.5">
+                                    <Label className="text-xs font-medium text-slate-700 flex items-center gap-1.5">
+                                        <MapPin className="h-3.5 w-3.5 text-blue-500" />
+                                        Lokasi Konsultasi <span className="text-red-500">*</span>
+                                    </Label>
+                                    <ComboboxSearch
+                                        value={data.lokasi_konsultasi_id}
+                                        onChange={(val) => {
+                                            setData('lokasi_konsultasi_id', val);
+                                            setData('tanggal_konsultasi', '');
+                                            setData('child_schedule_id', '');
+                                        }}
+                                        staticOptions={locations}
+                                        labelKey="nama_lokasi"
+                                        valueKey="id"
+                                        placeholder="Pilih lokasi konsultasi..."
+                                        className="h-10 rounded-xl border-slate-200 bg-slate-50/50 text-sm focus-visible:bg-white focus-visible:ring-2 focus-visible:ring-blue-500/20 focus-visible:border-blue-400"
+                                    />
+                                    <FieldError message={fieldError('lokasi_konsultasi_id')} />
+                                </div>
+                            )}
 
                             {/* --- Tanggal --- */}
                             <div className="space-y-1.5">
@@ -586,7 +655,7 @@ export default function RequestForm() {
                                     Pilih Tanggal <span className="text-red-500">*</span>
                                 </Label>
 
-                                {!data.lokasi_konsultasi_id ? (
+                                {needsLocation && !data.lokasi_konsultasi_id ? (
                                     <motion.p
                                         initial={{ opacity: 0 }}
                                         animate={{ opacity: 1 }}

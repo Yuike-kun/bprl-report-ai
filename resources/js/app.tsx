@@ -2,18 +2,19 @@ import { createInertiaApp } from '@inertiajs/react';
 import { router } from '@inertiajs/react';
 import { createRoot } from 'react-dom/client';
 import 'toastr/build/toastr.min.css';
-import { alertError, alertSuccess, getErrorMessage } from '@/lib/alert';
+import { alertError, alertSuccess, alertWarning, getErrorMessage } from '@/lib/alert';
 
 const appName = import.meta.env.VITE_APP_NAME || 'BPRL';
 
 router.on('success', ({ detail: { page } }) => {
     const props = page.props as {
-        flash?: { success?: string; error?: string };
+        flash?: { success?: string; error?: string; warning?: string };
         errors?: Record<string, string | string[]>;
     };
 
     if (props.flash?.success) alertSuccess(props.flash.success);
     if (props.flash?.error) alertError(props.flash.error);
+    if (props.flash?.warning) alertWarning(props.flash.warning);
 
     const firstError = Object.values(props.errors ?? {})[0];
     if (firstError) {

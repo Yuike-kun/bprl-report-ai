@@ -235,6 +235,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/permohonan-konsultasi/export-csv', [ReportController::class, 'exportPermohonanCsv'])->name('permohonan-konsultasi.export-csv');
         Route::get('/berita-acara', [ReportController::class, 'beritaAcaraReport'])->name('berita-acara');
         Route::get('/berita-acara/export-csv', [ReportController::class, 'exportBeritaAcaraCsv'])->name('berita-acara.export-csv');
+        Route::get('/berita-acara/export-xlsx', [ReportController::class, 'exportBeritaAcaraXlsx'])->name('berita-acara.export-xlsx');
         Route::get('/kkprl-proposal', [ReportController::class, 'kkprlProposalReport'])->name('kkprl-proposal');
         Route::get('/kkprl-proposal/export-csv', [ReportController::class, 'exportKkprlProposalCsv'])->name('kkprl-proposal.export-csv');
     });
@@ -244,6 +245,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/permohonan-konsultasi/export-csv', [ReportController::class, 'exportPermohonanCsv']);
         Route::get('/berita-acara', [ReportController::class, 'beritaAcaraReport']);
         Route::get('/berita-acara/export-csv', [ReportController::class, 'exportBeritaAcaraCsv']);
+        Route::get('/berita-acara/export-xlsx', [ReportController::class, 'exportBeritaAcaraXlsx']);
     });
 
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');

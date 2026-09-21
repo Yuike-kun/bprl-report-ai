@@ -61,7 +61,7 @@ class PermohonanKonsultasi extends Model
 
     public function kabupaten()
     {
-        return $this->belongsTo(District::class, 'kabupaten', 'id');
+        return $this->belongsTo(Regency::class, 'kabupaten', 'id');
     }
 
     public function provinsi()

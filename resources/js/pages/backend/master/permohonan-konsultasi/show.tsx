@@ -30,8 +30,10 @@ type Submission = {
     pelaksanaan: 'Luring' | 'Daring' | 'Hybrid';
     lokasi_konsultasi_id: number | null;
     rencana_kegiatan: string;
-    kabupaten: string | { id?: number; name?: string } | null;
-    provinsi: string | { id?: number; name?: string } | null;
+    kabupaten: number | string | null;
+    provinsi: number | string | null;
+    kabupaten_name?: string | null;
+    provinsi_name?: string | null;
     nomor_telepon: string;
     email: string;
     permintaan_khusus: string | null;
@@ -47,14 +49,6 @@ type Submission = {
 };
 
 type Props = { submission: Submission };
-
-const getLocationName = (loc: string | { id?: number; name?: string } | null | undefined): string => {
-    if (!loc) return '-';
-    if (typeof loc === 'object') {
-        return loc.name ?? '-';
-    }
-    return String(loc);
-};
 
 function DetailItem({ label, value }: { label: string; value: React.ReactNode }) {
     const displayValue = typeof value === 'object' && value !== null && 'name' in (value as any)
@@ -441,11 +435,11 @@ export default function PermohonanKonsultasiShow({ submission }: Props) {
                                 />
                                 <DetailItem
                                     label="Kabupaten/Kota"
-                                    value={getLocationName(submission.kabupaten)}
+                                    value={submission.kabupaten_name ?? '-'}
                                 />
                                 <DetailItem
                                     label="Provinsi"
-                                    value={getLocationName(submission.provinsi)}
+                                    value={submission.provinsi_name ?? '-'}
                                 />
                                 <DetailItem
                                     label="Persetujuan S&amp;K"

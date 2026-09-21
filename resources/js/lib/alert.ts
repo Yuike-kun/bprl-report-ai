@@ -20,6 +20,10 @@ export function alertError(error: unknown): JQuery {
     return toastr.error(getErrorMessage(error));
 }
 
+export function alertWarning(message: string): JQuery {
+    return toastr.warning(message);
+}
+
 export function alertLoading(message: string): JQuery {
     return toastr.info(message, 'Memproses...', {
         timeOut: 0,

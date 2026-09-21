@@ -7,6 +7,8 @@ use App\Models\AssignRequestToStaff;
 use App\Models\DokumenKonsultasi;
 use App\Models\LokasiKonsultasi;
 use App\Models\PermohonanKonsultasi;
+use App\Models\Province;
+use App\Models\Regency;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
@@ -113,11 +115,15 @@ class PermohonanKonsultasiController extends Controller
     {
         $permohonanKonsultasi->load([
             'jadwal.lokasi',
-            'kabupaten',
-            'provinsi',
             'dokumen',
             'assign_to_staff.Staff.user',
         ]);
+
+        // `kabupaten`/`provinsi` are relation *and* column names on this model, so eager
+        // loading them would shadow the raw id in the serialized JSON. Resolve the
+        // display names separately instead and keep the raw ids intact for the frontend.
+        $permohonanKonsultasi->setAttribute('provinsi_name', Province::find($permohonanKonsultasi->provinsi)?->name);
+        $permohonanKonsultasi->setAttribute('kabupaten_name', Regency::find($permohonanKonsultasi->kabupaten)?->name);
 
         $assignedStaff = $permohonanKonsultasi->assign_to_staff
             ->map(function ($assignment) {
@@ -183,7 +189,12 @@ class PermohonanKonsultasiController extends Controller
 
     public function edit(PermohonanKonsultasi $permohonanKonsultasi): Response
     {
-        $permohonanKonsultasi->load(['jadwal.lokasi', 'kabupaten', 'provinsi']);
+        $permohonanKonsultasi->load(['jadwal.lokasi']);
+
+        // See the comment in show() — resolve names separately so the raw
+        // province/regency ids reach the frontend intact.
+        $permohonanKonsultasi->setAttribute('provinsi_name', Province::find($permohonanKonsultasi->provinsi)?->name);
+        $permohonanKonsultasi->setAttribute('kabupaten_name', Regency::find($permohonanKonsultasi->kabupaten)?->name);
 
         return Inertia::render('backend/master/permohonan-konsultasi/edit', [
             'submission' => $permohonanKonsultasi,
@@ -204,8 +215,8 @@ class PermohonanKonsultasiController extends Controller
             'pelaksanaan' => ['required', 'in:Luring,Daring,Hybrid'],
             'lokasi_konsultasi_id' => ['nullable', 'exists:lokasi_konsultasis,id'],
             'rencana_kegiatan' => ['required', 'string'],
-            'kabupaten' => ['required', 'string', 'max:255'],
-            'provinsi' => ['required', 'string', 'max:255'],
+            'kabupaten' => ['required', 'integer', 'exists:regencies,id'],
+            'provinsi' => ['required', 'integer', 'exists:provinces,id'],
             'nomor_telepon' => ['required', 'string', 'max:30'],
             'email' => ['required', 'email', 'max:255'],
             'permintaan_khusus' => ['nullable', 'string'],

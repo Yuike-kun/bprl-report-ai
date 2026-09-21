@@ -77,7 +77,7 @@ export default function BeritaAcara({
         removeExistingDoc,
         goToStep2,
         handleSubmit,
-    } = useBeritaAcaraForm(konsultasi, berita_acara, adminMode);
+    } = useBeritaAcaraForm(konsultasi, berita_acara, adminMode, staffList);
 
     // If stored values are numeric IDs (old data / admin-created), resolve them to
     // display names once on mount so the ComboboxSearch shows the label correctly.

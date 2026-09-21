@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { ComboboxSearch } from "@/components/backend/combobox-searchable";
 
 type Location = {
     id: number;
@@ -22,8 +23,10 @@ type Submission = {
     pelaksanaan: "Luring" | "Daring" | "Hybrid";
     lokasi_konsultasi_id: number | null;
     rencana_kegiatan: string;
-    kabupaten: string | { id?: number; name?: string } | null;
-    provinsi: string | { id?: number; name?: string } | null;
+    kabupaten: number | string | null;
+    provinsi: number | string | null;
+    kabupaten_name?: string | null;
+    provinsi_name?: string | null;
     nomor_telepon: string;
     email: string;
     permintaan_khusus: string | null;
@@ -36,13 +39,8 @@ type Props = {
     locations: Location[];
 };
 
-const getLocationName = (loc: string | { id?: number; name?: string } | null | undefined): string => {
-    if (!loc) return '';
-    if (typeof loc === 'object') {
-        return loc.name ?? '';
-    }
-    return String(loc);
-};
+const comboboxCls =
+    "h-8 w-full rounded-2xl border border-input bg-background px-3 text-sm";
 
 export default function PermohonanKonsultasiEdit({ submission, locations }: Props) {
     const { data, setData, put, processing, errors } = useForm({
@@ -54,8 +52,8 @@ export default function PermohonanKonsultasiEdit({ submission, locations }: Prop
         pelaksanaan: submission.pelaksanaan,
         lokasi_konsultasi_id: submission.lokasi_konsultasi_id ? String(submission.lokasi_konsultasi_id) : "",
         rencana_kegiatan: submission.rencana_kegiatan,
-        kabupaten: getLocationName(submission.kabupaten),
-        provinsi: getLocationName(submission.provinsi),
+        kabupaten: submission.kabupaten ? String(submission.kabupaten) : "",
+        provinsi: submission.provinsi ? String(submission.provinsi) : "",
         nomor_telepon: submission.nomor_telepon,
         email: submission.email,
         permintaan_khusus: submission.permintaan_khusus ?? "",
@@ -166,14 +164,36 @@ export default function PermohonanKonsultasiEdit({ submission, locations }: Prop
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                             <div className="space-y-2">
-                                <Label htmlFor="kabupaten">Kabupaten / Kota</Label>
-                                <Input id="kabupaten" value={data.kabupaten} onChange={e => setData("kabupaten", e.target.value)} />
-                                {errors.kabupaten && <p className="text-sm text-red-500">{errors.kabupaten}</p>}
+                                <Label htmlFor="provinsi">Provinsi</Label>
+                                <ComboboxSearch
+                                    value={data.provinsi}
+                                    selectedLabel={submission.provinsi_name ?? undefined}
+                                    onChange={(val) => {
+                                        setData("provinsi", val);
+                                        setData("kabupaten", "");
+                                    }}
+                                    fetchUrl="/api/geolocation/provinces"
+                                    labelKey="name"
+                                    valueKey="id"
+                                    placeholder="Pilih provinsi"
+                                    className={comboboxCls}
+                                />
+                                {errors.provinsi && <p className="text-sm text-red-500">{errors.provinsi}</p>}
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="provinsi">Provinsi</Label>
-                                <Input id="provinsi" value={data.provinsi} onChange={e => setData("provinsi", e.target.value)} />
-                                {errors.provinsi && <p className="text-sm text-red-500">{errors.provinsi}</p>}
+                                <Label htmlFor="kabupaten">Kabupaten / Kota</Label>
+                                <ComboboxSearch
+                                    value={data.kabupaten}
+                                    selectedLabel={submission.kabupaten_name ?? undefined}
+                                    onChange={(val) => setData("kabupaten", val)}
+                                    fetchUrl={data.provinsi ? `/api/geolocation/regencies?province_id=${data.provinsi}` : ""}
+                                    labelKey="name"
+                                    valueKey="id"
+                                    placeholder={data.provinsi ? "Pilih kabupaten/kota" : "Pilih provinsi terlebih dahulu"}
+                                    disabled={!data.provinsi}
+                                    className={comboboxCls}
+                                />
+                                {errors.kabupaten && <p className="text-sm text-red-500">{errors.kabupaten}</p>}
                             </div>
                         </div>
 

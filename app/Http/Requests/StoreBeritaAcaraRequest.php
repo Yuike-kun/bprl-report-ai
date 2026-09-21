@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Staff;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreBeritaAcaraRequest extends FormRequest
@@ -9,6 +10,41 @@ class StoreBeritaAcaraRequest extends FormRequest
     public function authorize(): bool
     {
         return true;
+    }
+
+    /**
+     * Drop staff references that no longer exist before the `exists` rules
+     * run. `assign_request_to_staff` used to have no FK constraint, so a
+     * deleted staff member's id could linger in a consultation's assignment
+     * (or in a browser's cached draft) and hard-fail this whole submission.
+     * Silently strip those instead and let the user know via a flash notice.
+     */
+    protected function prepareForValidation(): void
+    {
+        $existingStaffIds = Staff::pluck('id')->map(fn ($id) => (string) $id)->all();
+        $droppedAny = false;
+
+        foreach (['staff_1_id', 'staff_2_id', 'staff_3_id', 'staff_4_id'] as $key) {
+            $value = $this->input($key);
+            if ($value !== null && $value !== '' && !in_array((string) $value, $existingStaffIds, true)) {
+                $this->merge([$key => null]);
+                $droppedAny = true;
+            }
+        }
+
+        $staffIds = (array) $this->input('staff_ids', []);
+        $validStaffIds = array_values(array_filter(
+            $staffIds,
+            fn ($id) => in_array((string) $id, $existingStaffIds, true),
+        ));
+        if (count($validStaffIds) !== count($staffIds)) {
+            $droppedAny = true;
+        }
+        $this->merge(['staff_ids' => $validStaffIds]);
+
+        if ($droppedAny) {
+            session()->flash('warning', 'Salah satu petugas pendamping yang tersimpan sebelumnya sudah tidak ditemukan dan telah dihapus dari daftar. Silakan periksa kembali Petugas Pendamping sebelum menyimpan.');
+        }
     }
 
     public function rules(): array

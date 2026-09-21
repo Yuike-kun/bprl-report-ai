@@ -9,6 +9,10 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use Symfony\Component\HttpFoundation\Response as HttpResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ReportController extends Controller
@@ -310,16 +314,17 @@ class ReportController extends Controller
     }
 
     /**
-     * Export Berita Acara Report to CSV.
+     * Build the filtered Berita Acara query shared by the report page and both exports.
      */
-    public function exportBeritaAcaraCsv(Request $request): StreamedResponse
+    private function beritaAcaraExportQuery(Request $request)
     {
         $year = (int) $request->query('year', date('Y'));
         $dateFrom = $request->query('date_from');
         $dateTo = $request->query('date_to');
         $search = trim((string) $request->query('search', ''));
 
-        $query = BeritaAcaraKonsultasi::query()->with(['staff1.user']);
+        $query = BeritaAcaraKonsultasi::query()
+            ->with(['staff1.user', 'staff2.user', 'staff3.user', 'staff4.user', 'staff.user', 'requester.user', 'documents']);
 
         if ($search !== '') {
             $query->where(function ($inner) use ($search) {
@@ -342,8 +347,139 @@ class ReportController extends Controller
             $query->whereYear('consultation_date', $year);
         }
 
-        $records = $query->latest('consultation_date')->get();
+        return $query->latest('consultation_date');
+    }
 
+    /**
+     * Column headers for the Berita Acara export — one per column of the
+     * `berita_acara_konsultasis` table (in migration order), plus a handful
+     * of resolved relation columns for readability.
+     */
+    private function beritaAcaraExportHeaders(): array
+    {
+        return [
+            'No',
+            'ID',
+            'Nomor Berita Acara',
+            'Status',
+            'Tahap Konsultasi',
+            'Tanggal Konsultasi',
+            'Mode Pelaksanaan',
+            'Lokasi',
+            'Lokasi Lainnya',
+            'Nama Pemohon',
+            'Jabatan Pemohon',
+            'Nama Subjek Hukum',
+            'Email Kontak',
+            'Jenis Persetujuan',
+            'Jenis Kegiatan',
+            'Rincian Kegiatan',
+            'Rincian Kegiatan Lainnya',
+            'KBLI',
+            'Provinsi',
+            'Kabupaten / Kota',
+            'Kecamatan',
+            'Nama Perairan',
+            'Nama Perairan Lainnya',
+            'Instrumen Konsultasi',
+            'Kategori Kegiatan',
+            'Luas Rencana',
+            'Satuan Luas',
+            'Kondisi Eksisting',
+            'Titik Koordinat',
+            'Dokumen yang Dimiliki',
+            'Dokumen Lainnya',
+            'Uraian Kegiatan',
+            'Pemanfaatan Sekitar',
+            'Kondisi Lingkungan',
+            'Informasi Lainnya',
+            'Hasil Konsultasi',
+            'Catatan Konsultasi / Koordinasi',
+            'ID Permohonan Terkait',
+            'ID Pemohon Terdaftar',
+            'Pemohon Terdaftar',
+            'Petugas 1',
+            'Petugas 2',
+            'Petugas 3',
+            'Petugas 4',
+            'Semua Petugas Pendamping',
+            'Jumlah Dokumen Lampiran',
+            'Dibuat Pada',
+            'Diperbarui Pada',
+            'Dihapus Pada',
+        ];
+    }
+
+    /**
+     * Build one export row covering every column of the Berita Acara table.
+     */
+    private function beritaAcaraExportRow(BeritaAcaraKonsultasi $row, int $index): array
+    {
+        $join = fn ($value) => is_array($value) ? implode('; ', $value) : ($value ?? '-');
+
+        $staffLabel = fn ($staff) => $staff ? ($staff->user?->name ?? "Staff #{$staff->id}") : '-';
+
+        return [
+            $index + 1,
+            $row->id,
+            $row->berita_acara_number ?? '-',
+            strtoupper((string) ($row->status ?? 'Draft')),
+            $row->consultation_stage ?? '-',
+            $row->consultation_date ? $row->consultation_date->format('d/m/Y') : '-',
+            $row->implementation_mode ?? '-',
+            $row->location ?? '-',
+            $row->location_other ?? '-',
+            $row->requester_name ?? '-',
+            $row->requester_position ?? '-',
+            $row->legal_entity_name ?? '-',
+            $row->contact_email ?? '-',
+            $row->permit_type ?? '-',
+            $row->activity_type ?? '-',
+            $join($row->activity_detail),
+            $row->activity_detail_other ?? '-',
+            $row->kbli ?? '-',
+            $row->province ?? '-',
+            $row->regency ?? '-',
+            $row->district ?? '-',
+            $row->water_name ?? '-',
+            $row->water_name_other ?? '-',
+            $row->consultation_instruments ?? '-',
+            $row->activity_category ?? '-',
+            $row->planned_area ?? '-',
+            $row->planned_area_unit ?? '-',
+            $row->existing_condition ?? '-',
+            $row->coordinate_points ?? '-',
+            $join($row->owned_documents),
+            $row->owned_documents_other ?? '-',
+            $row->activity_description ?? '-',
+            $row->surrounding_utilization ?? '-',
+            $row->environmental_condition ?? '-',
+            $row->other_information ?? '-',
+            $row->consultation_result ?? '-',
+            $row->consultation_notes ?? '-',
+            $row->request_form_id ?? '-',
+            $row->requester_id ?? '-',
+            $row->requester?->user?->name ?? $row->requester?->institution_name ?? '-',
+            $staffLabel($row->staff1),
+            $staffLabel($row->staff2),
+            $staffLabel($row->staff3),
+            $staffLabel($row->staff4),
+            $row->staff->isNotEmpty()
+                ? $row->staff->map(fn ($s) => $staffLabel($s))->implode('; ')
+                : '-',
+            $row->documents->count(),
+            $row->created_at ? $row->created_at->format('d/m/Y H:i') : '-',
+            $row->updated_at ? $row->updated_at->format('d/m/Y H:i') : '-',
+            $row->deleted_at ? $row->deleted_at->format('d/m/Y H:i') : '-',
+        ];
+    }
+
+    /**
+     * Export Berita Acara Report to CSV.
+     */
+    public function exportBeritaAcaraCsv(Request $request): StreamedResponse
+    {
+        $records = $this->beritaAcaraExportQuery($request)->get();
         $filename = 'Laporan_Berita_Acara_'.now()->format('Ymd_His').'.csv';
 
         return response()->streamDownload(function () use ($records) {
@@ -352,39 +488,52 @@ class ReportController extends Controller
             // BOM for UTF-8 Excel compatibility
             fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
 
-            fputcsv($handle, [
-                'No',
-                'Nomor Berita Acara',
-                'Tanggal Konsultasi',
-                'Nama Pemohon',
-                'Jabatan',
-                'Perusahaan / Instansi',
-                'Email',
-                'Jenis Kegiatan',
-                'Lokasi / Perairan',
-                'Petugas Pendamping',
-                'Status',
-            ]);
+            fputcsv($handle, $this->beritaAcaraExportHeaders(), ',', '"', '\\');
 
             foreach ($records as $index => $row) {
-                fputcsv($handle, [
-                    $index + 1,
-                    $row->berita_acara_number ?? '-',
-                    $row->consultation_date ? $row->consultation_date->format('d/m/Y') : '-',
-                    $row->requester_name ?? '-',
-                    $row->requester_position ?? '-',
-                    $row->legal_entity_name ?? '-',
-                    $row->contact_email ?? '-',
-                    $row->activity_type ?? '-',
-                    $row->water_name ?? $row->location ?? '-',
-                    $row->staff1?->user?->name ?? '-',
-                    strtoupper((string) ($row->status ?? 'Draft')),
-                ]);
+                fputcsv($handle, $this->beritaAcaraExportRow($row, $index), ',', '"', '\\');
             }
 
             fclose($handle);
         }, $filename, [
             'Content-Type' => 'text/csv; charset=UTF-8',
+            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ]);
+    }
+
+    /**
+     * Export Berita Acara Report to XLSX.
+     */
+    public function exportBeritaAcaraXlsx(Request $request): HttpResponse
+    {
+        $records = $this->beritaAcaraExportQuery($request)->get();
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Berita Acara');
+
+        $headers = $this->beritaAcaraExportHeaders();
+        $sheet->fromArray($headers, null, 'A1');
+        $sheet->getStyle('A1:'.$sheet->getHighestColumn().'1')->getFont()->setBold(true);
+
+        foreach ($records as $index => $row) {
+            $sheet->fromArray($this->beritaAcaraExportRow($row, $index), null, 'A'.($index + 2));
+        }
+
+        $lastColumnIndex = Coordinate::columnIndexFromString($sheet->getHighestColumn());
+        for ($i = 1; $i <= $lastColumnIndex; $i++) {
+            $column = Coordinate::stringFromColumnIndex($i);
+            $sheet->getColumnDimension($column)->setAutoSize(true);
+        }
+
+        $filename = 'Laporan_Berita_Acara_'.now()->format('Ymd_His').'.xlsx';
+
+        return response()->streamDownload(function () use ($spreadsheet) {
+            $writer = new Xlsx($spreadsheet);
+            $writer->save('php://output');
+        }, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
             'Content-Disposition' => "attachment; filename=\"{$filename}\"",
         ]);

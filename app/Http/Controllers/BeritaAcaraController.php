@@ -87,13 +87,15 @@ class BeritaAcaraController extends Controller
 
     private function syncPermohonanKonsultasi(PermohonanKonsultasi $konsultasi, array $data): void
     {
+        // Note: `province`/`regency` on the Berita Acara are free-text names for
+        // the activity site, while `provinsi`/`kabupaten` on the consultation are
+        // province/regency *ids* for the requester's location. They are not the
+        // same value, so they must not be synced here.
         $konsultasi->update([
             'nama_pemohon' => $data['requester_name'] ?? $konsultasi->nama_pemohon,
             'jabatan_pemohon' => $data['requester_position'] ?? $konsultasi->jabatan_pemohon,
             'instansi' => $data['legal_entity_name'] ?? $konsultasi->instansi,
             'email' => $data['contact_email'] ?? $konsultasi->email,
-            'provinsi' => $data['province'] ?? $konsultasi->provinsi,
-            'kabupaten' => $data['regency'] ?? $konsultasi->kabupaten,
             'status' => 'berita_acara',
         ]);
     }
