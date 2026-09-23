@@ -2,17 +2,18 @@
 
 namespace App\Mail;
 
-use Carbon\Carbon;
-use App\Models\Regency;
+use App\Models\PermohonanKonsultasi;
 use App\Models\Province;
+use App\Models\Regency;
+use App\Support\TextCase;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
-use Barryvdh\DomPDF\Facade\Pdf;
-use App\Models\PermohonanKonsultasi;
-use Illuminate\Mail\Mailables\Content;
-use Illuminate\Queue\SerializesModels;
-use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Mail\Mailables\Attachment;
+use Illuminate\Mail\Mailables\Content;
+use Illuminate\Mail\Mailables\Envelope;
+use Illuminate\Queue\SerializesModels;
 
 class KonsultasiDikonfirmasiMail extends Mailable
 {
@@ -38,7 +39,7 @@ class KonsultasiDikonfirmasiMail extends Mailable
             markdown: 'emails.konsultasi.dikonfirmasi',
             with: [
                 'permohonan' => $this->permohonan,
-                'confirmed'  => $this->confirmed,
+                'confirmed' => $this->confirmed,
             ],
         );
     }
@@ -46,7 +47,7 @@ class KonsultasiDikonfirmasiMail extends Mailable
     /**
      * Get the attachments for the message.
      *
-     * @return array<int, \Illuminate\Mail\Mailables\Attachment>
+     * @return array<int, Attachment>
      */
     public function attachments(): array
     {
@@ -98,8 +99,10 @@ class KonsultasiDikonfirmasiMail extends Mailable
 
             return trim($value);
         };
-        $kabupatenName = $locationName($this->permohonan->kabupaten, Regency::class);
-        $provinsiName = $locationName($this->permohonan->provinsi, Province::class);
+        // Wilayah names are stored ALL CAPS (indonesia.sql dump); render them
+        // as normal text in the letter body instead of "KABUPATEN BANTAENG".
+        $kabupatenName = TextCase::humanize($locationName($this->permohonan->kabupaten, Regency::class));
+        $provinsiName = TextCase::humanize($locationName($this->permohonan->provinsi, Province::class));
 
         return Pdf::loadView('pdf.surat-konfirmasi-kkprl', [
             'permohonan' => $this->permohonan,
@@ -111,4 +114,3 @@ class KonsultasiDikonfirmasiMail extends Mailable
         ])->output();
     }
 }
-

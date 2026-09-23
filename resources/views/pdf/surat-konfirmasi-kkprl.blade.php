@@ -137,7 +137,7 @@
         <tr>
             <td>Lokasi Konsultasi</td>
             <td>:</td>
-            <td>{{ $permohonan->jadwal?->lokasi?->nama_lokasi ?? 'Daring' }}</td>
+            <td>{{ \App\Support\TextCase::humanize($permohonan->jadwal?->lokasi?->nama_lokasi ?? 'Daring') }}</td>
         </tr>
         <tr>
             <td>Agenda Konsultasi</td>

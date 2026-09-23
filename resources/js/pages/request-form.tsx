@@ -227,10 +227,12 @@ export default function RequestForm() {
         return { tanggal, sisa };
     });
 
-    const matchedSchedule = matchingSchedules.find(
-        (s) => s.tanggal.slice(0, 10) === data.tanggal_konsultasi,
-    );
-    const timeSlots = matchedSchedule?.child_schedules ?? [];
+    // One date can hold several schedule records (double) — gather slots from
+    // all of them so the list matches the quota summed on the date card.
+    const timeSlots = matchingSchedules
+        .filter((s) => s.tanggal.slice(0, 10) === data.tanggal_konsultasi)
+        .flatMap((s) => s.child_schedules)
+        .sort((a, b) => a.waktu.localeCompare(b.waktu));
 
     /* ---------- Validation ---------- */
     const required = (value: string | number | boolean | null | undefined) =>

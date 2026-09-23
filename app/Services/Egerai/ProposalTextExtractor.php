@@ -2,6 +2,8 @@
 
 namespace App\Services\Egerai;
 
+use App\Support\TextCase;
+
 /**
  * Faithful PHP port of the reference e-GeRAI Python app's extract.py
  * `_parse_proposal_text()` — same field keys, same regex intent, applied to
@@ -89,6 +91,15 @@ class ProposalTextExtractor
                 $data['_lokasi_parts'] = $lines;
             }
         }
+
+        // The source proposal prints the wilayah block in ALL CAPS
+        // ("BUNTUSU", "KOTA MAKASSAR") — normalise each part once here so the
+        // review form, the persisted KkprlProposal and both document engines
+        // (local + external API koreksi) all see normal casing.
+        $data['_lokasi_parts'] = array_map(
+            fn ($part) => TextCase::humanize(is_string($part) ? $part : null) ?? $part,
+            $data['_lokasi_parts']
+        );
 
         if (preg_match('/PT\.\s*[A-Z .]+?(?=\s+yang diwakili|\s+berencana)/u', $fullText, $m)) {
             $data['Nama Perusahaan/Instansi'] = TextNormalizer::norm($m[0]);

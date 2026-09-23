@@ -9,6 +9,7 @@ use App\Services\DocumentImageExtractor;
 use App\Services\KKPRL\ProposalExtractionService;
 use App\Services\PdfImageExtractorService;
 use App\Services\ProposalDocumentGenerator;
+use App\Support\TextCase;
 use DOMDocument;
 use DOMXPath;
 use Exception;
@@ -374,12 +375,13 @@ class GenerateDocxController extends Controller
             'jenis_kegiatan' => $draft->jenis_kegiatan ?? '',
             'no_referensi' => $draft->no_referensi ?? '',
             'tanggal_penyusunan' => $draft->tanggal_penyusunan?->format('d F Y') ?? '',
-            // Bab I
+            // Bab I — wilayah from the cascading dropdowns is ALL CAPS as
+            // stored by database/dump/indonesia.sql; normalise for output.
             'nama_perairan' => $sea?->nama_perairan ?? '',
-            'provinsi' => $sea?->provinsi ?? '',
-            'kabupaten' => $sea?->kabupaten ?? '',
-            'kecamatan' => $sea?->kecamatan ?? '',
-            'desa' => $sea?->desa ?? '',
+            'provinsi' => TextCase::humanize($sea?->provinsi) ?? '',
+            'kabupaten' => TextCase::humanize($sea?->kabupaten) ?? '',
+            'kecamatan' => TextCase::humanize($sea?->kecamatan) ?? '',
+            'desa' => TextCase::humanize($sea?->desa) ?? '',
             'uraian_kegiatan' => $sea?->uraian_kegiatan ?? '',
             'jadwal_konstruksi' => $sea?->jadwal_konstruksi ?? '',
             'luas_ruang_total' => $sea?->luas_ruang_total ?? '',
@@ -659,6 +661,14 @@ class GenerateDocxController extends Controller
                 $request->only(self::ALL_FIELDS),
                 fn ($val) => ! is_null($val) && $val !== ''
             );
+
+            // The narrative may quote the location verbatim — send normal
+            // casing instead of the ALL CAPS wilayah values from the form.
+            foreach (['provinsi', 'kabupaten', 'kecamatan', 'desa'] as $locKey) {
+                if (is_string($profileContext[$locKey] ?? null)) {
+                    $profileContext[$locKey] = TextCase::humanize($profileContext[$locKey]);
+                }
+            }
 
             $rawResponse = $this->claude->generateNarasi($documentText, $profileContext);
 

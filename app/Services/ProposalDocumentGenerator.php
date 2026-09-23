@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\KkprlProposal;
+use App\Support\TextCase;
 use PhpOffice\PhpWord\Element\Section;
 use PhpOffice\PhpWord\PhpWord;
 use PhpOffice\PhpWord\Shared\Converter;
@@ -119,14 +120,20 @@ class ProposalDocumentGenerator
         return $value !== '' ? $value : ($default ?? self::MISSING);
     }
 
+    /** Location column from the wilayah dump (or e-GeRAI extraction) — ALL CAPS as stored. */
+    private function pvLoc(KkprlProposal $p, string $key): string
+    {
+        return TextCase::humanize($this->pv($p, $key)) ?? self::MISSING;
+    }
+
     private function pLokasi(KkprlProposal $p): string
     {
         return sprintf(
             'Desa %s, Kecamatan %s, %s, Provinsi %s',
-            $this->pv($p, 'village'),
-            $this->pv($p, 'district'),
-            $this->pv($p, 'regency'),
-            $this->pv($p, 'province')
+            $this->pvLoc($p, 'village'),
+            $this->pvLoc($p, 'district'),
+            $this->pvLoc($p, 'regency'),
+            $this->pvLoc($p, 'province')
         );
     }
 
@@ -673,7 +680,7 @@ class ProposalDocumentGenerator
         $this->heading($s, 'D. Kondisi Sosial Ekonomi Masyarakat', 2);
         $sumber = filled($p->sosek_data_source) ? $p->sosek_data_source : 'Badan Pusat Statistik';
         $tahunTxt = filled($p->sosek_data_year) ? ' tahun '.$p->sosek_data_year : '';
-        $this->text($s, "Berdasarkan data sekunder $sumber$tahunTxt, Desa {$this->pv($p, 'village')} memiliki luas wilayah {$this->pv($p, 'village_area')} Ha dengan jumlah penduduk sebanyak {$this->pv($p, 'population_count')} jiwa. Kehadiran rencana kegiatan ini diharapkan dapat mendukung struktur sosial-ekonomi kawasan secara harmonis dan melibatkan konsultasi publik dengan kelompok nelayan setempat sebelum pelaksanaan konstruksi.");
+        $this->text($s, "Berdasarkan data sekunder $sumber$tahunTxt, Desa {$this->pvLoc($p, 'village')} memiliki luas wilayah {$this->pv($p, 'village_area')} Ha dengan jumlah penduduk sebanyak {$this->pv($p, 'population_count')} jiwa. Kehadiran rencana kegiatan ini diharapkan dapat mendukung struktur sosial-ekonomi kawasan secara harmonis dan melibatkan konsultasi publik dengan kelompok nelayan setempat sebelum pelaksanaan konstruksi.");
         if (filled($p->livelihood_description)) {
             $this->labeled($s, 'Mata Pencaharian Masyarakat Desa', (string) $p->livelihood_description);
         }
@@ -749,7 +756,9 @@ class ProposalDocumentGenerator
 
     private function location(array $d): string
     {
-        return $this->v($d, 'location', $this->v($d, 'Lokasi Kegiatan', $this->v($d, 'provinsi')));
+        return TextCase::humanize(
+            $this->v($d, 'location', $this->v($d, 'Lokasi Kegiatan', $this->v($d, 'provinsi')))
+        ) ?? '';
     }
 
     private function company(array $d): string
@@ -1285,11 +1294,16 @@ img {
             'marginBottom' => Converter::cmToTwip(2),
         ]);
 
+        // _lokasi_parts come out of the source proposal in ALL CAPS
+        // ("BUNTUSU", "KOTA MAKASSAR") — normalise each part before composing.
         $locationParts = $prop['_lokasi_parts'] ?? [];
-        $desa = $locationParts[0] ?? self::MISSING;
-        $kecamatan = $locationParts[1] ?? self::MISSING;
-        $kabupaten = $locationParts[2] ?? self::MISSING;
-        $provinsi = $locationParts[3] ?? self::MISSING;
+        $partAt = fn (int $i): string => TextCase::humanize(
+            is_string($locationParts[$i] ?? null) ? $locationParts[$i] : null
+        ) ?? self::MISSING;
+        $desa = $partAt(0);
+        $kecamatan = $partAt(1);
+        $kabupaten = $partAt(2);
+        $provinsi = $partAt(3);
         $lokasi = "Desa $desa, Kecamatan $kecamatan, $kabupaten, Provinsi $provinsi";
 
         $perusahaan = $this->g($prop, 'Nama Perusahaan/Instansi');

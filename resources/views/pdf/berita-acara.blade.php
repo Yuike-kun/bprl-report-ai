@@ -427,6 +427,8 @@
         </div>
     </div>
 
+    
+
     @php
         $tanggal = \Carbon\Carbon::parse($beritaAcara->consultation_date)->locale('id');
         $hari = $tanggal->translatedFormat('l');
@@ -458,9 +460,15 @@
                 $activityDetailRaw === 'Yang lain' ? $beritaAcara->activity_detail_other : $activityDetailRaw;
         }
 
-        $waterName = $beritaAcara->water_name === 'Lainnya' ? $beritaAcara->water_name_other : $beritaAcara->water_name;
+        // Wilayah/lokasi values are ALL CAPS in their source tables; render
+        // them as normal text in the letter body (see App\Support\TextCase).
+        $waterName = \App\Support\TextCase::humanize(
+            $beritaAcara->water_name === 'Lainnya' ? $beritaAcara->water_name_other : $beritaAcara->water_name,
+        );
 
-        $location = $beritaAcara->location === 'Lainnya' ? $beritaAcara->location_other : $beritaAcara->location;
+        $location = \App\Support\TextCase::humanize(
+            $beritaAcara->location === 'Lainnya' ? $beritaAcara->location_other : $beritaAcara->location,
+        );
 
         $ownedDocs = collect($beritaAcara->owned_documents ?? [])
             ->map(fn($d) => $d === 'Yang lain' ? $beritaAcara->owned_documents_other : $d)
@@ -479,9 +487,18 @@
             return $value;
         };
 
-        $provinceName = $locationName($beritaAcara->province, \App\Models\Province::class);
-        $regencyName = $locationName($beritaAcara->regency, \App\Models\Regency::class);
-        $districtName = $locationName($beritaAcara->district, \App\Models\District::class);
+        $provinceName = \App\Support\TextCase::humanize($locationName($beritaAcara->province, \App\Models\Province::class));
+        $regencyName = \App\Support\TextCase::humanize($locationName($beritaAcara->regency, \App\Models\Regency::class));
+        $districtName = \App\Support\TextCase::humanize($locationName($beritaAcara->district, \App\Models\District::class));
+
+        // The letter body writes the literal word "Kabupaten" before the
+        // regency name, but names from the wilayah dump already start with
+        // "Kabupaten "/"Kota " — fold them together so the line reads
+        // "Kabupaten Bantaeng" instead of "Kabupaten Kabupaten Bantaeng",
+        // and let cities keep their correct "Kota" label.
+        $regencyLabel = preg_match('/^(Kabupaten|Kota)\b/i', (string) $regencyName)
+            ? (string) $regencyName
+            : 'Kabupaten '.$regencyName;
 
         $docsByType = $beritaAcara->documents->groupBy('document_type');
         $sigDoc = optional($docsByType->get('tanda_tangan_perwakilan'))->first();
@@ -585,7 +602,7 @@
         <strong>{{ $permitTypeLabel }}</strong> untuk permohonan
         <strong>{{ $activityDetail }}</strong> dengan KBLI {{ $beritaAcara->kbli ?: '-' }} oleh
         <strong>{{ $beritaAcara->legal_entity_name }}</strong> di Kecamatan {{ $districtName }},
-        Kabupaten {{ $regencyName }}, Provinsi {{ $provinceName }} yang dilaksanakan secara
+        {{ $regencyLabel }}, Provinsi {{ $provinceName }} yang dilaksanakan secara
         <em>{{ $modeLabel }}</em> di {{ $location }} dan dihadiri oleh:
     </p>
 
@@ -618,7 +635,7 @@
         <p class="intro">
             Adapun rencana lokasi kegiatan {{ $activityDetail }} yang akan dilakukan oleh
             {{ $beritaAcara->legal_entity_name }} terletak di perairan {{ $waterName }} di
-            Kecamatan {{ $districtName }}, Kabupaten {{ $regencyName }}, Provinsi {{ $provinceName }}
+            Kecamatan {{ $districtName }}, {{ $regencyLabel }}, Provinsi {{ $provinceName }}
             dengan titik koordinat sebagai berikut:
         </p>
         @php
@@ -709,7 +726,7 @@
         <p class="intro">
             Adapun rencana lokasi kegiatan {{ $activityDetail }} yang akan dilakukan oleh
             {{ $beritaAcara->legal_entity_name }} terletak di perairan {{ $waterName }} di
-            Kecamatan {{ $districtName }}, Kabupaten {{ $regencyName }}, Provinsi {{ $provinceName }}.
+            Kecamatan {{ $districtName }}, {{ $regencyLabel }}, Provinsi {{ $provinceName }}.
         </p>
 
         <div class="section-title">2. Catatan Hasil Konsultasi/Koordinasi</div>

@@ -10,6 +10,7 @@ use App\Services\Egerai\EgeraiExtractionService;
 use App\Services\Egerai\LaporanTextExtractor;
 use App\Services\Egerai\ProposalTextExtractor;
 use App\Services\ProposalDocumentGenerator;
+use App\Support\TextCase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
@@ -235,6 +236,10 @@ class EgeraiProposalController extends Controller
     {
         $prop = $egeraiJob->prop_fields ?? [];
         $loc = $prop['_lokasi_parts'] ?? ['', '', '', ''];
+        // Parts may still be ALL CAPS for jobs extracted before
+        // ProposalTextExtractor normalised them — fix at the persistence
+        // boundary so the master panel and previews never show caps.
+        $locAt = fn (int $i): string => TextCase::humanize(is_string($loc[$i] ?? null) ? $loc[$i] : null) ?? '-';
 
         $isReclamation = ! empty($prop['reklamasi']) ? true : (! empty($prop['non_reklamasi']) ? false : false);
         $isBusiness = ! empty($prop['kegiatan_berusaha']) ? true : (! empty($prop['non_berusaha']) ? false : null);
@@ -272,10 +277,10 @@ class EgeraiProposalController extends Controller
             'activity_type' => $prop['Jenis Kegiatan'] ?? '-',
             'water_name' => $prop['Nama Perairan'] ?? '-',
             'area_size' => (float) preg_replace('/[^\d.]/', '', (string) ($prop['Luas Kebutuhan Ruang'] ?? '0')) ?: 0,
-            'village' => $loc[0] ?? '-',
-            'district' => $loc[1] ?? '-',
-            'regency' => $loc[2] ?? '-',
-            'province' => $loc[3] ?? '-',
+            'village' => $locAt(0),
+            'district' => $locAt(1),
+            'regency' => $locAt(2),
+            'province' => $locAt(3),
             'activity_status' => ($prop['kegiatan_status'] ?? '') ?: 'Rencana',
             'activity_category' => $prop['KBLI'] ?? '-',
             'activity_details' => array_filter([$prop['Jenis Kegiatan'] ?? null]),

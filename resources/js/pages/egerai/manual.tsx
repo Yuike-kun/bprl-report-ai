@@ -528,7 +528,7 @@ export default function EgeraiManual() {
                                             karang_kondisi: 'Baik Sekali',
                                         }));
                                         setWilayah({
-                                            provinsi: 'SUAWESI SELATAN',
+                                            provinsi: 'SULAWESI SELATAN',
                                             kabupaten: 'KOTA MAKASSAR',
                                             kecamatan: 'TAMALANREA',
                                             desa: 'BUNTUSU',

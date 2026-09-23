@@ -1551,7 +1551,7 @@ export default function ManualProposalForm() {
                                             koordinat_manual: '119.412345 -5.123456\n119.412890 -5.123890',
                                         }));
                                         setWilayah({
-                                            provinsi: 'SUAWESI SELATAN',
+                                            provinsi: 'SULAWESI SELATAN',
                                             kabupaten: 'KOTA MAKASSAR',
                                             kecamatan: 'TAMALANREA',
                                             desa: 'BUNTUSU',

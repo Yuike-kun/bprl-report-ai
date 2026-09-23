@@ -1,11 +1,15 @@
 <?php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * @property string $name
+ */
 class Regency extends Model
 {
-    protected $table = "regencies";
+    protected $table = 'regencies';
 
     public function province()
     {

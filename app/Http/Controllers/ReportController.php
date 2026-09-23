@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\BeritaAcaraKonsultasi;
 use App\Models\KkprlProposal;
 use App\Models\PermohonanKonsultasi;
+use App\Models\Province;
+use App\Models\Regency;
+use App\Support\TextCase;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -58,6 +61,22 @@ class ReportController extends Controller
         }
 
         $submissions = (clone $query)->latest()->paginate(15)->withQueryString();
+
+        // Display-only sentence casing for the wilayah relation names; the DB
+        // keeps its raw values because the edit form cascade matches them
+        // case-sensitively against the geolocation API response. NB: the FK
+        // columns share the relation names, so the shadowed relation must be
+        // read via getRelationValue() — $p->kabupaten returns the raw code.
+        $submissions->getCollection()->each(function (PermohonanKonsultasi $p) {
+            $kabupaten = $p->getRelationValue('kabupaten');
+            if ($kabupaten instanceof Regency) {
+                $kabupaten->name = TextCase::humanize($kabupaten->name);
+            }
+            $provinsi = $p->getRelationValue('provinsi');
+            if ($provinsi instanceof Province) {
+                $provinsi->name = TextCase::humanize($provinsi->name);
+            }
+        });
 
         // Key metrics calculation
         $totalCount = PermohonanKonsultasi::count();
@@ -252,6 +271,13 @@ class ReportController extends Controller
 
         $records = (clone $query)->latest('consultation_date')->paginate(15)->withQueryString();
 
+        // Display-only sentence casing for the caps-prone free-text location
+        // fields (same treatment as the PDF letters and the CSV/XLSX export).
+        $records->getCollection()->each(function (BeritaAcaraKonsultasi $r) {
+            $r->water_name = TextCase::humanize($r->water_name) ?? $r->water_name;
+            $r->location = TextCase::humanize($r->location) ?? $r->location;
+        });
+
         // Key Metrics
         $totalCount = BeritaAcaraKonsultasi::count();
         $thisMonthCount = BeritaAcaraKonsultasi::whereMonth('consultation_date', date('m'))
@@ -427,8 +453,8 @@ class ReportController extends Controller
             $row->consultation_stage ?? '-',
             $row->consultation_date ? $row->consultation_date->format('d/m/Y') : '-',
             $row->implementation_mode ?? '-',
-            $row->location ?? '-',
-            $row->location_other ?? '-',
+            TextCase::humanize($row->location ?? '-') ?? '-',
+            TextCase::humanize($row->location_other ?? '-') ?? '-',
             $row->requester_name ?? '-',
             $row->requester_position ?? '-',
             $row->legal_entity_name ?? '-',
@@ -438,11 +464,11 @@ class ReportController extends Controller
             $join($row->activity_detail),
             $row->activity_detail_other ?? '-',
             $row->kbli ?? '-',
-            $row->province ?? '-',
-            $row->regency ?? '-',
-            $row->district ?? '-',
-            $row->water_name ?? '-',
-            $row->water_name_other ?? '-',
+            TextCase::humanize($row->province ?? '-') ?? '-',
+            TextCase::humanize($row->regency ?? '-') ?? '-',
+            TextCase::humanize($row->district ?? '-') ?? '-',
+            TextCase::humanize($row->water_name ?? '-') ?? '-',
+            TextCase::humanize($row->water_name_other ?? '-') ?? '-',
             $row->consultation_instruments ?? '-',
             $row->activity_category ?? '-',
             $row->planned_area ?? '-',
@@ -509,7 +535,7 @@ class ReportController extends Controller
     {
         $records = $this->beritaAcaraExportQuery($request)->get();
 
-        $spreadsheet = new Spreadsheet();
+        $spreadsheet = new Spreadsheet;
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Berita Acara');
 
@@ -601,6 +627,13 @@ class ReportController extends Controller
             ->paginate(15)
             ->withQueryString();
 
+        // Display-only sentence casing for the table's regency/province cells;
+        // the filter dropdown stays raw so its value still matches the DB.
+        $submissions->getCollection()->each(function (KkprlProposal $p) {
+            $p->regency = TextCase::humanize($p->regency) ?? $p->regency;
+            $p->province = TextCase::humanize($p->province) ?? $p->province;
+        });
+
         // Key metrics calculation
         $totalCount = KkprlProposal::count();
         $investmentTotal = (float) KkprlProposal::sum('investment_value');
@@ -642,7 +675,13 @@ class ReportController extends Controller
             ->orderByDesc('count')
             ->limit(5)
             ->get()
-            ->mapWithKeys(fn ($row) => [blank($row->province) ? 'Belum diisi' : $row->province => $row->count])
+            ->mapWithKeys(function ($row) {
+                $label = blank($row->province)
+                    ? 'Belum diisi'
+                    : TextCase::humanize($row->province) ?? (string) $row->province;
+
+                return [$label => $row->count];
+            })
             ->toArray();
 
         // Distinct provinces for the filter dropdown
@@ -744,10 +783,10 @@ class ReportController extends Controller
 
             foreach ($records as $index => $row) {
                 $lokasi = implode(', ', array_filter([
-                    $row->village,
-                    $row->district,
-                    $row->regency,
-                    $row->province,
+                    TextCase::humanize($row->village),
+                    TextCase::humanize($row->district),
+                    TextCase::humanize($row->regency),
+                    TextCase::humanize($row->province),
                 ]));
 
                 fputcsv($handle, [
@@ -758,7 +797,7 @@ class ReportController extends Controller
                     $row->email ?? '-',
                     $row->activity_type ?? '-',
                     $lokasi !== '' ? $lokasi : '-',
-                    $row->water_name ?? '-',
+                    TextCase::humanize($row->water_name ?? '-') ?? '-',
                     $row->area_size ?? '-',
                     $row->is_reclamation ? 'Ya' : 'Tidak',
                     $row->is_business_activity ? 'Ya' : 'Tidak',

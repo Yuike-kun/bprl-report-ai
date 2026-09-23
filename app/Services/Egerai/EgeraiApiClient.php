@@ -2,6 +2,7 @@
 
 namespace App\Services\Egerai;
 
+use App\Support\TextCase;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
 
@@ -158,7 +159,9 @@ class EgeraiApiClient
             $value = match ($source) {
                 'prop' => $prop[$key] ?? '',
                 'lap' => $lap[$key] ?? '',
-                'prop_loc' => $lokasiParts[(int) $key] ?? '',
+                // The external API renders these straight into its own docx —
+                // send normal casing or the caps come back in the download.
+                'prop_loc' => TextCase::humanize(is_string($lokasiParts[(int) $key] ?? null) ? $lokasiParts[(int) $key] : null) ?? '',
                 default => '',
             };
 
