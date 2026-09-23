@@ -28,36 +28,19 @@ class ProposalDocumentGenerator
     /** Cached result of the AI ecosystem narrative for the proposal currently being rendered. */
     private ?array $ekosistemNarasi = null;
 
-    /** Cached result of the AI hydro-oceanography estimate for the proposal currently being rendered. */
-    private ?array $hidroEstimasi = null;
-
     /** Cached result of the AI ecosystem narrative for the egerai (docChapterThree) pipeline currently being rendered. */
     private ?array $ekosistemNarasiDoc = null;
 
     /**
-     * AI-sourced reference blocks (ecosystem narrative sources, hydro-oceanography
-     * estimate sources/disclaimer) queued while rendering Chapter III, so they can
-     * be printed together on the literal last page of the document (a dedicated
-     * "LAMPIRAN: SUMBER REFERENSI" section after Chapter IV) instead of interrupting
-     * the middle of the report. See queueReference() / renderPendingReferences().
+     * AI-sourced reference blocks (ecosystem narrative sources) queued while
+     * rendering Chapter III, so they can be printed together on the literal
+     * last page of the document (a dedicated "LAMPIRAN: SUMBER REFERENSI"
+     * section after Chapter IV) instead of interrupting the middle of the
+     * report. See queueReference() / renderPendingReferences().
      *
      * @var array<int, array{heading: string, intro: ?string, introItalic: bool, items: array}>
      */
     private array $pendingReferences = [];
-
-    /**
-     * The subset of LaporanTextExtractor::FIELD_HINTS keys this generator can
-     * ask the AI to estimate when the (optional) hydro-oceanography survey
-     * report was never uploaded or left these gaps unextracted. Excludes
-     * lokasi_studi, which is not a numeric/technical parameter.
-     */
-    private const HIDRO_ESTIMABLE_KEYS = [
-        'batimetri_titik_pusat', 'batimetri_panjang_lintasan', 'batimetri_terdalam',
-        'hs_rata', 'hs_maks', 'hs_arah', 'arus_rata', 'arus_maks', 'arus_arah',
-        'hat', 'msl', 'lat', 'tidal_range', 'formzahl',
-        'eko_total_ha', 'eko_karang_ha', 'eko_karang_pct', 'eko_lainnya_ha',
-        'eko_lainnya_pct', 'eko_terbuka_ha', 'eko_terbuka_pct', 'eko_jarak_terdekat_km',
-    ];
 
     public function __construct(?ClaudeService $claude = null)
     {
@@ -554,64 +537,21 @@ class ProposalDocumentGenerator
     }
 
     /**
-     * The (optional) "Laporan Hidro-Oseanografi" survey document is frequently
-     * never uploaded, leaving every gelombang/arus/pasut/batimetri/luas-ekosistem
-     * field in $lap blank — docChapterThree() then rendered a raw "[data tidak
-     * terdeteksi otomatis]" placeholder for each one. This asks the AI to
-     * research real regional oceanographic reference data (web search) for
-     * whichever of those fields are still missing once per document render
-     * (cached in $this->hidroEstimasi), so the draft shows a plausible,
-     * source-cited regional estimate instead of a bare placeholder. Returns []
-     * (handled by callers via the existing self::MISSING fallback) on any AI
-     * failure or when nothing is actually missing, so generation never blocks.
-     */
-    private function hidroOseanografiEstimasi(array $prop, array $lap, string $lokasi): array
-    {
-        if ($this->hidroEstimasi !== null) {
-            return $this->hidroEstimasi;
-        }
-
-        $missing = array_values(array_filter(
-            self::HIDRO_ESTIMABLE_KEYS,
-            fn ($key) => blank($lap[$key] ?? null)
-        ));
-
-        if (! $missing) {
-            return $this->hidroEstimasi = [];
-        }
-
-        $context = [
-            'lokasi' => $lokasi,
-            'nama_perairan' => (string) ($prop['Nama Perairan'] ?? ''),
-            'jenis_kegiatan' => (string) ($prop['Jenis Kegiatan'] ?? ''),
-            // Whatever the survey report/extraction DID already provide, so the
-            // AI stays consistent with it instead of estimating in isolation.
-            'data_terukur_tersedia' => collect($lap)
-                ->only(self::HIDRO_ESTIMABLE_KEYS)
-                ->filter(fn ($v) => filled($v))
-                ->all(),
-        ];
-
-        return $this->hidroEstimasi = $this->claude()->estimateHidroOseanografi($context, $missing);
-    }
-
-    /**
      * Same detailed, source-cited AI ecosystem narrative as ekosistemNarasi()
      * (used by the KkprlProposal-based kkprlChapterThree() flow), adapted for
      * docChapterThree()'s array-based $prop data (egerai upload/manual
      * pipeline). Reuses ClaudeService::generateEkosistemNarrative() as-is —
      * same strict "only real DATA FAKTUAL, no fabricated species/percentages,
      * web-search for regional context only" rules — so both pipelines produce
-     * the same long-form (3-4 paragraph per subsection), cited quality
-     * instead of docChapterThree()'s previous one-sentence template text.
+     * the same short (1-2 paragraph per subsection), cited quality instead of
+     * docChapterThree()'s previous one-sentence template text.
      *
-     * Deliberately NOT gated by the "isi dengan AI" checkbox
-     * ($aiFillEnabled): unlike hidroOseanografiEstimasi() — which invents
-     * numbers for parameters that are genuinely absent — this only elaborates
-     * on ecosystem data that already exists (or explains a genuinely absent
-     * ecosystem using existing has_mangrove/has_seagrass/has_coral_reef
-     * signals), so it always runs. Returns [] (falls back to the static
-     * one-sentence text) only on an AI failure.
+     * This is the ONLY AI call anywhere in the egerai generate-document
+     * pipeline: it only elaborates on ecosystem data that already exists (or
+     * explains a genuinely absent ecosystem using existing
+     * has_mangrove/has_seagrass/has_coral_reef signals) — it never invents
+     * numbers for parameters that are genuinely absent. Returns [] (falls
+     * back to the static one-sentence text) only on an AI failure.
      */
     private function ekosistemNarasiDoc(array $prop, string $lokasi): array
     {
@@ -1040,16 +980,13 @@ class ProposalDocumentGenerator
      * (App\Http\Controllers\EgeraiProposalController).
      * ════════════════════════════════════════════════════════════════ */
     /**
-     * $aiFillEnabled controls whether docChapterThree() may call the AI to
-     * estimate missing hydro-oceanography/ecosystem-area fields (see
-     * hidroOseanografiEstimasi()) — the user-facing "isi dengan AI" checkbox.
-     * When false, the AI call is skipped entirely (not just its result
-     * discarded) and the existing "[data tidak terdeteksi otomatis]"
-     * placeholder is left as-is.
+     * AI is only ever used here for the ecosystem narrative (mangrove/lamun/
+     * karang), always grounded in data that already exists — see
+     * ekosistemNarasiDoc(). No other section is AI-generated.
      */
-    public function buildDocument(array $prop, array $propImages, array $lap, array $lapImages, string $outputPath, bool $aiFillEnabled = true): void
+    public function buildDocument(array $prop, array $propImages, array $lap, array $lapImages, string $outputPath): void
     {
-        $word = $this->buildWord($prop, $propImages, $lap, $lapImages, $aiFillEnabled);
+        $word = $this->buildWord($prop, $propImages, $lap, $lapImages);
         (new Word2007($word))->save($outputPath);
     }
 
@@ -1059,9 +996,9 @@ class ProposalDocumentGenerator
      * mirrors the reference Python app's /review page, which builds the real
      * .docx once and converts it with mammoth for a "what you'll get" preview.
      */
-    public function renderPreviewHtml(array $prop, array $propImages, array $lap, array $lapImages, bool $aiFillEnabled = true): string
+    public function renderPreviewHtml(array $prop, array $propImages, array $lap, array $lapImages): string
     {
-        $word = $this->buildWord($prop, $propImages, $lap, $lapImages, $aiFillEnabled);
+        $word = $this->buildWord($prop, $propImages, $lap, $lapImages);
 
         return $this->formatWordHtmlToA4Document((new HTML($word))->getContent());
     }
@@ -1334,7 +1271,7 @@ img {
 </html>';
     }
 
-    private function buildWord(array $prop, array $propImages, array $lap, array $lapImages, bool $aiFillEnabled = true): PhpWord
+    private function buildWord(array $prop, array $propImages, array $lap, array $lapImages): PhpWord
     {
         $this->images = $propImages + $lapImages;
         $this->pendingReferences = [];
@@ -1366,7 +1303,7 @@ img {
         $section->addPageBreak();
         $this->docChapterTwo($section, $prop, $lokasi, $perusahaan, $perairan, $jenis);
         $section->addPageBreak();
-        $this->docChapterThree($section, $prop, $lap, $lokasi, $desa, $aiFillEnabled);
+        $this->docChapterThree($section, $prop, $lap, $lokasi, $desa);
         $section->addPageBreak();
         $this->docChapterFour($section, $perusahaan, $prop);
         $this->renderPendingReferences($section);
@@ -1624,27 +1561,18 @@ img {
         $this->figure($s, 'foto_pantai', 'Gambar 3. Kondisi Eksisting Perairan dan Garis Pantai di Sekitar Lokasi Permohonan.', 11);
     }
 
-    private function docChapterThree(Section $s, array $prop, array $lap, string $lokasi, string $desa, bool $aiFillEnabled = true): void
+    private function docChapterThree(Section $s, array $prop, array $lap, string $lokasi, string $desa): void
     {
         $this->heading($s, 'III. DATA KONDISI TERKINI LOKASI DAN SEKITARNYA', 1);
 
-        // The "Laporan Hidro-Oseanografi" survey document is optional and often
-        // never uploaded — fill whichever gelombang/arus/pasut/batimetri/luas-
-        // ekosistem fields are still missing with an AI-researched, source-cited
-        // regional estimate instead of leaving a bare "data tidak terdeteksi"
-        // placeholder. Only ever fills gaps; real extracted/measured values in
-        // $lap always take precedence and are never overwritten. Skipped
-        // entirely (no AI call at all) when the user unchecks "isi dengan AI".
-        $hidro = $aiFillEnabled ? $this->hidroOseanografiEstimasi($prop, $lap, $lokasi) : [];
-        $hidroUsedKeys = [];
-        foreach (($hidro['values'] ?? []) as $key => $value) {
-            if (filled($value) && blank($lap[$key] ?? null)) {
-                $lap[$key] = $value;
-                $hidroUsedKeys[] = $key;
-            }
-        }
+        // AI is intentionally NOT used to fill gelombang/arus/pasut/batimetri
+        // gaps here — only real extracted/measured values in $lap are shown;
+        // still-missing fields fall back to the static self::MISSING
+        // placeholder below. AI is reserved solely for the ecosystem narrative
+        // (mangrove/lamun/karang), which is always grounded in data that
+        // genuinely exists — see ekosistemNarasiDoc().
 
-        // Detailed, source-cited AI narrative (3-4 paragraphs per subsection)
+        // Detailed, source-cited AI narrative (1-2 paragraphs per subsection)
         // grounded strictly in the DATA FAKTUAL below — replaces the short
         // one-sentence template text when available. See ekosistemNarasiDoc().
         $ai = $this->ekosistemNarasiDoc($prop, $lokasi);
@@ -1909,17 +1837,6 @@ img {
             $this->text($s, $narasi['batimetri']);
         }
         $this->figure($s, 'profil_batimetri', 'Gambar 11. Profil Garis Batimetri pada Lintasan Pemeruman Titik Pusat Rencana Kegiatan.', 13);
-
-        // Printed on the document's literal last page (LAMPIRAN: SUMBER
-        // REFERENSI, after Chapter IV) instead of here — see queueReference().
-        if ($hidroUsedKeys) {
-            $this->queueReference(
-                'Catatan Estimasi Data Hidro-Oseanografi (AI)',
-                $hidro['catatan'] ?: 'Sebagian nilai gelombang, arus, pasang surut, dan/atau batimetri pada Bab III di atas merupakan estimasi regional preliminer berdasarkan referensi publik (bukan hasil survei lapangan) karena Laporan Hidro-Oseanografi belum diunggah/lengkap, dan wajib diverifikasi dengan survei hidro-oseanografi sesungguhnya sebelum pengajuan resmi.',
-                $hidro['sumber'] ?? [],
-                introItalic: true
-            );
-        }
 
         $this->heading($s, 'D. Kondisi Sosial Ekonomi Masyarakat', 2);
         $sumberSosek = (string) ($prop['sumber_data_sosek'] ?? '') ?: 'Badan Pusat Statistik';

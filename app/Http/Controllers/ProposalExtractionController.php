@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\ProposalExtraction;
 use App\Services\KKPRL\CoordinateExtractor;
-use App\Services\KKPRL\KkprlAssistantService;
 use App\Services\KKPRL\ProposalExtractionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -86,23 +85,6 @@ class ProposalExtractionController extends Controller
         abort_unless(Storage::disk('local')->exists($proposalExtraction->source_path), 404);
 
         return Storage::disk('local')->download($proposalExtraction->source_path, $proposalExtraction->source_filename);
-    }
-
-    public function assistant(Request $request, KkprlAssistantService $assistant)
-    {
-        $validated = $request->validate([
-            'question' => ['required', 'string', 'max:2000'],
-            'history' => ['nullable', 'array', 'max:20'],
-            'history.*.role' => ['required_with:history', 'string', 'in:user,assistant'],
-            'history.*.content' => ['required_with:history', 'string', 'max:4000'],
-        ]);
-
-        $result = $assistant->reply($validated['question'], $validated['history'] ?? []);
-
-        return response()->json([
-            'answer' => $result['answer'] ?? '',
-            'sources' => $result['sources'] ?? [],
-        ]);
     }
 
     private function authorize(Request $request, ProposalExtraction $proposalExtraction): void

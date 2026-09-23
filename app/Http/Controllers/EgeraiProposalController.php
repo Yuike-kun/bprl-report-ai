@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\EgeraiJob;
 use App\Models\KkprlProposal;
 use App\Services\DocumentImageExtractor;
+use App\Services\Egerai\EgeraiApiClient;
 use App\Services\Egerai\EgeraiExtractionService;
 use App\Services\Egerai\LaporanTextExtractor;
 use App\Services\Egerai\ProposalTextExtractor;
@@ -102,13 +103,10 @@ class EgeraiProposalController extends Controller
             'prop_fields.*' => ['nullable'],
             'lap_fields' => ['nullable', 'array'],
             'lap_fields.*' => ['nullable'],
-            'ai_fill_enabled' => ['nullable', 'boolean'],
         ]);
 
         $propFields = array_merge($egeraiJob->prop_fields ?? [], $validated['prop_fields']);
         $lapFields = array_merge($egeraiJob->lap_fields ?? [], $validated['lap_fields'] ?? []);
-        // Default true (keep existing behavior) when the checkbox value isn't sent at all.
-        $aiFillEnabled = array_key_exists('ai_fill_enabled', $validated) ? (bool) $validated['ai_fill_enabled'] : $egeraiJob->ai_fill_enabled;
 
         $dir = $egeraiJob->storageDir();
         $propImages = $this->resolveManifest($egeraiJob->prop_images ?? [], $dir);
@@ -118,8 +116,7 @@ class EgeraiProposalController extends Controller
             'prop_fields' => $propFields,
             'lap_fields' => $lapFields,
             'status' => 'ready',
-            'ai_fill_enabled' => $aiFillEnabled,
-            'preview_html' => $this->renderPreview($propFields, $propImages, $lapFields, $lapImages, $aiFillEnabled),
+            'preview_html' => $this->renderPreview($propFields, $propImages, $lapFields, $lapImages),
         ]);
 
         return back()->with('success', 'Perubahan tersimpan.');
@@ -143,7 +140,6 @@ class EgeraiProposalController extends Controller
                 $egeraiJob->lap_fields ?? [],
                 $lapImages,
                 $outputPath,
-                $egeraiJob->ai_fill_enabled
             );
 
             $filename = 'Proposal_PKKPRL_'.now()->format('Ymd_His').'.docx';
@@ -171,6 +167,61 @@ class EgeraiProposalController extends Controller
             Log::error('Gagal finalize dokumen e-GeRAI', ['job_id' => $egeraiJob->job_id, 'message' => $exception->getMessage()]);
 
             return back()->withErrors(['finalize' => 'Gagal membuat dokumen: '.$exception->getMessage()]);
+        }
+    }
+
+    /**
+     * Experimental alternate engine: generates the final document via the
+     * standalone e-GerAI Python API instead of the local
+     * ProposalDocumentGenerator. Both source files are required because the
+     * external /api/v1/dokumen/ekstrak endpoint mandates both proposal AND
+     * laporan (unlike the local flow, where laporan is optional). Only the
+     * ~35 fields EgeraiApiClient::KOREKSI_FIELDS covers can be corrected —
+     * anything else reflects the external API's own fresh extraction, not
+     * this job's locally-edited prop_fields/lap_fields. See EgeraiApiClient
+     * class docblock for the full explanation.
+     */
+    public function generateViaExternalApi(EgeraiJob $egeraiJob, EgeraiApiClient $client)
+    {
+        $dir = $egeraiJob->storageDir();
+        $propPath = $egeraiJob->prop_source_path ? $dir.'/'.$egeraiJob->prop_source_path : null;
+        $lapPath = $egeraiJob->lap_source_path ? $dir.'/'.$egeraiJob->lap_source_path : null;
+
+        if (! $propPath || ! is_file($propPath) || ! $lapPath || ! is_file($lapPath)) {
+            return back()->withErrors([
+                'finalize' => 'API eksternal membutuhkan dokumen Proposal DAN Laporan (keduanya wajib diunggah); job ini tidak memiliki salah satunya.',
+            ]);
+        }
+
+        try {
+            $extracted = $client->extract($propPath, $lapPath);
+            $docxBytes = $client->generate(
+                $extracted['job_id'],
+                $egeraiJob->prop_fields ?? [],
+                $egeraiJob->lap_fields ?? [],
+            );
+
+            try {
+                $propImages = $this->resolveManifest($egeraiJob->prop_images ?? [], $dir);
+                $lapImages = $this->resolveManifest($egeraiJob->lap_images ?? [], $dir);
+                $this->createKkprlProposalFromJob($egeraiJob, $propImages, $lapImages);
+            } catch (\Throwable $exception) {
+                Log::error('Gagal mencatat KkprlProposal dari egerai job (API eksternal)', ['job_id' => $egeraiJob->job_id, 'message' => $exception->getMessage()]);
+            }
+
+            $filename = 'Proposal_PKKPRL_API_'.now()->format('Ymd_His').'.docx';
+
+            File::deleteDirectory($dir);
+            $egeraiJob->delete();
+
+            return response($docxBytes, 200, [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'Content-Disposition' => 'attachment; filename="'.$filename.'"',
+            ]);
+        } catch (\Throwable $exception) {
+            Log::error('Gagal generate dokumen via API eksternal e-GeRAI', ['job_id' => $egeraiJob->job_id, 'message' => $exception->getMessage()]);
+
+            return back()->withErrors(['finalize' => 'Gagal membuat dokumen via API eksternal: '.$exception->getMessage()]);
         }
     }
 
@@ -334,10 +385,10 @@ class EgeraiProposalController extends Controller
     }
 
     /** Renders the full "what you'll get" document preview; never fatal if it fails. */
-    private function renderPreview(array $propFields, array $propImages, array $lapFields, array $lapImages, bool $aiFillEnabled = true): ?string
+    private function renderPreview(array $propFields, array $propImages, array $lapFields, array $lapImages): ?string
     {
         try {
-            return (new ProposalDocumentGenerator)->renderPreviewHtml($propFields, $propImages, $lapFields, $lapImages, $aiFillEnabled);
+            return (new ProposalDocumentGenerator)->renderPreviewHtml($propFields, $propImages, $lapFields, $lapImages);
         } catch (\Throwable $exception) {
             Log::warning('Gagal membuat pratinjau dokumen e-GeRAI: '.$exception->getMessage());
 
@@ -381,7 +432,6 @@ class EgeraiProposalController extends Controller
             'lap_source_filename' => $egeraiJob->lap_source_filename,
             'prop_fields' => $egeraiJob->prop_fields ?? [],
             'lap_fields' => $egeraiJob->lap_fields ?? [],
-            'ai_fill_enabled' => (bool) $egeraiJob->ai_fill_enabled,
             'preview_html' => $egeraiJob->preview_html,
             'prop_field_hints' => ProposalTextExtractor::FIELD_HINTS,
             'lap_field_hints' => LaporanTextExtractor::FIELD_HINTS,

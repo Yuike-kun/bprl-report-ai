@@ -80,7 +80,6 @@ class EgeraiManualController extends Controller
     {
         $prop = $this->mapPropFields($request);
         $lap = [];
-        $aiFillEnabled = $request->boolean('ai_fill_enabled', true);
 
         $outputPath = storage_path('app/tmp/Draft_Proposal_'.uniqid().'.docx');
         if (! is_dir(dirname($outputPath))) {
@@ -88,7 +87,7 @@ class EgeraiManualController extends Controller
         }
 
         try {
-            (new ProposalDocumentGenerator)->buildDocument($prop, [], $lap, [], $outputPath, $aiFillEnabled);
+            (new ProposalDocumentGenerator)->buildDocument($prop, [], $lap, [], $outputPath);
 
             return response()->download($outputPath, 'Draft_Proposal_'.now()->format('Ymd_His').'.docx')
                 ->deleteFileAfterSend(true);
@@ -122,7 +121,6 @@ class EgeraiManualController extends Controller
         }
 
         $propImages = $this->storeImages($request, $dir);
-        $aiFillEnabled = $request->boolean('ai_fill_enabled', true);
 
         $job->update([
             'user_id' => $request->user()?->id,
@@ -133,12 +131,11 @@ class EgeraiManualController extends Controller
             'lap_fields' => $lapFields,
             'prop_images' => $this->manifest($propImages, $dir),
             'lap_images' => [],
-            'ai_fill_enabled' => $aiFillEnabled,
         ]);
 
         $preview = null;
         try {
-            $preview = (new ProposalDocumentGenerator)->renderPreviewHtml($prop, $propImages, $lapFields, [], $aiFillEnabled);
+            $preview = (new ProposalDocumentGenerator)->renderPreviewHtml($prop, $propImages, $lapFields, []);
         } catch (\Throwable $exception) {
             Log::warning('Gagal membuat pratinjau dokumen manual: '.$exception->getMessage());
         }

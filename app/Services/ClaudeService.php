@@ -16,169 +16,6 @@ class ClaudeService
 
     protected const CLAUDE_VERSION = '2023-06-01';
 
-    /** Cap the conversation history sent per request, mirroring the reference asisten_kkprl.py. */
-    protected const MAX_HISTORY_MESSAGES = 20;
-
-    /**
-     * Full knowledge-base system prompt for the public KKPRL chatbot ("Asisten Navi"),
-     * ported verbatim from the reference materi sosialisasi (BPRL Makassar) so answers
-     * are grounded in the same legal basis, PNBP tariffs, SLA breakdown, and document
-     * checklists instead of the model's own (potentially stale/hallucinated) knowledge.
-     */
-    protected const SYSTEM_PROMPT_KKPRL = <<<'PROMPT'
-Kamu adalah asisten e-GeRAI BPRL Makassar (Gerai Elektronik Balai Penataan Ruang Laut Makassar), sebuah chatbot resmi bantu-jawab untuk publik terkait perizinan KKPRL (Kesesuaian Kegiatan Pemanfaatan Ruang Laut) di Indonesia (Kementerian Kelautan dan Perikanan, sistem OSS).
-
-ATURAN JAWABAN:
-- Jawab HANYA pertanyaan yang berkaitan dengan KKPRL, ruang laut, perizinan berusaha di laut, PKKPRL, reklamasi laut, OSS, PNBP ruang laut, dan topik terkait tata ruang laut.
-- Jika pertanyaan di luar topik tersebut, tolak dengan sopan dan singkat, arahkan kembali ke topik KKPRL.
-- Jawaban harus SINGKAT dan JELAS: gunakan poin-poin (bullet) bila perlu, hindari basa-basi panjang, langsung ke inti.
-- Gunakan Bahasa Indonesia formal namun mudah dipahami.
-- Jika tidak yakin dengan detail teknis atau angka spesifik (misal nominal PNBP terbaru), sampaikan bahwa pemohon perlu memverifikasi ke OSS/hotline resmi KKP, jangan mengarang angka. Bila perlu, gunakan alat pencarian web (web_search) untuk memverifikasi ke situs resmi terkini (oss.go.id, kkp.go.id, jdih.kkp.go.id, e-sea.kkp.go.id) sebelum menjawab.
-- Jangan menyebutkan bahwa kamu adalah Claude/AI Anthropic; posisikan diri sebagai "e-GeRAI BPRL Makassar".
-- Boleh menyebut sumber rujukan umum: UU No. 6/2023, PP No. 5/2021, PP No. 28/2025, Permen KKP No. 28/2021, sistem OSS, dan e-SEA (e-sea.kkp.go.id) untuk tracking.
-- Akhiri jawaban dengan menawarkan bantuan lanjutan bila relevan (misalnya: "Ada hal lain terkait KKPRL yang ingin ditanyakan?") hanya jika sesuai konteks, jangan berlebihan.
-
-DATA TARIF PNBP KKPRL (PP Nomor 85 Tahun 2021 tentang Jenis dan Tarif atas Jenis PNBP yang Berlaku pada KKP — kategori XII. Persetujuan Kesesuaian Kegiatan Pemanfaatan Ruang Laut):
-A. Pemanfaatan Ruang untuk Kegiatan yang Menetap di Laut — Rp18.680.000,00 per ha
-B. Pemanfaatan Ruang untuk Kabel Bawah Laut — per izin: Rp128.595.000,00 + Rp227.800,00/km (di luar kawasan konservasi) ATAU + Rp7.500.000,00/km (di dalam kawasan konservasi)
-C. Pemanfaatan Ruang untuk Pipa Bawah Laut:
-   1. Pipa Air Bersih/Air Baku — per izin: Rp148.595.000,00 + Rp2.500.000,00/km (di luar kawasan konservasi) ATAU + Rp7.500.000,00/km (di dalam kawasan konservasi)
-   2. Pipa Selain Air Bersih/Air Baku — per izin: Rp148.595.000,00 + Rp25.000.000,00/km (di luar kawasan konservasi) ATAU + Rp75.000.000,00/km (di dalam kawasan konservasi)
-
-CATATAN PENTING SOAL TAGIHAN PNBP:
-- Tagihan PNBP diterbitkan melalui SIMPONI (Sistem Informasi PNBP Online) Kementerian Keuangan.
-- Tagihan PNBP HANYA boleh diterbitkan oleh Satker terkait, dalam hal ini Sekretariat Ditjen PRL — pelaku usaha TIDAK diperkenankan menerbitkan tagihan secara mandiri.
-- Luas yang dikenakan tarif adalah luas hasil penilaian/persetujuan (bukan selalu sama dengan luas permohonan awal).
-
-INSTRUKSI PERHITUNGAN PNBP:
-- Jika pengguna bertanya soal biaya/tarif/PNBP KKPRL DAN menyebutkan luasan (ha) atau panjang (km) serta jenis kegiatan, HITUNG langsung tagihannya dengan rumus yang sesuai dan tunjukkan langkah perhitungannya secara singkat, mengikuti format contoh berikut:
-  "Perusahaan A memohonkan PKKPRL seluas 1 Ha, berdasarkan hasil penilaian disetujui 0,7 ha, maka Perusahaan A akan dikenakan tagihan PNBP sebesar 0,7 x Rp18.680.000,00 = Rp13.076.000,00"
-- Format perhitungan: sebutkan jenis kegiatan → rumus/tarif yang dipakai → substitusi angka → hasil akhir dalam Rupiah (format ribuan pakai titik, misal Rp13.076.000,00).
-- Jika pengguna hanya bertanya tarif secara umum tanpa memberi angka luasan, tampilkan tabel tarif singkat DAN tawarkan untuk menghitung jika mereka memberi luasan/panjang spesifik.
-- Jika kategori kegiatan pengguna tidak tercakup dalam data tarif di atas, sampaikan bahwa tarif tersebut perlu dicek langsung ke PP No. 85 Tahun 2021 atau SIMPONI/hotline KKP, jangan mengarang angka.
-- Ingatkan bahwa luas final yang dikenakan tarif adalah luas hasil penilaian/persetujuan, bukan otomatis sama dengan luas permohonan.
-
-=== BANK DATA: Materi Sosialisasi KKPRL (BPRPL Makassar, Ditjen PRL - KKP) ===
-Gunakan data berikut sebagai rujukan utama bila relevan dengan pertanyaan. Jawab tetap singkat, ambil poin yang relevan saja, jangan menempel seluruh isi bank data sekaligus.
-
-[1. LANDASAN YURIDIS]
-Pengelolaan Ruang Laut meliputi perencanaan, pemanfaatan, pengawasan, dan pengendalian (UU 6/2023 Pasal 19 angka 3, Pasal 42 ayat 2). Dasar hukum utama:
-- UU No 27/2007 jo UU No 1/2014 tentang Pengelolaan Wilayah Pesisir dan Pulau-Pulau Kecil
-- UU No 32/2014 tentang Kelautan
-- UU No 6/2023 tentang Penetapan PERPPU No 2/2022 tentang Cipta Kerja
-- PP No 21/2021 tentang Penyelenggaraan Penataan Ruang
-- PP No 28/2025 tentang Penyelenggaraan Perizinan Berusaha Berbasis Risiko
-- Permen KP No 28/2021 tentang Penyelenggaraan Penataan Ruang Laut
-- Kepdirjen PRL No 50/2023 tentang Pedoman Teknis Penyelenggaraan KKPRL
-Pemanfaatan Ruang Laut secara spesifik = Kesesuaian Kegiatan Pemanfaatan Ruang Laut (KKPRL), meliputi Persetujuan KKPRL dan Konfirmasi KKPRL.
-
-[2. KEGIATAN YANG MEMERLUKAN KKPRL]
-UU No 6/2023 Pasal 18 angka 12, Pasal 16 ayat 2: setiap orang yang memanfaatkan ruang dari Perairan Pesisir WAJIB memiliki KKPRL dari Pemerintah Pusat. Kegiatan yang diberikan KKPRL antara lain: biofarmakologi laut, bioteknologi laut, pemanfaatan air laut selain energi, wisata bahari, pengangkatan benda muatan kapal tenggelam (BMKT), telekomunikasi, instalasi ketenagalistrikan, perikanan, perhubungan, kegiatan usaha minyak dan gas bumi, usaha pertambangan mineral, pengumpulan data dan penelitian, pertahanan dan keamanan, penyediaan sumber daya air, pulau buatan, dumping, mitigasi bencana, dan kegiatan pemanfaatan ruang laut lainnya. Contoh detail lokasi: pelabuhan/terminal khusus, instalasi perikanan, PLTB lepas pantai, PLTS terapung, budidaya perikanan, galangan kapal, pipa bawah laut, kabel bawah laut, kawasan konservasi terumbu karang, pusat data bawah laut, reklamasi, breakwater.
-
-[3. IZIN DASAR PERIZINAN BERUSAHA (PP 28/2025)]
-Tahapan: (1) Memulai Usaha — wajib penuhi 3 izin dasar: KKPR/KKPRL, Persetujuan Lingkungan (AMDAL/UKL-UPL/SPPL), PBG & SLF; (2) Menjalankan Usaha — mengurus Perizinan Berusaha (PB) via OSS dan Perizinan Penunjang (PB UMKU) bila perlu.
-Kewenangan: Menteri KP (ruang laut) & Menteri ATR (ruang darat) menerbitkan Persetujuan/Konfirmasi KKPRL (dasar: PP 21/2021); Menteri LH menerbitkan Persetujuan Lingkungan (dasar: PP 22/2021); K/L/D sektor (migas, minerba, perikanan, perhubungan, pariwisata dll) menerbitkan Perizinan Berusaha berbasis level risiko — Rendah: NIB, Menengah Rendah: NIB & Standar, Menengah Tinggi: NIB & Standar, Tinggi: NIB & Izin (dasar: PP 28/2021 dll).
-
-[4. PERSETUJUAN vs KONFIRMASI KKPRL & SUBJEK HUKUM]
-- Persetujuan KKPRL: untuk kegiatan skala/risiko rendah.
-- Konfirmasi KKPRL: untuk kegiatan skala/risiko menengah.
-Matriks subjek hukum:
-- Pelaku Usaha (Berusaha) → selalu Persetujuan KKPRL.
-- Pemerintah Pusat/Daerah kegiatan Non Berusaha, Strategis Nasional → Konfirmasi KKPRL.
-- Pemerintah Pusat/Daerah kegiatan Non Berusaha, Non Strategis Nasional → Konfirmasi KKPRL.
-- Masyarakat Lokal & Masyarakat Tradisional, Non Berusaha → Persetujuan KKPRL (dapat diberikan insentif nonfiskal berupa Fasilitasi Persetujuan KKPRL secara komunal).
-Catatan: kegiatan instansi Pemerintah Pusat/Daerah = kegiatan dibiayai APBN/APBD; Masyarakat Lokal/Tradisional = yang memanfaatkan ruang laut untuk kebutuhan hidup sehari-hari.
-
-[5. TAHAPAN PENERBITAN KKPRL]
-Kanal pendaftaran: Sistem OSS (Online Single Submission) dan Sistem e-SEA (Electronic Services for All, khusus perizinan sektor kelautan, berbasis risiko, terintegrasi dengan OSS).
-4 tahap:
-1. Pendaftaran — pemohon mendaftar via OSS/e-SEA, unggah dokumen usulan kegiatan.
-2. Pemeriksaan — petugas memeriksa kelengkapan & kebenaran dokumen.
-3. Penilaian — kajian kesesuaian dokumen usulan terhadap RTR/RZ.
-4. Penerbitan — menerbitkan surat perintah setor PNBP, pembayaran tagihan, lalu menerbitkan KKPRL.
-
-[6. ALUR & SERVICE LEVEL AGREEMENT (SLA) PP 28/2025]
-SLA total: 33 hari (tanpa perbaikan) atau 43 hari (dengan perbaikan). Rincian alur:
-- Pra-Pendaftaran (Pemohon): pendampingan info awal (peruntukan/arahan ruang, data spasial, status izin, teknis dokumen, teknis sistem OSS/elektronik) — tanpa batas hari baku, tahap konsultasi.
-- Pendaftaran (Pemohon di OSS): lengkapi dokumen (koordinat lokasi, rencana bangunan & instalasi laut, informasi pemanfaatan ruang laut, data kondisi terkini lokasi & hidro-oseanografi, persyaratan reklamasi jika ada, persyaratan lainnya).
-- Penilaian (KKP): verifikasi dokumen → penilaian teknis → verifikasi lapangan — 25 hari.
-- Perbaikan (Pemohon/KKP, bila perlu): 2x masing-masing 5 hari = 2 x 5 hari.
-- Pemeriksaan (KKP): 2x masing-masing 5 hari = 2 hari (jadwal audit, tagihan PNBP diterbitkan di tahap ini).
-- Pembayaran PNBP (Pemohon): 3 x 7 hari kalender.
-- Proses Penerbitan KKPRL (KKP): 6 hari, termasuk riwayat aktivitas (SK Klarifikasi Kegiatan, TBA Analisis, DKT Keberatan Adat/Masyarakat Hukum, Kartu Kendali, DKT Ops Penyusun, DKT Manajemen Risiko, Esai Atasan) hingga terbit Persetujuan/Konfirmasi KKPRL.
-
-[7. PENILAIAN PERMOHONAN — DASAR TATA RUANG BERJENJANG]
-Penilaian kesesuaian lokasi dilakukan berjenjang & komplementer terhadap: RTRWN/RTRL (Rencana Tata Ruang Wilayah Nasional/Rencana Tata Ruang Laut) → RZ KAW (Rencana Zonasi Kawasan Antarwilayah) → RZ KSNT (Rencana Zonasi Kawasan Strategis Nasional Tertentu) → RTR KSN/RZ KSN (Kawasan Strategis Nasional) → RTRWP/RZWP-3-K (Rencana Tata Ruang Wilayah Pesisir dan Pulau-Pulau Kecil).
-
-[8. PENILAIAN — 14 ASPEK YANG DIPERHATIKAN] (Permen KP 28/2021 Pasal 125 ayat 3)
-1. Kelestarian ekosistem pesisir & pulau kecil
-2. Keberadaan wilayah perlindungan & pelestarian biota laut
-3. Keberadaan wilayah perlindungan situs budaya & fitur geomorfologi laut unik
-4. Kepentingan masyarakat & nelayan tradisional
-5. Kepentingan nasional
-6. Keberadaan wilayah pertahanan & keamanan negara
-7. Hak lintas damai, lintas transit, lintas alur laut kepulauan bagi kapal asing
-8. Perjanjian internasional bidang batas maritim
-9. Pemanfaatan ruang laut di kawasan perbatasan dalam proses perundingan
-10. Keberadaan daerah penangkapan ikan tradisional berdasarkan perjanjian internasional
-11. Kebebasan peletakan pipa/kabel bawah laut di wilayah yurisdiksi
-12. Kebebasan pembangunan pulau buatan & instalasi laut wilayah yurisdiksi
-13. Keberadaan koridor instalasi pipa/kabel bawah laut yang sudah ada
-14. Pelaksanaan perbaikan pipa/kabel bawah laut yang sudah ada
-
-[9. PENILAIAN — 8 ASPEK YANG DIPERTIMBANGKAN] (Permen KP 28/2021 Pasal 125 ayat 4)
-Fungsi peruntukan zona; Daya dukung & daya tampung/ketersediaan ruang laut; Jenis kegiatan (Utama/Pendukung) & skala usaha (Mikro/Kecil/Menengah/Besar); Kebutuhan ruang untuk mendukung kepentingan kegiatan; Pemanfaatan ruang laut yang telah ada; Teknologi yang digunakan; Potensi dampak lingkungan yang ditimbulkan.
-
-[10. KERINGANAN & KEMUDAHAN KKPRL] (khusus kegiatan Perikanan dan UMK)
-Layanan Konsultasi Online/Offline (Pusat & UPT); Layanan Gerai Pendampingan Permohonan (Coaching Clinic); Sosialisasi ke pelaku usaha & stakeholder; Penilaian Teknis oleh UPT untuk risiko rendah-menengah; Kedalaman Data dokumen permohonan (bukan verifikasi fisik berlapis); Tidak dijadwalkan verifikasi lapangan kecuali ada indikasi konflik; Boleh gunakan Data Sekunder dalam dokumen permohonan; Fasilitasi khusus untuk Masyarakat Lokal sesuai peraturan. Hotline layanan: +62 811-4216-855.
-
-[11. CEK FAKTA KKPRL — MITOS vs FAKTA]
-SALAH: dokumen diserahkan fisik ke KKP | BENAR: diajukan elektronik via e-SEA
-SALAH: pengajuan permohonan dipungut biaya | BENAR: pengajuan permohonan TIDAK dipungut biaya
-SALAH: tarif PNBP PKKPRL mahal | BENAR: pungutan PNBP baru dikenakan setelah dinyatakan layak/direkomendasikan disetujui; tarif dasar Rp1.868,00/m² (setara Rp18.680.000,00/ha)
-SALAH: permohonan KKPRL hanya bisa sekali | BENAR: KKPRL dapat dimohonkan lebih dari 1 kali
-SALAH: semua permohonan wajib verifikasi lapangan | BENAR: verifikasi lapangan bersifat opsional (bila diperlukan)
-
-[12. PENDAFTARAN KKPRL] (Permen KP No 28/2021 Pasal 123)
-- Kegiatan Berusaha (Persetujuan): daftar via Sistem OSS, dilengkapi dokumen persyaratan. Format dokumen: bit.ly/format_PKKPRLaut
-- Kegiatan Non Berusaha (Persetujuan & Konfirmasi): daftar via sistem elektronik Kementerian, e-SEA (https://e-sea.kkp.go.id/)
-Dokumen pendaftaran kegiatan reklamasi via e-SEA umumnya mencakup: dokumen pendukung reklamasi (rencana pengambilan sumber material, rencana pemanfaatan lahan reklamasi, gambaran umum pelaksanaan reklamasi, jadwal rencana pelaksanaan kerja), rencana bangunan & instalasi laut, informasi pemanfaatan ruang laut, data kondisi terkini lokasi & sekitarnya (opsional), dan persyaratan lain-lain.
-
-[13. DOKUMEN PERMOHONAN KKPRL KEGIATAN BERUSAHA — RINCIAN]
-1. Rencana Bangunan dan Instalasi di Laut:
-   a. Rencana Kegiatan: uraian latar belakang/tujuan/manfaat usaha; kegiatan eksisting/rencana yang dimohonkan; rencana jadwal pelaksanaan kegiatan utama & pendukung; rencana tapak/site plan lengkap dengan rencana bangunan & instalasi laut serta fasilitas penunjang; deskripsi luas/panjang lokasi yang dibutuhkan per kegiatan utama & penunjang.
-   b. Peta Lokasi: plotting batas area dan/atau jalur beserta titik koordinat geografis (format N/E).
-2. Informasi Pemanfaatan Ruang Laut: deskripsi penggunaan ruang laut di sekitar lokasi permohonan (contoh: kegiatan pariwisata berjarak 200 meter dari lokasi).
-3. Data Kondisi Terkini Lokasi dan Sekitarnya (Ekosistem, Hidrografi, & Oseanografi):
-   - Kondisi ekosistem pesisir: data mangrove, lamun, terumbu karang (jenis, kerapatan, luasan, dokumentasi)
-   - Kondisi hidro-oseanografi: arus (kecepatan, arah, peta), gelombang (tinggi, arah, peta — jika reklamasi wajib tambah pemodelan), pasang surut (tipe & grafik), batimetri (kedalaman & peta)
-   - Profil dasar laut: cross section/penampang melintang morfologi dasar laut
-   - Kondisi sosial ekonomi masyarakat: jumlah penduduk, kepadatan, rasio jenis kelamin, perekonomian (disertai sumber data)
-   - Aksesibilitas lokasi
-4. Persyaratan Lainnya: informasi izin lain yang sudah dimiliki pemohon (dokumen pendukung teknis lain sesuai kebutuhan).
-5. Persyaratan Reklamasi (jika kegiatan menggunakan metode reklamasi), tambahan informasi:
-   a. Rencana pengambilan Sumber Material Reklamasi — lokasi (disertai gambar), jarak ke lokasi reklamasi, jumlah kebutuhan material, metode pengambilan material
-   b. Rencana Pemanfaatan Lahan Reklamasi (disertai peta & luasan)
-   c. Gambaran Umum Pelaksanaan Reklamasi — metode teknis mulai dari pengambilan material hingga penimbunan
-   d. Jadwal Rencana Pelaksanaan Reklamasi (disertai tabel jadwal)
-   Alur reklamasi: Material → Pengangkutan → Penimbunan → Pemadatan → Monitoring.
-
-[14. TAMBAHAN DOKUMEN UNTUK KASUS KHUSUS]
-- Kegiatan kebijakan nasional strategis dibiayai APBN/APBD oleh Pemerintah Pusat/Daerah: tambahkan Surat Permohonan (tarif PNBP Rp0,00/nol rupiah) dan Bukti Penggunaan APBN/APBD.
-- Pipa dan/atau Kabel Bawah Laut: tambahkan Data Dukung sesuai Kepmen KP No 77/2024.
-- KKPRL di Kawasan Suaka Alam/Kawasan Pelestarian Alam (KSA/KPA): tambahkan rekomendasi Pemanfaatan Kawasan dari Kementerian Kehutanan.
-- Fasilitasi Masyarakat Lokal: tambahkan rekomendasi dari direktorat teknis bidang pendayagunaan pesisir dan pulau-pulau kecil.
-Seluruh dokumen tambahan dilampirkan dalam format digital sah sesuai ketentuan.
-
-[15. KEWAJIBAN PEMEGANG KKPRL] (Pasal 137 Permen KP No 28/2021)
-Pemegang KKPRL wajib memenuhi seluruh kewajiban yang tertera pada Lampiran Dokumen KKPRL. Jika pemegang izin tidak memenuhi kewajiban tersebut, akan dikenai sanksi sesuai peraturan perundang-undangan yang berlaku.
-
-[16. TRACKING PERMOHONAN]
-Fitur tracking tersedia di e-SEA (https://e-sea.kkp.go.id/): masukkan nomor permohonan KKPRL sesuai OSS → klik "Cari Permohonan" → pilih menu "Tracking" → status permohonan akan terlihat. e-SEA juga punya fitur Panduan dan Laporan Tahunan.
-
-Catatan sumber: materi disusun berdasarkan bahan sosialisasi KKPRL oleh Balai Penataan Ruang Laut (BPRL) Makassar, Direktorat Jenderal Penataan Ruang Laut, KKP, mengacu pada UU No.6/2023, PP No.21/2021, PP No.28/2025, Permen KP No.28/2021, dan PP No.85/2021. Jika ada perbedaan dengan peraturan terbaru, arahkan pemohon untuk mengecek ulang ke OSS/e-SEA/hotline resmi KKP.
-PROMPT;
-
     protected const REQUIRED_SECTIONS = [
         'batimetri',
         'gelombang',
@@ -343,14 +180,12 @@ ATURAN MUTLAK — WAJIB DIPATUHI:
 1. HANYA gunakan data spesifik lokasi (spesies, persentase tutupan, kondisi) dari DATA FAKTUAL di bawah ini. DILARANG KERAS mengarang, menebak, atau menambahkan jenis spesies, persentase tutupan, kondisi, jarak, maupun angka spesifik-lokasi apa pun yang tidak tercantum secara eksplisit di DATA FAKTUAL.
 2. Jika suatu data (misalnya persentase atau jarak) tidak tersedia di DATA FAKTUAL, JANGAN mengisinya dengan angka perkiraan — nyatakan secara eksplisit bahwa data tersebut tidak tersedia/tidak terukur dan perlu survei lanjutan, atau cukup hilangkan detail tersebut dari kalimat.
 3. Jika suatu ekosistem dinyatakan TIDAK ADA (mis. has_mangrove = Tidak), tulis narasi yang menyatakan ekosistem tersebut tidak teridentifikasi pada lokasi kegiatan — jangan menulis narasi keberadaannya.
-4. Gunakan alat pencarian web (web_search) secara aktif — lakukan BEBERAPA kali pencarian (bukan hanya satu) — untuk mencari referensi ILMIAH/RESMI TERKINI (tahun {$year} atau publikasi terbaru yang tersedia, JANGAN mengutip data usang bertahun-tahun lampau kecuali itu memang dasar hukum/peraturan yang masih berlaku) mengenai kondisi umum ekosistem pesisir (mangrove/lamun/terumbu karang) di wilayah "{$context['lokasi']}" dan perairan "{$context['nama_perairan']}" dari situs web NYATA dan tepercaya (contoh: kkp.go.id, brin.go.id, big.go.id, jurnal ilmiah/repositori kampus, mongabay.co.id, walhi.or.id, situs pemerintah daerah/BPS/OPD DKP setempat). Gunakan hasil pencarian sebagai konteks ekologis regional pendukung yang KAYA dan SPESIFIK-WILAYAH (mis. karakteristik ekosistem pesisir kabupaten/kota atau perairan tersebut, ancaman/tekanan lingkungan yang umum terjadi di kawasan itu, program konservasi/rehabilitasi yang pernah/sedang berjalan di sana, status kawasan konservasi terdekat bila ada) — BUKAN untuk mengganti atau menambah angka spesifik lokasi kegiatan yang tidak ada di DATA FAKTUAL.
-5. Gunakan gaya bahasa teknis-formal Bahasa Indonesia sebagaimana lazim pada dokumen proposal PKKPRL/AMDAL resmi. WAJIB tulis 3-4 paragraf yang cukup panjang dan padat informasi untuk SETIAP subbagian ekosistem (mangrove, lamun, terumbu karang) — bukan 1-2 paragraf singkat, dan bukan poin-poin.
-6. Setiap subbagian ekosistem WAJIB membahas seluruh aspek berikut secara berurutan dan mengalir sebagai narasi (bukan daftar bernomor), sepanjang relevan dengan data/hasil pencarian yang ada:
-   a. Deskripsi kondisi eksisting di lokasi berdasarkan DATA FAKTUAL (spesies, persentase tutupan, kondisi) — jika ekosistem tidak ada, jelaskan hal ini secara eksplisit dengan penjelasan yang tetap informatif (mis. kemungkinan penyebab ekologis/geomorfologis ketiadaan ekosistem tersebut, bila didukung konteks pencarian web).
-   a2. KHUSUS untuk angka PERSENTASE TUTUPAN pada DATA FAKTUAL (bila tersedia): bahas secara KHUSUS dan LEBIH MENDALAM (bukan hanya menyebut angkanya sekilas) — jelaskan apa arti persentase tersebut menurut kriteria baku kerusakan/kesehatan ekosistem pesisir yang relevan (mis. untuk terumbu karang: kategori Rusak/Sedang/Baik/Baik Sekali berdasarkan kriteria baku kerusakan terumbu karang KepMenLH; untuk mangrove/lamun: kategori jarang/sedang/padat atau rusak/baik menurut kriteria kerapatan tutupan yang berlaku), bandingkan dengan kondisi rata-rata/tipikal ekosistem sejenis di wilayah tersebut menurut hasil pencarian web (lebih tinggi/rendah/sebanding), dan jelaskan implikasinya terhadap fungsi ekologis serta tingkat kehati-hatian mitigasi yang diperlukan.
-   b. Signifikansi ekologis jenis/kondisi yang disebutkan: peran fungsional ekosistem tersebut (mis. mangrove sebagai penahan abrasi & nursery ground, lamun sebagai habitat dugong/penyu & penyerap karbon biru, terumbu karang sebagai pemecah gelombang alami & habitat biota laut).
-   c. Konteks regional/wilayah dari hasil pencarian web (karakteristik kawasan, status konservasi, tekanan/ancaman lingkungan yang umum di wilayah tersebut, upaya pengelolaan yang diketahui ada).
-   d. Implikasi terhadap rencana kegiatan dan arahan mitigasi spesifik untuk ekosistem tersebut (mis. metode konstruksi yang meminimalkan gangguan, buffer zone, pengendalian sedimentasi, larangan penambatan pada substrat vegetasi, dsb.).
+4. Gunakan alat pencarian web (web_search) HANYA 1 KALI (satu kali panggilan saja, jangan lebih) untuk mencari referensi ILMIAH/RESMI TERKINI mengenai kondisi umum ekosistem pesisir (mangrove/lamun/terumbu karang) di wilayah "{$context['lokasi']}" dan perairan "{$context['nama_perairan']}" dari situs web NYATA dan tepercaya (contoh: kkp.go.id, brin.go.id, big.go.id, jurnal ilmiah/repositori kampus, mongabay.co.id, walhi.or.id, situs pemerintah daerah/BPS/OPD DKP setempat). Gunakan hasil pencarian secukupnya sebagai konteks ekologis regional pendukung (mis. karakteristik ekosistem pesisir kabupaten/kota atau perairan tersebut, ancaman/tekanan lingkungan yang umum terjadi di kawasan itu) — BUKAN untuk mengganti atau menambah angka spesifik lokasi kegiatan yang tidak ada di DATA FAKTUAL. Jika hasil pencarian tidak relevan/tidak ditemukan, lanjutkan tanpa konteks regional tambahan daripada mencari ulang.
+5. Gunakan gaya bahasa teknis-formal Bahasa Indonesia sebagaimana lazim pada dokumen proposal PKKPRL/AMDAL resmi. Tulis 1-2 paragraf yang ringkas namun padat informasi untuk SETIAP subbagian ekosistem (mangrove, lamun, terumbu karang) — bukan 3-4 paragraf panjang, dan bukan poin-poin.
+6. Setiap subbagian ekosistem WAJIB membahas hal berikut secara ringkas dan mengalir sebagai narasi (bukan daftar bernomor), sepanjang relevan dengan data yang ada:
+   a. Deskripsi kondisi eksisting di lokasi berdasarkan DATA FAKTUAL (spesies, persentase tutupan, kondisi) — jika ekosistem tidak ada, nyatakan hal ini secara eksplisit. Untuk angka PERSENTASE TUTUPAN (bila tersedia), sebutkan kategori baku kerusakan/kesehatan ekosistem yang relevan (mis. untuk terumbu karang: kategori Rusak/Sedang/Baik/Baik Sekali menurut kriteria baku kerusakan terumbu karang KepMenLH; untuk mangrove/lamun: kategori jarang/sedang/padat).
+   b. Signifikansi ekologis singkat dari jenis/kondisi yang disebutkan (mis. mangrove sebagai penahan abrasi & nursery ground, lamun sebagai habitat dugong/penyu, terumbu karang sebagai pemecah gelombang alami).
+   c. Implikasi ringkas terhadap rencana kegiatan dan arahan mitigasi untuk ekosistem tersebut (mis. buffer zone, pengendalian sedimentasi, larangan penambatan pada substrat vegetasi).
 7. DILARANG mengulang kalimat yang sama persis antar subbagian; setiap subbagian harus punya narasi unik dan spesifik terhadap ekosistemnya masing-masing.
 7b. JANGAN sertakan tag/markup sitasi apa pun di dalam teks narasi (mis. "<cite>...</cite>", "<cite index=\"...\">...</cite>", catatan kaki bernomor, atau kutipan mentah hasil pencarian yang ditempel apa adanya). Tulis narasi sebagai prosa mengalir yang meringkas/mengintegrasikan informasi tersebut dengan kata-kata sendiri — daftar sumber sudah dan HANYA dicantumkan terpisah di bagian akhir dokumen.
 8. Output HANYA objek JSON valid tanpa markdown, dengan struktur persis:
@@ -364,20 +199,16 @@ Output HANYA objek JSON valid tanpa markdown atau teks lain di dalam blok teks a
 PROMPT;
 
         try {
-            // Needs generous headroom: the prompt demands 3-4 long paragraphs for
-            // EACH of 3 ecosystem subsections plus a summary (easily 3000-4000+
-            // output tokens on its own), and tokens are also spent on the
-            // web_search tool_use calls/results before the model reaches the
-            // final JSON text. Too low a budget risks hitting max_tokens mid-
-            // search or mid-JSON with no usable (or truncated/invalid) output —
-            // observed in testing with 6000.
-            // Content alone (3-4 long paragraphs x 3 ecosystems + summary) can run
-            // well past 12000 tokens once web_search tool_use/result overhead
-            // (up to several searches, each potentially returning large snippet
-            // text) is added on top — observed intermittently truncating mid-
-            // JSON with 12000. Also cap search usage below the client default
-            // (6) so more of the budget is reserved for the actual narrative.
-            $json = $this->callClaudeWithWebSearch($prompt, maxTokens: 16000, maxSearchUses: 4);
+            // Deliberately kept lean to control token spend: the prompt now
+            // only asks for 1-2 paragraphs per subsection (not 3-4) and a
+            // single web_search call (not several) — this is the ONLY AI call
+            // in the whole generate-document pipeline, by design (see
+            // docChapterThree()/ekosistemNarasiDoc()). Still needs real
+            // headroom though: the web_search tool_use/result round-trip and
+            // thinking tokens cost roughly the same regardless of how short
+            // the final prose is, so too low a budget here truncates the
+            // response mid-JSON (observed in testing with 4000).
+            $json = $this->callClaudeWithWebSearch($prompt, maxTokens: 8000, maxSearchUses: 1);
             $text = $this->extractResponseText($json);
 
             if (blank($text)) {
@@ -404,9 +235,10 @@ PROMPT;
 
             // Fallback: same instructions, no web search tool (older accounts/models
             // may not support the tool, or the call may have failed transiently).
-            // Same long-output reasoning as above minus the tool-call overhead.
+            // No tool-call overhead here, but keep real headroom for the same
+            // reason as above (thinking tokens + 1-2 paragraphs x 3 + summary).
             try {
-                $raw = $this->callClaudeRaw($prompt, maxTokens: 12000);
+                $raw = $this->callClaudeRaw($prompt, maxTokens: 6000);
                 $decoded = $this->parseJson($raw);
 
                 if (! is_array($decoded)) {
@@ -427,105 +259,6 @@ PROMPT;
 
                 return [];
             }
-        }
-    }
-
-    /**
-     * Estimates whichever hydro-oceanography / ecosystem-area parameters are
-     * still missing (the "Laporan Hidro-Oseanografi" survey document is
-     * optional and frequently never uploaded, or extraction only recovers
-     * some of its fields) using Anthropic's web_search tool to ground the
-     * estimate in real, publicly available regional oceanographic reference
-     * data (BMKG, BIG, Dishidros, published bathymetry/wave-climate studies,
-     * etc.) for the given water body/region — NOT a substitute for an actual
-     * site survey, and explicitly labeled as such in the returned "catatan".
-     *
-     * $context: ['lokasi' => ..., 'nama_perairan' => ..., 'jenis_kegiatan' => ...,
-     * 'data_terukur_tersedia' => [key => value, ...]] (already-known values, so
-     * the AI stays consistent with them instead of estimating in isolation).
-     * $missingKeys: array of LaporanTextExtractor::FIELD_HINTS keys to estimate.
-     *
-     * Returns ['values' => [key => string, ...], 'catatan' => string, 'sumber' => [...]].
-     * Returns [] on any failure so the caller falls back to the existing
-     * self::MISSING placeholder text.
-     */
-    public function estimateHidroOseanografi(array $context, array $missingKeys): array
-    {
-        if (blank($this->apiKey) || ! $missingKeys) {
-            return [];
-        }
-
-        $hints = \App\Services\Egerai\LaporanTextExtractor::FIELD_HINTS;
-        $daftarField = collect($missingKeys)
-            ->map(fn ($key) => '- '.$key.': '.($hints[$key] ?? $key))
-            ->implode("\n");
-
-        $known = collect($context['data_terukur_tersedia'] ?? [])
-            ->map(fn ($value, $key) => '- '.$key.': '.$value)
-            ->implode("\n");
-        $knownBlock = $known !== '' ? $known : '(tidak ada data terukur lain yang tersedia)';
-
-        $year = now()->year;
-
-        $prompt = <<<PROMPT
-Anda adalah Ahli Hidro-Oseanografi yang membantu menyusun draf awal proposal PKKPRL. Dokumen "Laporan Hidro-Oseanografi" survei lapangan untuk kegiatan ini TIDAK tersedia atau tidak lengkap, sehingga beberapa parameter teknis di bawah ini perlu diisi dengan ESTIMASI REGIONAL sementara (bukan data hasil pengukuran lapangan), agar draf proposal tidak kosong sambil menunggu survei sesungguhnya.
-
-Lokasi kegiatan: "{$context['lokasi']}"
-Perairan: "{$context['nama_perairan']}"
-Jenis kegiatan: "{$context['jenis_kegiatan']}"
-
-DATA TERUKUR YANG SUDAH TERSEDIA (gunakan sebagai konteks agar estimasi Anda konsisten dengannya, JANGAN diubah):
-{$knownBlock}
-
-ATURAN MUTLAK — WAJIB DIPATUHI:
-1. Gunakan alat pencarian web (web_search) secara aktif — lakukan BEBERAPA kali pencarian dengan variasi kata kunci — untuk mencari referensi RESMI/ILMIAH (BMKG, BIG, Dishidros/Pushidrosal, jurnal ilmiah, publikasi KKP, studi AMDAL/oseanografi wilayah tersebut) mengenai karakteristik gelombang, arus, pasang surut, dan batimetri di perairan "{$context['nama_perairan']}" atau wilayah pesisir "{$context['lokasi']}" atau wilayah perairan terdekat/sejenis di Indonesia bila referensi spesifik lokasi tidak ditemukan.
-2. Estimasi HANYA boleh didasarkan pada referensi yang benar-benar ditemukan lewat pencarian (karakteristik regional/wilayah perairan sejenis) — DILARANG KERAS mengarang angka tanpa dasar apa pun.
-3. Jika untuk suatu parameter TIDAK ditemukan referensi yang cukup layak untuk dijadikan dasar estimasi regional, kembalikan string kosong ("") untuk parameter tersebut — JANGAN menebak.
-4. Nilai numerik dikembalikan sebagai angka saja (tanpa satuan, gunakan titik sebagai desimal), kecuali disebutkan lain pada definisi field.
-5. Field eko_* (luas/persentase ekosistem) HANYA diisi bila konsisten satu sama lain (total = karang + lainnya + terbuka, persentase menjumlah ~100%) dan tetap ditandai sebagai estimasi.
-
-PARAMETER YANG PERLU DIESTIMASI (hanya field berikut, field lain jangan disertakan):
-{$daftarField}
-
-Output HANYA objek JSON valid tanpa markdown, dengan struktur persis:
-{"values": {"<key>": "<estimasi atau string kosong>", ...}, "catatan": "1 kalimat singkat yang menyatakan bahwa nilai-nilai ini adalah estimasi regional preliminer berdasarkan referensi publik, bukan hasil survei lapangan, dan wajib diverifikasi dengan survei hidro-oseanografi sesungguhnya sebelum pengajuan resmi."}
-PROMPT;
-
-        try {
-            // Needs headroom beyond the final JSON payload itself: tokens are also
-            // spent on the model's web_search tool_use calls and their results
-            // before it reaches the final text block. Too low a budget here risks
-            // hitting max_tokens mid-search with no text block at all (observed
-            // in testing with 3000, and again intermittently with 6000 when the
-            // model runs several searches across up to 21 parameters).
-            $json = $this->callClaudeWithWebSearch($prompt, maxTokens: 10000);
-            $text = $this->extractResponseText($json);
-
-            if (blank($text)) {
-                throw new Exception('Response Claude (web search) kosong.');
-            }
-
-            $decoded = $this->parseJson($text);
-
-            if (! is_array($decoded) || ! is_array($decoded['values'] ?? null)) {
-                return [];
-            }
-
-            $values = [];
-            foreach ($missingKeys as $key) {
-                $value = $decoded['values'][$key] ?? '';
-                $values[$key] = is_string($value) || is_numeric($value) ? trim((string) $value) : '';
-            }
-
-            return [
-                'values' => $values,
-                'catatan' => is_string($decoded['catatan'] ?? null) ? $this->stripInlineCitationTags($decoded['catatan']) : '',
-                'sumber' => $this->extractCitations($json),
-            ];
-        } catch (Exception $exception) {
-            Log::warning('AI estimasi hidro-oseanografi gagal.', ['error' => $exception->getMessage()]);
-
-            return [];
         }
     }
 
@@ -638,73 +371,6 @@ PROMPT;
             ->unique('url')
             ->values()
             ->all();
-    }
-
-    /**
-     * Answer a KKPRL question, grounded on real, current web pages via Anthropic's
-     * native web_search tool wherever the question benefits from up-to-date info
-     * (e.g. PNBP rates, OSS procedures, SLA). Returns ['answer' => string, 'sources' => array]
-     * where `sources` only ever contains pages the tool actually fetched (from Anthropic's
-     * `citations` metadata) — never fabricated URLs — so the frontend can render a
-     * "Sumber" list beneath the answer, similar to ChatGPT's web-search citations.
-     */
-    /**
-     * Answer a KKPRL question, grounded on the ported reference knowledge base
-     * (legal basis, PNBP tariffs + calculation, SLA, document checklists, mitos vs
-     * fakta) plus real-time web verification via Anthropic's native web_search tool
-     * for anything that can change over time. Supports multi-turn conversation
-     * history (trimmed to the last MAX_HISTORY_MESSAGES entries), mirroring the
-     * reference asisten_kkprl.py's `chat_reply(messages)`.
-     *
-     * @param  array<int, array{role: string, content: string}>  $history  Prior turns, oldest first (excluding the current $question).
-     * @return array{answer: string, sources: array<int, array{title: string, url: string}>}
-     */
-    public function answerKkprl(string $question, array $history = []): array
-    {
-        if (blank($this->apiKey)) {
-            return ['answer' => 'Asisten belum aktif. Silakan hubungi BPRL Makassar atau gunakan layanan e-SEA resmi.', 'sources' => []];
-        }
-
-        $year = now()->year;
-        $systemPrompt = self::SYSTEM_PROMPT_KKPRL
-            ."\n\nTahun berjalan adalah {$year} — jangan menyampaikan informasi/angka yang sudah usang seolah-olah masih berlaku saat ini."
-            .' Gunakan format Markdown: **bold** untuk istilah/angka penting, gunakan poin (-) untuk daftar syarat/langkah, jangan gunakan heading (#).'
-            .' WAJIB: gunakan alat pencarian web (web_search) minimal satu kali untuk SETIAP pertanyaan yang berkaitan dengan KKPRL/ruang laut sebelum menjawab — walaupun BANK DATA di atas sudah memuat jawabannya — guna memverifikasi/melengkapi jawaban dengan sumber resmi terkini (oss.go.id, kkp.go.id, jdih.kkp.go.id, e-sea.kkp.go.id, peraturan.go.id). Kecualikan pencarian hanya untuk sapaan/basa-basi atau pertanyaan yang jelas di luar topik KKPRL.';
-
-        $messages = collect($history)
-            ->filter(fn ($m) => is_array($m) && in_array($m['role'] ?? null, ['user', 'assistant'], true) && filled($m['content'] ?? null))
-            ->map(fn ($m) => ['role' => $m['role'], 'content' => (string) $m['content']])
-            ->values()
-            ->all();
-
-        $messages[] = ['role' => 'user', 'content' => $question];
-        $messages = array_slice($messages, -self::MAX_HISTORY_MESSAGES);
-
-        try {
-            $json = $this->callClaudeMessagesWithWebSearch(
-                $messages,
-                maxTokens: 2500,
-                maxSearchUses: 3,
-                system: $systemPrompt,
-            );
-
-            $answer = trim($this->extractResponseText($json));
-
-            if (blank($answer)) {
-                Log::warning('Claude Asisten KKPRL tidak mengembalikan jawaban.', [
-                    'model' => $this->model,
-                    'response' => $json,
-                ]);
-
-                return ['answer' => 'Asisten tidak menerima jawaban dari model. Periksa konfigurasi model lalu coba lagi.', 'sources' => []];
-            }
-
-            return ['answer' => $answer, 'sources' => $this->extractCitations($json)];
-        } catch (Exception $exception) {
-            Log::warning('Asisten KKPRL gagal.', ['error' => $exception->getMessage()]);
-
-            return ['answer' => 'Maaf, terjadi kendala teknis saat menghubungi asisten. Silakan coba lagi sebentar lagi, atau hubungi hotline BPRL Makassar.', 'sources' => []];
-        }
     }
 
     /* ────────────────────────────────────────────────────────────────

@@ -122,43 +122,46 @@ export default function Assistant() {
     const makeId = () =>
         `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
+    // Temporary: points at the standalone e-GerAI Asisten API. Override with
+    // VITE_ASISTEN_API_URL once a permanent endpoint is available.
+    const ASISTEN_API =
+        import.meta.env.VITE_ASISTEN_API_URL ?? 'http://localhost:8001';
+
     const askAsisten = async (question: string, priorMessages: Message[]) => {
         setSending(true);
 
         try {
+            // `history` state is already chronological (oldest -> newest), so the
+            // slice below keeps that order. The API requires the very last
+            // message to be the current "user" question being asked.
             const conversationHistory = priorMessages
                 .slice(-20)
+                .filter((m) => m.role && m.content)
                 .map((m) => ({ role: m.role, content: m.content }));
-            const res = await fetch('/kkprl/assistant', {
+            const res = await fetch(`${ASISTEN_API}/api/v1/asisten/chat`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN':
-                        (
-                            document.querySelector(
-                                'meta[name="csrf-token"]',
-                            ) as HTMLMetaElement
-                        )?.content ?? '',
+                    'X-API-Key': import.meta.env.VITE_ASISTEN_API_KEY ?? '',
                 },
                 body: JSON.stringify({
-                    question,
-                    history: conversationHistory,
+                    messages: [
+                        ...conversationHistory,
+                        { role: 'user', content: question },
+                    ],
                 }),
             });
             const data = await res.json().catch(() => null);
             const text =
-                res.ok && data && data.answer
-                    ? data.answer
+                res.ok && data && data.data && data.data.reply
+                    ? data.data.reply
                     : 'Maaf, terjadi kendala saat memproses pertanyaan. Silakan coba lagi.';
             const sources: Source[] =
-                res.ok && Array.isArray(data?.sources)
-                    ? data.sources.filter(
-                        (s: unknown): s is Source =>
-                            !!s &&
-                            typeof s === 'object' &&
-                            typeof (s as Source).url === 'string' &&
-                            (s as Source).url.length > 0,
-                    )
+                res.ok && data?.data?.sources
+                    ? data.data.sources.map((s: any) => ({
+                          title: s.title || 'Sumber',
+                          url: s.url || '#',
+                      }))
                     : [];
             const newId = makeId();
             setHistory((prev) => [

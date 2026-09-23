@@ -45,6 +45,15 @@ return [
         'model' => env('CLAUDE_MODEL', 'claude-opus-4-5'),
     ],
 
+    // Standalone e-GerAI Python API (see OpenAPI at {url}/openapi.json).
+    // Temporary/experimental: used only by the "generate via external API"
+    // trial action on the /egerai review page, alongside (not replacing)
+    // the native ProposalDocumentGenerator flow.
+    'egerai_api' => [
+        'url' => env('EGERAI_API_URL', 'http://localhost:8001'),
+        'key' => env('EGERAI_API_KEY'),
+    ],
+
     'mailtrap' => [
         'api_key' => env('MAILTRAP_API_KEY'),
         'inbox_id' => env('MAILTRAP_INBOX_ID'),

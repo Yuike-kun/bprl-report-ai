@@ -9,9 +9,10 @@ type Props = {
     error?: string;
     label?: string;
     required?: boolean;
+    center?: boolean; // new: controls whether the pad is centered in its container
 };
 
-export default function SignaturePad({ value, onChange, error, label, required }: Props) {
+export default function SignaturePad({ value, onChange, error, label, required, center }: Props) {
     const [mode, setMode] = useState<"draw" | "upload">("draw");
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const [isDrawing, setIsDrawing] = useState(false);
@@ -150,7 +151,7 @@ export default function SignaturePad({ value, onChange, error, label, required }
     };
 
     return (
-        <div className="space-y-3">
+            <div className={`space-y-3 flex flex-col w-full ${center ? "items-center justify-center" : ""}`}>
             <div className="flex items-center justify-between">
                 <Label className="text-sm font-medium text-slate-700">
                     {label ?? "Tanda Tangan"} {required && <span className="text-red-500">*</span>}

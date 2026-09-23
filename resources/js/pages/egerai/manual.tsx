@@ -153,7 +153,6 @@ const todayIso = new Date().toISOString().split('T')[0];
 
 export default function EgeraiManual() {
     const [values, setValues] = useState<Record<string, string>>({});
-    const [aiFillEnabled, setAiFillEnabled] = useState(false);
     const setValue = (name: string, value: string) =>
         setValues((prev) => ({ ...prev, [name]: value }));
 
@@ -302,7 +301,6 @@ export default function EgeraiManual() {
 
         instalasiPosisi.forEach((v) => fd.append('instalasi_posisi[]', v));
 
-        fd.append('ai_fill_enabled', aiFillEnabled ? '1' : '0');
         fd.append('non_reklamasi', nonReklamasi ? '1' : '0');
         fd.append('reklamasi', reklamasi ? '1' : '0');
         fd.append('kegiatan_berusaha', kegiatanBerusaha ? '1' : '0');
@@ -593,32 +591,21 @@ export default function EgeraiManual() {
                                     Unduh Draft
                                 </button>
                             </div>
-                            <label className="mt-2.5 flex w-full cursor-pointer items-start gap-3 rounded-xl bg-[#f7fafd] p-3 text-[13px] text-[#33495e]">
-                                <input
-                                    type="checkbox"
-                                    checked={aiFillEnabled}
-                                    onChange={(e) =>
-                                        setAiFillEnabled(e.target.checked)
-                                    }
-                                    className="mt-0.5 h-4 w-4 shrink-0 accent-[#1E63C7]"
-                                />
+                            <div className="mt-2.5 flex w-full items-start gap-3 rounded-xl bg-[#f7fafd] p-3 text-[13px] text-[#33495e]">
                                 <span>
                                     <span className="font-bold text-[#123A63]">
-                                        Isi data hidro-oseanografi kosong dengan estimasi AI
+                                        Narasi ekosistem dibuat otomatis oleh AI
                                     </span>
                                     <br />
-                                    Untuk data gelombang/arus/pasang surut/
-                                    batimetri/luas ekosistem yang belum
-                                    terisi, AI akan mencari referensi regional
-                                    dan mengisi estimasi sementara beserta
-                                    sumbernya. Matikan untuk membiarkan kolom
-                                    tersebut kosong dan diisi manual. (Narasi
-                                    detail ekosistem mangrove/lamun/karang
-                                    beserta sumbernya tetap selalu dibuat AI
-                                    dari data yang sudah ada, terlepas dari
-                                    status kotak centang ini.)
+                                    Narasi detail ekosistem mangrove/lamun/
+                                    karang beserta sumbernya dibuat AI
+                                    berdasarkan data yang sudah ada (tidak
+                                    mengarang data). Data gelombang/arus/
+                                    pasang surut/batimetri lainnya tidak diisi
+                                    otomatis oleh AI — kolom yang kosong perlu
+                                    dilengkapi manual.
                                 </span>
-                            </label>
+                            </div>
                         </div>
 
                         <div className="mb-[18px] rounded-2xl border border-[#e7eef6] bg-white p-6 shadow-[0_8px_26px_rgba(18,58,99,0.10)]">

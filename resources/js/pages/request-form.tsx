@@ -295,7 +295,7 @@ export default function RequestForm() {
 
     return (
         <Layout pageTitle={adminMode ? 'Tambah Permohonan Konsultasi' : undefined}>
-            <div className="mx-auto w-full max-w-4xl px-4 py-8">
+            <div className="mx-auto w-full max-w-4xl px-4 py-8 bg-white sm:px-6 lg:px-8 lg:py-12 rounded-2xl shadow-md shadow-slate-200/50">
 
                 {/* ===== Page header ===== */}
                 <motion.div
@@ -523,6 +523,7 @@ export default function RequestForm() {
                                     value={data.tanda_tangan}
                                     onChange={(val) => setData('tanda_tangan', val)}
                                     error={fieldError('tanda_tangan')}
+                                    
                                 />
                             </div>
                         </div>

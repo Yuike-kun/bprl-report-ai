@@ -71,6 +71,10 @@ Route::prefix('egerai')->as('egerai.')->group(function () {
     Route::get('/{egeraiJob}/review', [EgeraiProposalController::class, 'review'])->name('review');
     Route::put('/{egeraiJob}/review', [EgeraiProposalController::class, 'update'])->name('update');
     Route::get('/{egeraiJob}/download', [EgeraiProposalController::class, 'download'])->name('download');
+    // Experimental: same final document, but built by the standalone e-GerAI
+    // Python API instead of the local ProposalDocumentGenerator. See
+    // EgeraiProposalController::generateViaExternalApi().
+    Route::get('/{egeraiJob}/download-api', [EgeraiProposalController::class, 'generateViaExternalApi'])->name('download-api');
     Route::get('/{egeraiJob}/image/{type}/{filename}', [EgeraiProposalController::class, 'image'])->name('image');
 });
 
@@ -271,8 +275,7 @@ Route::get('/pkkprl/download-kkprl-proposal/{proposalId}', [GenerateDocxControll
 Route::post('/kkprl/review', [GenerateDocxController::class, 'reviewAndGenerate'])
     ->name('kkprl.review');
 
+// Chat itself is now served directly from the browser by the external
+// e-GerAI Asisten API (see resources/js/pages/Assistant.tsx); no backend
+// proxy route is needed here anymore.
 Route::get('/asisten', fn () => inertia('Assistant'))->name('asisten');
-
-Route::post('/kkprl/assistant', [ProposalExtractionController::class, 'assistant'])
-    ->middleware(['throttle:20,1', 'api'])
-    ->name('kkprl.assistant');
