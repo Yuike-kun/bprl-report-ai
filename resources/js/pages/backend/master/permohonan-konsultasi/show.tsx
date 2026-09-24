@@ -482,7 +482,7 @@ export default function PermohonanKonsultasiShow({ submission }: Props) {
                                     </h3>
                                 </div>
                                 <a
-                                    href={`/signature-upload?id=${submission.id}&email=${encodeURIComponent(submission.email)}`}
+                                    href={`/signature-upload?email=${encodeURIComponent(submission.email)}&nomor_telepon=${encodeURIComponent(submission.nomor_telepon)}`}
                                     target="_blank"
                                     rel="noreferrer"
                                     className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-blue-600 hover:bg-blue-50 transition-colors"

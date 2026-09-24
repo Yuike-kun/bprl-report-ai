@@ -62,6 +62,14 @@ const services = [
         cta: 'Upload Tanda Tangan',
     },
     {
+        icon: FileText,
+        tag: 'PEMOHON',
+        title: 'Cek Berita Acara',
+        desc: 'Tinjau isi Berita Acara konsultasi yang sudah final dan unduh PDF resminya tanpa login.',
+        href: '/cek-berita-acara',
+        cta: 'Cek Sekarang',
+    },
+    {
         icon: FileUp,
         tag: 'MANDIRI',
         title: 'Proposal KKPRL',
@@ -208,9 +216,9 @@ export default function Welcome() {
                                     variants={heroChildVariants}
                                     className="text-5xl leading-[1.02] font-black tracking-tight text-white sm:text-6xl lg:text-[3.75rem]"
                                 >
-                                    Layanan Digital
+                                    GerAI
                                     <br />
-                                    Dokumen KKPRL
+                                    Layanan KKPRL
                                 </motion.h1>
 
                                 <motion.p

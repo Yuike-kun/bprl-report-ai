@@ -7,6 +7,7 @@ import {
     ChevronDown,
     ClipboardCheck,
     FileCheck2,
+    FileSearch,
     Menu,
     MessageCircle,
     PenTool,
@@ -40,6 +41,13 @@ const services = [
         icon: PenTool,
         title: 'Unggah Tanda Tangan',
         desc: 'Unggah atau perbarui tanda tangan berkas permohonan tanpa akun login.',
+        badge: 'Pemohon',
+    },
+    {
+        href: '/cek-berita-acara',
+        icon: FileSearch,
+        title: 'Cek Berita Acara',
+        desc: 'Tinjau isi Berita Acara final & unduh PDF resminya tanpa login.',
         badge: 'Pemohon',
     },
     {

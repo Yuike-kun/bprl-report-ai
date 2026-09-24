@@ -24,6 +24,7 @@ use App\Http\Controllers\Pegawai\DashboardController as PegawaiDashboardControll
 use App\Http\Controllers\Pegawai\SignatureKonsultasiController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProposalExtractionController;
+use App\Http\Controllers\PublicBeritaAcaraCheckController;
 use App\Http\Controllers\PublicUploadSignatureController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RequestFormController;
@@ -46,6 +47,9 @@ Route::post('/request-form', [RequestFormController::class, 'store'])->name('req
 
 Route::get('/signature-upload', [PublicUploadSignatureController::class, 'index'])->name('signature-upload');
 Route::post('/signature-upload', [PublicUploadSignatureController::class, 'store'])->name('signature-upload.store');
+
+Route::get('/cek-berita-acara', [PublicBeritaAcaraCheckController::class, 'index'])->name('cek-berita-acara');
+Route::get('/cek-berita-acara/{beritaAcara}/pdf', [PublicBeritaAcaraCheckController::class, 'pdf'])->name('cek-berita-acara.pdf');
 Route::get('/master/permohonan-konsultasi/{permohonanKonsultasi}/download-confirmation-pdf', [PermohonanKonsultasiController::class, 'downloadConfirmationPdf'])->name('master.permohonan-konsultasi.download-confirmation-pdf');
 
 Route::middleware('guest')->group(function () {

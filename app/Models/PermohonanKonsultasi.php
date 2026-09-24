@@ -2,6 +2,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class PermohonanKonsultasi extends Model
 {
@@ -54,7 +55,10 @@ class PermohonanKonsultasi extends Model
         return $this->hasMany(KkprlProposal::class, 'permohonan_konsultasi_id');
     }
 
-    public function beritaAcara()
+    /**
+     * @return HasOne<BeritaAcaraKonsultasi, $this>
+     */
+    public function beritaAcara(): HasOne
     {
         return $this->hasOne(BeritaAcaraKonsultasi::class, 'request_form_id');
     }
