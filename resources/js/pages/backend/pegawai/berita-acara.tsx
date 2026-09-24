@@ -15,7 +15,7 @@ import {
     Layers,
     BadgeCheck,
 } from 'lucide-react';
-import { ComboboxSearch } from '@/components/backend/combobox-searchable';
+import { ComboboxMultiSearch } from '@/components/backend/combobox-multi-searchable';
 import {
     FormLabel,
     FieldError,
@@ -39,6 +39,7 @@ import type {
     FormData,
 } from '@/components/types/berita-acara';
 import { useBeritaAcaraForm } from '@/props/hooks/useBeritaAcaraForm';
+import { ComboboxSearch } from '@/components/backend/combobox-searchable';
 
 export default function BeritaAcara({
     staffList,
@@ -165,24 +166,21 @@ export default function BeritaAcara({
             });
     }, [form.district, locationIds.regency, locationIds.district]);
 
-    // staffOptions is currently unused in the markup below (kept from the
-    // original component) — wire it into a staff-assignment field if/when
-    // that UI is added.
-    const staffOptions = staffList.map((s) => ({
-        value: String(s.id),
-        label: `${s.name} — ${s.position}`,
-    }));
-
     const selectedStaffIds = form.staff_ids.length
         ? form.staff_ids
         : [form.staff_1_id, form.staff_2_id, form.staff_3_id, form.staff_4_id].filter(Boolean);
 
-    const toggleStaff = (staffId: string) => {
+    const selectedStaffOptions = selectedStaffIds.map((id) => {
+        const staff = staffList.find((s) => String(s.id) === id);
+        return staff
+            ? { id: Number(staff.id), name: staff.name }
+            : { id: Number(id), name: `Staf #${id}` };
+    });
+
+    const handleStaffChange = (items: any[]) => {
         set(
             'staff_ids',
-            selectedStaffIds.includes(staffId)
-                ? selectedStaffIds.filter((id) => id !== staffId)
-                : [...selectedStaffIds, staffId],
+            items.map((item) => String(item.id)),
         );
     };
 
@@ -455,40 +453,14 @@ export default function BeritaAcara({
                                 <p className="mb-2 text-xs text-slate-500">
                                     Pilih seluruh staf yang terlibat dalam pendampingan permohonan.
                                 </p>
-                                <div className="grid gap-2 sm:grid-cols-2">
-                                    {staffOptions.map((option) => {
-                                        const isChecked = selectedStaffIds.includes(option.value);
-                                        return (
-                                            <label
-                                                key={option.value}
-                                                className={`flex cursor-pointer items-center gap-2.5 rounded-xl border p-2.5 text-xs font-semibold transition-all ${
-                                                    isChecked
-                                                        ? 'border-blue-500 bg-blue-50 text-blue-700'
-                                                        : 'border-slate-200 text-slate-700 hover:border-blue-300 hover:bg-blue-50/40'
-                                                }`}
-                                            >
-                                                <input
-                                                    type="checkbox"
-                                                    checked={isChecked}
-                                                    onChange={() => toggleStaff(option.value)}
-                                                    className="hidden"
-                                                />
-                                                <span
-                                                    className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border-2 transition-all ${
-                                                        isChecked
-                                                            ? 'border-blue-500 bg-blue-500'
-                                                            : 'border-slate-300'
-                                                    }`}
-                                                >
-                                                    {isChecked && (
-                                                        <Check className="h-2.5 w-2.5 text-white" />
-                                                    )}
-                                                </span>
-                                                <span className="truncate">{option.label}</span>
-                                            </label>
-                                        );
-                                    })}
-                                </div>
+                                <ComboboxMultiSearch
+                                    value={selectedStaffOptions}
+                                    onChange={handleStaffChange}
+                                    fetchUrl="/staff/json"
+                                    searchParam="search"
+                                    labelKey="name"
+                                    placeholder="Cari & pilih petugas pendamping..."
+                                />
                                 <FieldError message={errors?.staff_ids || errors?.staff_1_id} />
                             </div>
 
