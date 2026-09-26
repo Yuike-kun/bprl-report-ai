@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AnalisisProposalController;
 use App\Http\Controllers\Api\NotificationApiController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BeritaAcaraController;
@@ -194,6 +195,20 @@ Route::middleware('auth')->group(function () {
         Route::get('/{proposalExtraction}/edit', [ProposalExtractionController::class, 'edit'])->name('edit');
         Route::put('/{proposalExtraction}', [ProposalExtractionController::class, 'update'])->name('update');
         Route::get('/{proposalExtraction}/download', [ProposalExtractionController::class, 'download'])->name('download');
+    });
+
+    // "Analisis & Koreksi Proposal": proxies straight to the external
+    // e-GerAI API's /api/v1/analisis/* endpoints (see EgeraiApiClient) —
+    // no local extraction/generation pipeline like /egerai has.
+    Route::middleware('role:admin,pegawai')->prefix('analisis-proposal')->as('analisis-proposal.')->group(function () {
+        Route::get('/', [AnalisisProposalController::class, 'create'])->name('create');
+        Route::post('/', [AnalisisProposalController::class, 'store'])->name('store');
+        Route::post('/unduh', [AnalisisProposalController::class, 'unduh'])->name('unduh');
+        Route::post('/simpan', [AnalisisProposalController::class, 'simpan'])->name('simpan');
+        Route::get('/riwayat', [AnalisisProposalController::class, 'riwayat'])->name('riwayat');
+        Route::get('/riwayat/{entryId}', [AnalisisProposalController::class, 'riwayatShow'])->name('riwayat.show');
+        Route::get('/riwayat/{entryId}/unduh', [AnalisisProposalController::class, 'riwayatUnduh'])->name('riwayat.unduh');
+        Route::delete('/riwayat/{entryId}', [AnalisisProposalController::class, 'riwayatHapus'])->name('riwayat.destroy');
     });
 
     Route::prefix('berita-acara')->as('berita-acara.')->group(function () {

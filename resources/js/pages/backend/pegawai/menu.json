@@ -19,6 +19,12 @@
     },
     {
         "type": "link",
+        "label": "Analisis Proposal",
+        "url": "/analisis-proposal",
+        "icon": "SearchCheck"
+    },
+    {
+        "type": "link",
         "label": "Dokumen",
         "url": "/documents",
         "icon": "FolderArchive"

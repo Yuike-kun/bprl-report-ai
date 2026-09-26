@@ -11,6 +11,7 @@ import {
     FileUp,
     MapPin,
     PenTool,
+    SearchCheck,
 } from 'lucide-react';
 import { useRef } from 'react';
 import logo from '/public/egerai-logo.png';
@@ -76,6 +77,14 @@ const services = [
         desc: 'Unggah Draft Proposal & Laporan Hidro-Oseanografi (atau isi manual), sistem ekstrak data & susun dokumen final otomatis.',
         href: '/egerai',
         cta: 'Isi Proposal',
+    },
+    {
+        icon: SearchCheck,
+        tag: 'INTERNAL',
+        title: 'Analisis Proposal',
+        desc: 'Unggah Proposal PKKPRL yang sudah jadi beserta laporan pembanding, lalu dapatkan pemeriksaan konsistensi datanya.',
+        href: '/analisis-proposal',
+        cta: 'Mulai Analisis',
     },
     {
         icon: UserRound,

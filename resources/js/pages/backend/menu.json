@@ -54,6 +54,11 @@
                 "label": "Proposal KKPRL",
                 "url": "/master/kkprl-proposal",
                 "icon": "FileText"
+            },
+            {
+                "label": "Analisis Proposal",
+                "url": "/analisis-proposal",
+                "icon": "SearchCheck"
             }
         ]
     },

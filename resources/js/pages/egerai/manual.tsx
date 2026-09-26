@@ -397,10 +397,9 @@ export default function EgeraiManual() {
                                 </SectionTitle>
                             </h3>
                             <p className={fieldHintClass}>
-                                Belum punya dokumennya? Boleh dikosongkan dulu —
-                                pakai tombol "Unduh Draft" di bawah untuk
-                                mengunduh draft Proposal saja terlebih dulu,
-                                lengkapi Laporannya nanti.
+                                Belum punya dokumennya? Peroleh data Hidro-Oseanografi melalui portal <a href="https://fadly2002-gerai-pelayanan-bprl.hf.space/" target="_blank" className=
+                                "text-[#1E63C7] hover:underline">
+                                    Gerai Pelayanan Balai Penataan Ruang Laut Makassar</a>, unduh hasilnya (PDF atau Word), lalu unggah di bawah ini. Belum sempat siap? Boleh dikosongkan dulu — pakai tombol "Unduh Draft" di bawah untuk mengunduh draft Proposal saja terlebih dulu, lengkapi Laporannya nanti.
                             </p>
                             <label
                                 className={

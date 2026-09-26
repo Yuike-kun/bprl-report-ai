@@ -11,6 +11,7 @@ import {
     Menu,
     MessageCircle,
     PenTool,
+    SearchCheck,
     ShieldCheck,
     User,
     Waves,
@@ -56,6 +57,13 @@ const services = [
         title: 'Proposal KKPRL',
         desc: 'Formulir penyusunan proposal KKPRL mandiri terstruktur.',
         badge: 'Mandiri',
+    },
+    {
+        href: '/analisis-proposal',
+        icon: SearchCheck,
+        title: 'Analisis Proposal',
+        desc: 'Periksa konsistensi Proposal PKKPRL terhadap laporan pembanding & kelola riwayat hasil analisis.',
+        badge: 'Internal',
     },
     {
         href: '/login',

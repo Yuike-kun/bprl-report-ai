@@ -42,6 +42,7 @@ import {
     BarChart3,
     FileBarChart,
     FileSpreadsheet,
+    SearchCheck,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { ReactNode, useEffect, useLayoutEffect, useRef, useState } from 'react';
@@ -88,6 +89,7 @@ const ICONS: Record<string, LucideIcon> = {
     BarChart3,
     FileBarChart,
     FileSpreadsheet,
+    SearchCheck,
 };
 
 const getIcon = (name?: string): LucideIcon =>

@@ -41,7 +41,7 @@ export const fieldTextareaClass =
 export const fieldLabelClass =
     'mb-[3px] block text-[12.5px] font-bold text-[#123A63]';
 
-export const fieldHintClass = 'mb-1.5 text-[11px] text-[#5b6b7c]';
+export const fieldHintClass = 'mb-1.5 text-[11px]';
 
 export const fieldExampleWrapClass =
     'mt-1.5 flex flex-wrap items-center gap-2.5 text-[13px] leading-[1.4] text-[#5b6b7c]';
@@ -1451,23 +1451,7 @@ export default function ManualProposalForm() {
                                 </span>
                             </h3>
                             <div className="mb-2.5 text-[11px] text-[#5b6b7c]">
-                                Belum punya dokumennya? Peroleh data
-                                Hidro-Oseanografi melalui portal{' '}
-                                <a
-                                    href="https://huggingface.co/spaces/Fadly2002/Gerai-Pelayanan-BPRL"
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="font-bold text-[#1E63C7]"
-                                >
-                                    Gerai Pelayanan Balai Penataan Ruang Laut
-                                    Makassar
-                                </a>
-                                , unduh hasilnya (PDF atau Word), lalu unggah di
-                                bawah ini. Belum sempat siap? Boleh dikosongkan
-                                dulu — pakai tombol{' '}
-                                <b>&quot;Unduh Draft&quot;</b> di bawah untuk
-                                mengunduh draft Proposal saja terlebih dulu,
-                                lengkapi Laporannya nanti.
+                                Belum punya dokumennya? Peroleh data Hidro-Oseanografi melalui portal <a href="https://fadly2002-gerai-pelayanan-bprl.hf.space/" target="_blank">Gerai Pelayanan Balai Penataan Ruang Laut Makassar</a>, unduh hasilnya (PDF atau Word), lalu unggah di bawah ini. Belum sempat siap? Boleh dikosongkan dulu — pakai tombol "Unduh Draft" di bawah untuk mengunduh draft Proposal saja terlebih dulu, lengkapi Laporannya nanti.
                             </div>
 
                             <label className="block cursor-pointer rounded-xl border-2 border-dashed border-[#b9cbe0] bg-[#f7fafd] p-6 text-center hover:border-[#1E63C7] hover:bg-[#eef5fd]">

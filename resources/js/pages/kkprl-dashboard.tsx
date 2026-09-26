@@ -33,7 +33,8 @@ export default function Home() {
             onError: (errors: any) => {
                 const messages = Object.values(errors).flat().join(' ');
                 setError(
-                    messages || 'File tidak dapat diproses. Pastikan PDF/DOCX valid dan maksimal 30 MB.'
+                    messages ||
+                        'File tidak dapat diproses. Pastikan PDF/DOCX valid dan maksimal 30 MB.',
                 );
                 setLoading(false);
             },
@@ -86,6 +87,14 @@ export default function Home() {
                                 >
                                     Isi formulir manual
                                 </Link>
+                                . Sudah punya proposal jadi dan mau
+                                dicek/dikoreksi datanya?{' '}
+                                <Link
+                                    href="/analisis-proposal"
+                                    className="text-blue-600 underline"
+                                >
+                                    Analisis di sini
+                                </Link>
                                 .
                             </>
                         }
@@ -102,21 +111,30 @@ export default function Home() {
                             Alur Proses
                         </h3>
                         {[
-                            [FileText, 'Upload Proposal'],
-                            [Settings, 'Upload Laporan'],
-                            [Sparkles, 'Generate Dokumen'],
-                            [Download, 'Download Dokumen'],
-                        ].map(([Icon, label], i) => {
+                            [FileText, 'Upload Proposal', '#DF301C'],
+                            [Settings, 'Upload Laporan', '#FF9100'],
+                            [Sparkles, 'Generate Dokumen', '#FFC349'],
+                            [Download, 'Download Dokumen', '#00B7CD'],
+                        ].map(([Icon, label, color], i) => {
                             const I = Icon as typeof FileText;
                             return (
                                 <div
-                                    className="flex items-start gap-[10px] pb-[14px] md:pb-0 xl:pb-[17px]"
+                                    className={`flex items-center gap-[10px] mb-3 transition-all duration-300 ease-in-out cursor-help cursor-z last:mb-0 p-3 hover:scale-110`}
+                                    style={{
+                                        backgroundColor: color as string + '1A',
+                                        borderRadius: '10px',
+                                    }}
                                     key={label as string}
                                 >
-                                    <i className="grid h-[26px] w-[26px] shrink-0 place-items-center rounded-full bg-[#1e63c7] text-[13px] font-extrabold text-white not-italic">
+                                    <i
+                                        style={{
+                                            backgroundColor: color as string,
+                                        }}
+                                        className="grid h-[26px] w-[26px] shrink-0 place-items-center rounded-full text-[13px] font-extrabold text-white not-italic flex items-center justify-center"
+                                    >
                                         {i + 1}
                                     </i>
-                                    <I className="mt-1 w-5 text-[#1e63c7]" />
+                                    <I className="mt-1 w-5" style={{ color: color as string }} />
                                     <span className="flex flex-col gap-[2px]">
                                         <b className="text-[13px] text-[#123a63]">
                                             {label as string}

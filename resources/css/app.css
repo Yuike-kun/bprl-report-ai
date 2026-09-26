@@ -168,7 +168,7 @@ table tr:last-child {
 .markdown-answer {
     font-size: 13.3px;
     line-height: 1.55;
-    color: #0A2557;
+    color: #0a2557;
 }
 .markdown-answer p {
     margin: 0 0 0.5em 0;
@@ -177,7 +177,7 @@ table tr:last-child {
     margin-bottom: 0;
 }
 .markdown-answer strong {
-    color: #123A63;
+    color: #123a63;
     font-weight: 700;
 }
 .markdown-answer ul,
@@ -212,7 +212,7 @@ table tr:last-child {
     background: rgba(10, 37, 87, 0.06);
 }
 .markdown-answer a {
-    color: #1AA6E0;
+    color: #1aa6e0;
     text-decoration: underline;
 }
 .markdown-answer code {
@@ -220,4 +220,44 @@ table tr:last-child {
     padding: 1px 4px;
     border-radius: 4px;
     font-size: 12px;
+}
+
+/* Analisis Proposal report card — admin panel's slate/blue palette, unlike
+   .markdown-answer above (chat bubbles) this renders full documents with
+   headings, so it needs its own heading/table rules. */
+.analisis-report h1,
+.analisis-report h2 {
+    @apply mt-6 mb-2 border-b border-slate-200 pb-2 text-lg font-bold text-slate-900 first:mt-0;
+}
+.analisis-report h3 {
+    @apply mt-4 mb-1.5 text-sm font-bold text-slate-800;
+}
+.analisis-report p {
+    @apply mb-3 text-sm leading-relaxed text-slate-700;
+}
+.analisis-report ul,
+.analisis-report ol {
+    @apply mb-3 space-y-1 pl-5 text-sm text-slate-700;
+}
+.analisis-report ul {
+    @apply list-disc;
+}
+.analisis-report ol {
+    @apply list-decimal;
+}
+.analisis-report strong {
+    @apply font-semibold text-slate-900;
+}
+.analisis-report table {
+    @apply my-3 w-full border-collapse text-sm;
+}
+.analisis-report th,
+.analisis-report td {
+    @apply border border-slate-200 px-3 py-2 text-left;
+}
+.analisis-report th {
+    @apply bg-slate-50 font-semibold text-slate-700;
+}
+.analisis-report tr:nth-child(even) td {
+    @apply bg-slate-50/50;
 }

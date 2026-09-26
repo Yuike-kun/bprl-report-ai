@@ -9,9 +9,14 @@ use RuntimeException;
 /**
  * Thin HTTP client for the standalone e-GerAI Python API (see OpenAPI at
  * {base_url}/openapi.json — same service that powers the /asisten chat).
- * Used only by the experimental "generate via external API" action; the
- * native ProposalDocumentGenerator/EgeraiExtractionService pipeline remains
- * the default and is unaffected by this client.
+ * Two independent feature groups use it:
+ *  - dokumen/*: the experimental "generate via external API" action on the
+ *    /egerai review page, alongside (not replacing) the native
+ *    ProposalDocumentGenerator/EgeraiExtractionService pipeline.
+ *  - analisis/*: AnalisisProposalController's "Analisis & Koreksi Proposal"
+ *    feature — this client is the only place that data ever touches; the
+ *    markdown result and saved history both live on the external API, not
+ *    in this app's own database.
  *
  * Important limitation: /api/v1/dokumen/generate only accepts corrections
  * ("koreksi") for the specific field set the Python app's review_fields.py
@@ -146,6 +151,151 @@ class EgeraiApiClient
         } catch (\Throwable) {
             // Housekeeping only; the job auto-expires after ~2 hours regardless.
         }
+    }
+
+    /**
+     * POST /api/v1/analisis/proposal — uploads 1..10 proposal files and
+     * 0..10 comparison "laporan" files, returns
+     * ['hasil_markdown' => string, 'nama_proposal' => string, 'nama_laporan' => string].
+     * Nothing is persisted server-side by this call; the markdown only
+     * becomes permanent once it's sent to analisisSimpan().
+     *
+     * @param  array<int, string>  $proposalPaths
+     * @param  array<int, string>  $laporanPaths
+     * @return array{hasil_markdown: string, nama_proposal: string, nama_laporan: string}
+     */
+    public function analisisProposal(array $proposalPaths, array $laporanPaths): array
+    {
+        $request = $this->http();
+        foreach ($proposalPaths as $path) {
+            $request = $request->attach('proposal', file_get_contents($path), basename($path));
+        }
+        foreach ($laporanPaths as $path) {
+            $request = $request->attach('laporan', file_get_contents($path), basename($path));
+        }
+
+        $response = $request->post("{$this->baseUrl}/api/v1/analisis/proposal");
+        $body = $response->json();
+
+        if (! $response->successful() || ! ($body['success'] ?? false)) {
+            throw new RuntimeException(
+                'Analisis proposal gagal: '.($body['error']['message'] ?? $response->status())
+            );
+        }
+
+        return $body['data'];
+    }
+
+    /** POST /api/v1/analisis/unduh — turns a markdown analysis result into a .docx, returns the raw bytes. */
+    public function analisisUnduh(string $hasilMarkdown, string $namaProposal = '', string $namaLaporan = ''): string
+    {
+        $response = $this->http()->post("{$this->baseUrl}/api/v1/analisis/unduh", [
+            'hasil_markdown' => $hasilMarkdown,
+            'nama_proposal' => $namaProposal,
+            'nama_laporan' => $namaLaporan,
+        ]);
+
+        if (! $response->successful()) {
+            $body = $response->json();
+
+            throw new RuntimeException(
+                'Unduh dokumen analisis gagal: '.($body['error']['message'] ?? $response->status())
+            );
+        }
+
+        return $response->body();
+    }
+
+    /** POST /api/v1/analisis/simpan — persists the markdown result server-side, returns its entry_id. */
+    public function analisisSimpan(string $hasilMarkdown, string $namaProposal, string $namaLaporan, string $disimpanOleh): string
+    {
+        $response = $this->http()->post("{$this->baseUrl}/api/v1/analisis/simpan", [
+            'hasil_markdown' => $hasilMarkdown,
+            'nama_proposal' => $namaProposal,
+            'nama_laporan' => $namaLaporan,
+            'disimpan_oleh' => $disimpanOleh,
+        ]);
+        $body = $response->json();
+
+        if (! $response->successful() || ! ($body['success'] ?? false)) {
+            throw new RuntimeException(
+                'Simpan hasil analisis gagal: '.($body['error']['message'] ?? $response->status())
+            );
+        }
+
+        return $body['data']['entry_id'];
+    }
+
+    /**
+     * GET /api/v1/analisis/riwayat — list of saved entries, each
+     * ['id', 'waktu', 'nama_proposal', 'nama_laporan', 'disimpan_oleh'].
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function analisisRiwayatList(?string $disimpanOleh = null, int $limit = 200): array
+    {
+        $response = $this->http()->get("{$this->baseUrl}/api/v1/analisis/riwayat", array_filter([
+            'disimpan_oleh' => $disimpanOleh,
+            'limit' => $limit,
+        ]));
+        $body = $response->json();
+
+        if (! $response->successful() || ! ($body['success'] ?? false)) {
+            throw new RuntimeException(
+                'Ambil riwayat analisis gagal: '.($body['error']['message'] ?? $response->status())
+            );
+        }
+
+        return $body['data']['items'];
+    }
+
+    /**
+     * GET /api/v1/analisis/riwayat/{entry_id} — returns ['meta' => [...], 'hasil_markdown' => string].
+     *
+     * @return array{meta: array<string, mixed>, hasil_markdown: string}
+     */
+    public function analisisRiwayatGet(string $entryId): array
+    {
+        $response = $this->http()->get("{$this->baseUrl}/api/v1/analisis/riwayat/{$entryId}");
+
+        if ($response->status() === 404) {
+            throw new RuntimeException('not_found');
+        }
+
+        $body = $response->json();
+        if (! $response->successful() || ! ($body['success'] ?? false)) {
+            throw new RuntimeException(
+                'Ambil hasil analisis gagal: '.($body['error']['message'] ?? $response->status())
+            );
+        }
+
+        return $body['data'];
+    }
+
+    /** DELETE /api/v1/analisis/riwayat/{entry_id} — best-effort, never throws (mirrors deleteJob()). */
+    public function analisisRiwayatHapus(string $entryId): void
+    {
+        try {
+            $this->http()->delete("{$this->baseUrl}/api/v1/analisis/riwayat/{$entryId}");
+        } catch (\Throwable) {
+            // Best-effort cleanup; a stray entry left behind isn't fatal.
+        }
+    }
+
+    /** GET /api/v1/analisis/riwayat/{entry_id}/unduh — returns the raw .docx bytes of a saved entry. */
+    public function analisisRiwayatUnduh(string $entryId): string
+    {
+        $response = $this->http()->get("{$this->baseUrl}/api/v1/analisis/riwayat/{$entryId}/unduh");
+
+        if ($response->status() === 404) {
+            throw new RuntimeException('not_found');
+        }
+
+        if (! $response->successful()) {
+            throw new RuntimeException('Unduh hasil analisis tersimpan gagal: '.$response->status());
+        }
+
+        return $response->body();
     }
 
     private function buildKoreksi(array $prop, array $lap): array
