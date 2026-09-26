@@ -50,7 +50,7 @@ class UsersController extends Controller
         $validated = $request->validate([
             'name'      => ['required', 'string', 'max:255'],
             'email'     => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
-            'password'  => ['required', 'confirmed', Password::defaults()],
+            'password'  => ['required', 'confirmed', 'min:8'],
             'role'      => ['required', 'string', Rule::in(User::ALL_ROLES)],
             'signature' => ['nullable', 'string'],
         ]);
