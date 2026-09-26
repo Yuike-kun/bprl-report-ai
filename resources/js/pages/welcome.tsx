@@ -225,7 +225,7 @@ export default function Welcome() {
                                     variants={heroChildVariants}
                                     className="text-5xl leading-[1.02] font-black tracking-tight text-white sm:text-6xl lg:text-[3.75rem]"
                                 >
-                                    GerAI
+                                    e-GerAI
                                     <br />
                                     Layanan KKPRL
                                 </motion.h1>

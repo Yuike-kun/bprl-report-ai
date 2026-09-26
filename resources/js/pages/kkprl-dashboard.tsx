@@ -11,6 +11,7 @@ import {
 import { useState } from 'react';
 import AppLayout from './layout';
 import DocumentUpload from '@/components/document-upload';
+import logoEgerai from '/public/logo-egerai-icon.png';
 
 export default function Home() {
     const [proposal, setProposal] = useState<File>();
@@ -175,7 +176,7 @@ export default function Home() {
                     className="mt-[22px] flex flex-wrap items-center gap-5 rounded-[18px] bg-gradient-to-br from-[#0a2557] via-[#12468c] to-[#1aa6e0] p-5 text-white shadow-[0_14px_34px_#0a25573d] md:mt-[34px] md:flex-nowrap md:px-[27px] md:py-[23px]"
                 >
                     <img
-                        src="/images/logo-egerai-icon.png"
+                        src={logoEgerai}
                         className="w-[59px] rounded-[13px] bg-white p-[7px]"
                     />
                     <span className="flex flex-1 flex-col gap-1">
