@@ -9,7 +9,6 @@ import {
     FileCheck2,
     FileSearch,
     Menu,
-    MessageCircle,
     PenTool,
     SearchCheck,
     ShieldCheck,
@@ -456,16 +455,33 @@ export default function HomeLayout({ children }: { children: ReactNode }) {
 
             <Navbar scrolled={scrolled} />
 
-            {/* Floating "Tanya AI" Button */}
+            {/* Floating "Tanya Navi" button — Navi is a tall full-body
+                character, so she stands whole beside the label (popping
+                above the pill's top edge) instead of being crushed into a
+                circular avatar, which cut her head and feet off. Shadow
+                hugs her silhouette via drop-shadow; the pill itself stays
+                in the site's white-card language. Her own motion is the
+                only animation — no ping dots, no gradient wash. */}
             {showAIButton && (
                 <Link
                     href="/asisten"
-                    className="group fixed right-6 bottom-6 z-50 flex items-center justify-center gap-2 overflow-hidden rounded-full bg-linear-to-br from-emerald-500 via-amber-400 to-blue-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-blue-600/30 transition-all duration-300 hover:-translate-y-1 hover:scale-110 hover:shadow-xl hover:shadow-blue-600/40 md:right-8 md:bottom-8 md:h-auto md:w-auto md:justify-start"
+                    aria-label="Tanya Navi — Asisten KKPRL"
+                    className="group fixed right-6 bottom-6 z-50 flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white py-2 pr-5 pl-3 shadow-xl shadow-slate-900/10 transition-all duration-200 hover:-translate-y-1 hover:border-blue-300 hover:shadow-xl hover:shadow-blue-600/25 focus-visible:-translate-y-1 focus-visible:border-blue-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 md:right-8 md:bottom-8"
                 >
-                    <MessageCircle />
-                    <span className="hidden sm:inline">Tanya Navi</span>
-                    <div className="absolute -top-1 -right-1 h-3 w-3 animate-ping rounded-full bg-[#F2A83B] opacity-75" />
-                    <div className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-[#F2A83B]" />
+                    <img
+                        src="/navi.gif"
+                        alt=""
+                        aria-hidden="true"
+                        className="-mt-10 h-24 w-auto shrink-0 origin-bottom object-contain drop-shadow-[0_4px_8px_rgba(18,58,99,0.3)] transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-3"
+                    />
+                    <span className="pb-1 leading-tight">
+                        <span className="block text-sm font-bold text-slate-900 transition-colors group-hover:text-blue-700">
+                            Tanya Navi
+                        </span>
+                        <span className="block text-[11px] font-medium text-slate-500">
+                            Asisten KKPRL
+                        </span>
+                    </span>
                 </Link>
             )}
 

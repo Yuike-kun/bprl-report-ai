@@ -255,7 +255,7 @@ export default function Assistant() {
                 <div className="mx-auto flex max-w-full px-10 flex-wrap items-center justify-between gap-5">
                     <div>
                         <h1 className="m-0 mb-1.5 text-xl font-extrabold text-[#123A63] sm:text-2xl">
-                            Asisten e-GerAI &mdash; Tanya KKPRL
+                            Asisten e-GerAI &mdash; Tanya Navi
                         </h1>
                         <p className="m-0 max-w-[560px] text-[12px] leading-[1.5] text-[#33495e] sm:text-[13.5px]">
                             Tanyakan apa pun seputar persyaratan, alur
@@ -343,7 +343,7 @@ export default function Assistant() {
                                     Ditjen Penataan Ruang Laut, KKP
                                 </div>
                                 <h2 className="mt-0.75 mb-0.75 text-base font-extrabold tracking-[-.01em] sm:text-lg">
-                                    Halo e-GerAI BPRL Makassar
+                                    Halo Asisten e-GerAI BPRL Makassar
                                 </h2>
                                 <div className="max-w-full text-[11px] leading-[1.5] opacity-85 sm:max-w-[440px] sm:text-xs">
                                     Jawaban singkat &amp; jelas seputar
