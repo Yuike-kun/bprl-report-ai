@@ -133,9 +133,6 @@ class AnalisisProposalController extends Controller
 
     public function riwayat(Request $request, EgeraiApiClient $client): Response
     {
-        // Admins can see every staff member's saved analyses; regular staff
-        // only see their own (disimpan_oleh was set to the user's name at
-        // save time — see simpan() above).
         $disimpanOleh = $request->user()->isAdmin() ? null : $request->user()->name;
 
         try {
