@@ -28,6 +28,10 @@ type Submission = {
     status: 'draft' | 'dikirim' | 'selesai';
     created_at: string;
     dokumen?: { id: number }[];
+    // Nullable belongsTo relations — a permohonan can exist before any
+    // schedule/slot is assigned to it, so both may arrive as null.
+    jadwal: { pelaksanaan: string } | null;
+    child_schedules: { waktu: string } | null;
 };
 
 type PaginatedSubmissions = {
@@ -381,9 +385,9 @@ export default function PermohonanKonsultasiIndex({
                         </td>
                         <td className="px-5 py-4 text-sm text-slate-600">
                             <p className="text-xs font-bold text-slate-900">
-                                {item.jadwal.pelaksanaan}
+                                {item.jadwal?.pelaksanaan ?? '-'}
                             </p>
-                            {item.child_schedules.waktu}
+                            {item.child_schedules?.waktu ?? '-'}
                         </td>
                         <td className="px-5 py-4 text-sm text-slate-600">
                             {new Date(item.created_at).toLocaleDateString(
