@@ -20,7 +20,7 @@ import {
 
 export default function LoginPage({ status }) {
     const { data, setData, post, processing, errors } = useForm({
-        email: '',
+        login: '',
         password: '',
         remember: false,
     });
@@ -84,32 +84,32 @@ export default function LoginPage({ status }) {
                         )}
 
                         <form onSubmit={submitForm} noValidate className="mt-6 space-y-5">
-                            {/* Email */}
+                            {/* Email atau Username */}
                             <div className="space-y-2">
-                                <Label htmlFor="email" className="text-sm font-medium text-slate-700">
-                                    Email
+                                <Label htmlFor="login" className="text-sm font-medium text-slate-700">
+                                    Email atau Username
                                 </Label>
                                 <div className="relative group">
                                     <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-blue-600" />
                                     <Input
-                                        id="email"
-                                        type="email"
-                                        autoComplete="email"
+                                        id="login"
+                                        type="text"
+                                        autoComplete="username"
                                         autoFocus
-                                        value={data.email}
-                                        onChange={(e) => setData('email', e.target.value)}
-                                        placeholder="nama@kkp.go.id"
-                                        aria-invalid={!!errors.email}
-                                        className={`h-11 rounded-lg border bg-white pl-10 placeholder:text-slate-400 transition-colors focus-visible:ring-blue-600/20 ${errors.email
+                                        value={data.login}
+                                        onChange={(e) => setData('login', e.target.value)}
+                                        placeholder="nama@kkp.go.id atau username"
+                                        aria-invalid={!!errors.login}
+                                        className={`h-11 rounded-lg border bg-white pl-10 placeholder:text-slate-400 transition-colors focus-visible:ring-blue-600/20 ${errors.login
                                                 ? 'border-red-400 focus-visible:border-red-400 focus-visible:ring-red-400/20'
                                                 : 'border-slate-300 hover:border-slate-400'
                                             }`}
                                     />
                                 </div>
-                                {errors.email && (
+                                {errors.login && (
                                     <p className="flex items-center gap-1.5 text-sm text-red-600">
                                         <CircleAlert className="h-3.5 w-3.5 shrink-0" />
-                                        {errors.email}
+                                        {errors.login}
                                     </p>
                                 )}
                             </div>
