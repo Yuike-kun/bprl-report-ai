@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Staff;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -38,13 +39,21 @@ class AuthController extends Controller
         if (filter_var($login, FILTER_VALIDATE_EMAIL)) {
             $credentials = ['email' => $login, 'password' => $validated['password']];
         } else {
-            $matched = User::where('name', $login)->get(['id', 'email']);
+            // Non-email identifiers resolve against the `users.name`
+            // column (the username) and the `staff.nip` column. Neither is
+            // guaranteed unique on its own, so only proceed when both
+            // lookups together point at exactly one account — otherwise
+            // reject rather than pick an account arbitrarily.
+            $userIds = User::where('name', $login)->pluck('id')
+                ->merge(Staff::where('nip', $login)->pluck('user_id'))
+                ->unique()
+                ->values();
 
-            if ($matched->count() !== 1) {
+            if ($userIds->count() !== 1) {
                 return $this->failedLogin();
             }
 
-            $credentials = ['email' => $matched->first()->email, 'password' => $validated['password']];
+            $credentials = ['email' => User::whereKey($userIds->first())->value('email'), 'password' => $validated['password']];
         }
 
         $remember = $request->boolean('remember');

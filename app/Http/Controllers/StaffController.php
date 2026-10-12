@@ -27,6 +27,7 @@ class StaffController extends Controller
                     $sub->where('position', 'like', "%{$search}%")
                         ->orWhere('department', 'like', "%{$search}%")
                         ->orWhere('phone', 'like', "%{$search}%")
+                        ->orWhere('nip', 'like', "%{$search}%")
                         ->orWhereHas('user', function ($u) use ($search) {
                             $u->where('name', 'like', "%{$search}%")
                                 ->orWhere('email', 'like', "%{$search}%");
@@ -104,6 +105,7 @@ class StaffController extends Controller
             'name'       => ['required', 'string', 'max:255'],
             'email'      => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password'   => ['required', 'string', 'min:8', 'confirmed'],
+            'nip'        => ['nullable', 'string', 'max:50', 'unique:staff,nip'],
             'position'   => ['required', 'string', 'max:100'],
             'department' => ['required', 'string', 'max:100'],
             'phone'      => ['nullable', 'string', 'max:30'],
@@ -121,6 +123,7 @@ class StaffController extends Controller
 
             Staff::create([
                 'user_id'    => $user->id,
+                'nip'        => $validated['nip'] ?? null,
                 'position'   => $validated['position'],
                 'department' => $validated['department'],
                 'phone'      => $validated['phone'] ?? null,
@@ -147,6 +150,7 @@ class StaffController extends Controller
             'name'       => ['required', 'string', 'max:255'],
             'email'      => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($staff->user_id)],
             'password'   => ['nullable', 'string', 'min:8', 'confirmed'],
+            'nip'        => ['nullable', 'string', 'max:50', Rule::unique('staff', 'nip')->ignore($staff->id)],
             'position'   => ['required', 'string', 'max:100'],
             'department' => ['required', 'string', 'max:100'],
             'phone'      => ['nullable', 'string', 'max:30'],
@@ -167,6 +171,7 @@ class StaffController extends Controller
             $staff->user()->update($userData);
 
             $staff->update([
+                'nip'        => $validated['nip'] ?? null,
                 'position'   => $validated['position'],
                 'department' => $validated['department'],
                 'phone'      => $validated['phone'] ?? null,
@@ -206,6 +211,7 @@ class StaffController extends Controller
                     $sub->where('position', 'like', "%{$search}%")
                         ->orWhere('department', 'like', "%{$search}%")
                         ->orWhere('phone', 'like', "%{$search}%")
+                        ->orWhere('nip', 'like', "%{$search}%")
                         ->orWhereHas('user', function ($u) use ($search) {
                             $u->where('name', 'like', "%{$search}%")
                                 ->orWhere('email', 'like', "%{$search}%");

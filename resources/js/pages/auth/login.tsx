@@ -98,7 +98,7 @@ export default function LoginPage({ status }) {
                                         autoFocus
                                         value={data.login}
                                         onChange={(e) => setData('login', e.target.value)}
-                                        placeholder="nama@kkp.go.id atau username"
+                                        placeholder="nama@kkp.go.id, username, atau NIP"
                                         aria-invalid={!!errors.login}
                                         className={`h-11 rounded-lg border bg-white pl-10 placeholder:text-slate-400 transition-colors focus-visible:ring-blue-600/20 ${errors.login
                                                 ? 'border-red-400 focus-visible:border-red-400 focus-visible:ring-red-400/20'

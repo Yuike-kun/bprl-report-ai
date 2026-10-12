@@ -7,3 +7,5 @@ export { SelectInput } from './SelectInput';
 export { FileUpload } from './FileUpload';
 export { SectionCard } from './SectionCard';
 export { ExistingFiles } from './ExistingFiles';
+export { RichTextEditor } from './RichTextEditor';
+export { isRichTextEmpty } from './rich-text';

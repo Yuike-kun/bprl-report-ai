@@ -13,6 +13,7 @@ export default function StaffCreate() {
         email: "",
         password: "",
         password_confirmation: "",
+        nip: "",
         position: "",
         department: "",
         phone: "",
@@ -126,6 +127,22 @@ export default function StaffCreate() {
                     {/* Staff Details */}
                     <div className="space-y-4">
                         <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider text-xs">Detail Staff</h2>
+
+                        {/* NIP */}
+                        <div>
+                            <Label htmlFor="nip" className="block text-sm font-semibold text-slate-700 mb-1.5">
+                                NIP
+                            </Label>
+                            <Input
+                                id="nip"
+                                value={data.nip}
+                                onChange={(e) => setData("nip", e.target.value)}
+                                placeholder="Contoh: 199001012015031001"
+                                className="rounded-xl border-slate-200 focus-visible:ring-emerald-500/30 focus-visible:border-emerald-500"
+                            />
+                            <p className="text-[11px] text-slate-400 mt-1">Opsional — bisa dipakai sebagai username saat login.</p>
+                            {errors.nip && <p className="text-xs text-red-600 mt-1">{errors.nip}</p>}
+                        </div>
 
                         {/* Position */}
                         <div>

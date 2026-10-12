@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { router } from '@inertiajs/react';
+import { isRichTextEmpty } from '@/components/berita_acara_components';
 import type { ExistingDocument, FormData } from '@/components/types/berita-acara';
 import { EMPTY_FORM } from '@/components/types/berita-acara';
 import { alertError } from '@/lib/alert';
@@ -165,10 +166,10 @@ export function useBeritaAcaraForm(
                 !form.planned_area ||
                 !form.existing_condition ||
                 !form.coordinate_points ||
-                !form.activity_description ||
-                !form.surrounding_utilization ||
-                !form.environmental_condition ||
-                !form.other_information ||
+                isRichTextEmpty(form.activity_description) ||
+                isRichTextEmpty(form.surrounding_utilization) ||
+                isRichTextEmpty(form.environmental_condition) ||
+                isRichTextEmpty(form.other_information) ||
                 !form.consultation_result
             ) {
                 alertError('Harap lengkapi semua field wajib di Langkah 2 terlebih dahulu.');
@@ -177,7 +178,7 @@ export function useBeritaAcaraForm(
             return true;
         }
 
-        if (!form.consultation_notes.trim()) {
+        if (isRichTextEmpty(form.consultation_notes)) {
             alertError('Harap isi catatan hasil Konsultasi/Koordinasi terlebih dahulu.');
             return false;
         }

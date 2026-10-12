@@ -22,6 +22,7 @@ import {
     RadioGroup,
     TextInput,
     TextareaInput,
+    RichTextEditor,
     SelectInput,
     FileUpload,
     SectionCard,
@@ -856,13 +857,13 @@ export default function BeritaAcara({
                                         terdokumentasi dengan baik dalam dokumen
                                         Berita Acara.
                                     </p>
-                                    <TextareaInput
+                                    <RichTextEditor
                                         value={form.consultation_notes}
                                         onChange={(v) =>
                                             set('consultation_notes', v)
                                         }
                                         placeholder="Contoh: Pemohon perlu melampirkan gambar rencana tapak (site plan) yang menunjukkan posisi pipa pengambilan air laut terhadap garis pantai dan batas area budidaya secara jelas..."
-                                        rows={10}
+                                        minHeight={220}
                                         error={errors?.consultation_notes}
                                     />
                                 </div>
@@ -1073,7 +1074,7 @@ export default function BeritaAcara({
                                             <FormLabel required>
                                                 {label}
                                             </FormLabel>
-                                            <TextareaInput
+                                            <RichTextEditor
                                                 value={(form as any)[key]}
                                                 onChange={(v) =>
                                                     set(
@@ -1082,7 +1083,6 @@ export default function BeritaAcara({
                                                     )
                                                 }
                                                 placeholder={placeholder}
-                                                rows={5}
                                                 error={(errors as any)?.[key]}
                                             />
                                         </div>

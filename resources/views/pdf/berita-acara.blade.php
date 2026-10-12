@@ -626,7 +626,7 @@
                     <p><strong>Rencana Kegiatan</strong> : {{ $activityDetail }}</p>
                     <p><strong>Luas/Panjang</strong> : {{ $beritaAcara->planned_area }}
                         {{ $beritaAcara->planned_area_unit }}</p>
-                    <p>{{ $beritaAcara->activity_description }}</p>
+                    <div>{!! \App\Support\BeritaAcaraHtml::render($beritaAcara->activity_description) !!}</div>
                 </td>
             </tr>
         </table>
@@ -681,14 +681,14 @@
         <div class="section-title">3. Informasi Pemanfaatan Ruang Laut Sekitar</div>
         <table class="result-table">
             <tr>
-                <td>{{ $beritaAcara->surrounding_utilization }}</td>
+                <td>{!! \App\Support\BeritaAcaraHtml::render($beritaAcara->surrounding_utilization) !!}</td>
             </tr>
         </table>
 
         <div class="section-title">4. Data Kondisi Terkini Lokasi dan Sekitar</div>
         <table class="result-table">
             <tr>
-                <td>{{ $beritaAcara->environmental_condition }}</td>
+                <td>{!! \App\Support\BeritaAcaraHtml::render($beritaAcara->environmental_condition) !!}</td>
             </tr>
         </table>
 
@@ -702,7 +702,7 @@
         <div class="section-title">6. Informasi Hal lainnya yang diperlukan</div>
         <table class="result-table">
             <tr>
-                <td>{{ $beritaAcara->other_information ?: '-' }}</td>
+                <td>{!! \App\Support\BeritaAcaraHtml::render($beritaAcara->other_information) !!}</td>
             </tr>
         </table>
 
@@ -732,7 +732,7 @@
         <div class="section-title">2. Catatan Hasil Konsultasi/Koordinasi</div>
         <table class="result-table">
             <tr>
-                <td style="white-space: pre-line;">{{ $beritaAcara->consultation_notes ?: '-' }}</td>
+                <td>{!! \App\Support\BeritaAcaraHtml::render($beritaAcara->consultation_notes) !!}</td>
             </tr>
         </table>
     @endif

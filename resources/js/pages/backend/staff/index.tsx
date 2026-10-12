@@ -37,6 +37,7 @@ type StaffUser = { id: number; name: string; email: string };
 
 type StaffItem = {
     id: number;
+    nip: string | null;
     position: string;
     department: string;
     phone: string | null;
@@ -469,6 +470,11 @@ export default function StaffIndex({
                             <p className="text-xs text-slate-400">
                                 {item.user?.email ?? ''}
                             </p>
+                            {item.nip && (
+                                <p className="font-mono text-[11px] text-slate-400">
+                                    NIP: {item.nip}
+                                </p>
+                            )}
                         </td>
                         <td className="px-5 py-4">
                             <Button

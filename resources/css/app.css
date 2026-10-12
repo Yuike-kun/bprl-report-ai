@@ -261,3 +261,7 @@ table tr:last-child {
 .analisis-report tr:nth-child(even) td {
     @apply bg-slate-50/50;
 }
+
+/* (Berita Acara editor content styling lives in the TinyMCE
+   content_style option — see RichTextEditor.tsx — so the same rules
+   apply inside the editor iframe. No page-level rules needed here.) */

@@ -7,6 +7,7 @@ import {
     Waves, Calendar, Hash, Radio, Layers, BadgeCheck
 } from "lucide-react";
 import { ComboboxSearch } from "@/components/backend/combobox-searchable";
+import { RichTextEditor } from "@/components/berita_acara_components";
 import { alertError } from "@/lib/alert";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -851,10 +852,10 @@ export default function CreateBeritaAcara({ staffList, konsultasi, record }: Pro
                             ].map(({ key, label, placeholder }) => (
                                 <div key={key}>
                                     <FormLabel required>{label}</FormLabel>
-                                    <TextareaInput
+                                    <RichTextEditor
                                         value={(form as any)[key]}
                                         onChange={(v) => set(key as keyof FormData, v)}
-                                        placeholder={placeholder} rows={5}
+                                        placeholder={placeholder}
                                         error={(errors as any)?.[key]} />
                                 </div>
                             ))}
