@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreBeritaAcaraRequest;
@@ -7,8 +8,10 @@ use App\Models\BeritaAcaraKonsultasi;
 use App\Models\PermohonanKonsultasi;
 use App\Models\Staff;
 use App\Support\BeritaAcaraPdfRenderer;
+use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
@@ -20,9 +23,25 @@ class BeritaAcaraController extends Controller
 
     private function staffIds(Request $request, ?int $currentStaffId = null, ?BeritaAcaraKonsultasi $record = null): array
     {
+        // If the client sent the staff_ids field (even empty), trust it completely.
+        if ($request->has('staff_ids')) {
+            $submittedIds = collect($request->input('staff_ids', []))
+                ->filter()
+                ->map(fn ($id) => (int) $id)
+                ->unique();
+
+            return $submittedIds
+                ->merge($currentStaffId ? [$currentStaffId] : [])
+                ->filter()
+                ->unique()
+                ->values()
+                ->all();
+        }
+
+        // Fallback: used when staff_ids is not present in the request (e.g., show endpoints).
         $submittedIds = collect($request->input('staff_ids', []))
             ->filter()
-            ->map(fn($id) => (int) $id)
+            ->map(fn ($id) => (int) $id)
             ->unique();
 
         if ($submittedIds->isNotEmpty()) {
@@ -52,7 +71,7 @@ class BeritaAcaraController extends Controller
                 $consultationAssignedIds = $consultation->assign_to_staff
                     ->pluck('staff')
                     ->filter()
-                    ->map(fn($id) => (int) $id)
+                    ->map(fn ($id) => (int) $id)
                     ->all();
             }
         }
@@ -67,18 +86,18 @@ class BeritaAcaraController extends Controller
                 $currentStaffId,
             ])
             ->filter()
-            ->map(fn($id) => (int) $id)
+            ->map(fn ($id) => (int) $id)
             ->unique()
             ->values()
             ->all();
     }
 
-    private function staffList(): \Illuminate\Support\Collection
+    private function staffList(): Collection
     {
         return Staff::with('user:id,name')
             ->where('is_active', true)
             ->get(['id', 'user_id', 'position'])
-            ->map(fn($s) => [
+            ->map(fn ($s) => [
                 'id' => $s->id,
                 'name' => $s->user?->name ?? "Staff #{$s->id}",
                 'position' => $s->position,
@@ -104,15 +123,14 @@ class BeritaAcaraController extends Controller
     {
         $rows = BeritaAcaraKonsultasi::query()
             ->with(['staff.user:id,name', 'documents'])
-            ->when($request->search, fn($q, $s) =>
-                $q
-                    ->where('requester_name', 'like', "%{$s}%")
-                    ->orWhere('berita_acara_number', 'like', "%{$s}%"))
-            ->when($request->status, fn($q, $st) => $q->where('status', $st))
+            ->when($request->search, fn ($q, $s) => $q
+                ->where('requester_name', 'like', "%{$s}%")
+                ->orWhere('berita_acara_number', 'like', "%{$s}%"))
+            ->when($request->status, fn ($q, $st) => $q->where('status', $st))
             ->latest()
             ->paginate(15)
             ->withQueryString()
-            ->through(fn($r) => [
+            ->through(fn ($r) => [
                 'id' => $r->id,
                 'status' => $r->status,
                 'consultation_stage' => $r->consultation_stage,
@@ -129,7 +147,7 @@ class BeritaAcaraController extends Controller
         $monthlyCategories = [];
         $monthlyCounts = [];
         for ($m = 1; $m <= 12; $m++) {
-            $date = \Carbon\Carbon::createFromDate($selectedYear, $m, 1);
+            $date = Carbon::createFromDate($selectedYear, $m, 1);
             $monthlyCategories[] = $date->translatedFormat('M');
             $monthlyCounts[] = BeritaAcaraKonsultasi::query()
                 ->whereYear('created_at', $selectedYear)
@@ -153,13 +171,13 @@ class BeritaAcaraController extends Controller
             ->distinct()
             ->pluck('year')
             ->filter()
-            ->map(fn($y) => (int) $y)
+            ->map(fn ($y) => (int) $y)
             ->toArray();
 
         if (empty($availableYears)) {
             $availableYears = [$currentY];
         } else {
-            if (!in_array($currentY, $availableYears, true)) {
+            if (! in_array($currentY, $availableYears, true)) {
                 $availableYears[] = $currentY;
             }
             rsort($availableYears);
@@ -199,7 +217,7 @@ class BeritaAcaraController extends Controller
             $konsultasi = PermohonanKonsultasi::with(['assign_to_staff.Staff.user', 'assign_to_staff.Staff'])->find($request->konsultasi);
             $berita_acara = BeritaAcaraKonsultasi::with(['staff.user', 'documents'])->where('request_form_id', $konsultasi?->id)->first();
             if ($berita_acara) {
-                $berita_acara->setAttribute('staff_ids', $berita_acara->staff->pluck('id')->map(fn($id) => (string) $id)->values()->all());
+                $berita_acara->setAttribute('staff_ids', $berita_acara->staff->pluck('id')->map(fn ($id) => (string) $id)->values()->all());
             }
 
             return Inertia::render('backend/pegawai/berita-acara', [
@@ -257,6 +275,7 @@ class BeritaAcaraController extends Controller
 
                 $konsultasi = PermohonanKonsultasi::find($request->request_form_id);
                 $this->syncPermohonanKonsultasi($konsultasi, $data);
+
                 return $record;
             });
 
@@ -276,7 +295,7 @@ class BeritaAcaraController extends Controller
             'permohonanKonsultasi.assign_to_staff.Staff.user',
             'staff.user:id,name',
         ]);
-        $beritaAcara->setAttribute('staff_ids', $beritaAcara->staff->pluck('id')->map(fn($id) => (string) $id)->values()->all());
+        $beritaAcara->setAttribute('staff_ids', $beritaAcara->staff->pluck('id')->map(fn ($id) => (string) $id)->values()->all());
 
         return Inertia::render('backend/pegawai/berita-acara', [
             'berita_acara' => $beritaAcara,
@@ -293,7 +312,7 @@ class BeritaAcaraController extends Controller
             'permohonanKonsultasi.assign_to_staff.Staff.user',
             'staff.user:id,name',
         ]);
-        $beritaAcara->setAttribute('staff_ids', $beritaAcara->staff->pluck('id')->map(fn($id) => (string) $id)->values()->all());
+        $beritaAcara->setAttribute('staff_ids', $beritaAcara->staff->pluck('id')->map(fn ($id) => (string) $id)->values()->all());
 
         return Inertia::render('backend/pegawai/berita-acara', [
             'berita_acara' => $beritaAcara,
@@ -349,7 +368,9 @@ class BeritaAcaraController extends Controller
             $data['staff_3_id'] = $staffIds[2] ?? null;
             $data['staff_4_id'] = $staffIds[3] ?? null;
 
-            if (!$beritaAcara) {
+            if (! $beritaAcara) {
+                $data['status'] = 'draft';
+                $data['requester'] = '-';
                 $beritaAcara = BeritaAcaraKonsultasi::create($data);
             } else {
                 $beritaAcara->update($data);
@@ -368,7 +389,8 @@ class BeritaAcaraController extends Controller
                 ->with('success', 'Berita Acara berhasil diperbarui.');
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->with('danger', 'Data gagal diinput. ' . $e->getMessage());
+
+            return back()->with('danger', 'Data gagal diinput. '.$e->getMessage());
         }
     }
 
@@ -460,7 +482,7 @@ class BeritaAcaraController extends Controller
 
     public function pdf(BeritaAcaraKonsultasi $beritaAcara)
     {
-        if (!auth()->user()->hasRole('admin')) {
+        if (! auth()->user()->hasRole('admin')) {
             $staffId = auth()->user()->staff->id ?? null;
 
             abort_unless(

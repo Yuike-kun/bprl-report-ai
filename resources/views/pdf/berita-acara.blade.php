@@ -550,11 +550,11 @@
                 ($beritaAcara->permohonanKonsultasi?->assign_to_staff->first()?->Staff ??
                     $beritaAcara->request_form?->assign_to_staff->first()?->Staff));
 
-        $rawStaffSig =
-            $beritaAcara->permohonanKonsultasi?->staff_tanda_tangan ??
-            ($beritaAcara->request_form?->staff_tanda_tangan ?? $staffMaker?->user?->signature);
-
-        $staffSignature = $getSignatureSrc($rawStaffSig);
+        // NOTE: Do NOT use permohonanKonsultasi->staff_tanda_tangan here.
+        // That field stores a signature collected on the consultation signature-pad
+        // page and is NOT guaranteed to belong to any particular staff member.
+        // Each staff should display their own user signature below.
+        $staffSignature = null;
 
         // ── Build full staff list ────────────────────────────────────────
         // Merge BelongsToMany staff (ordered by sort_order) with the legacy
@@ -753,10 +753,7 @@
         <tbody>
             @foreach ($allStaff as $i => $staff)
                 @php
-                    $rawSig =
-                        $i === 0 && $staffSignature
-                            ? $staffSignature
-                            : $getSignatureSrc($staff->user?->signature ?? null);
+                    $rawSig = $getSignatureSrc($staff->user?->signature ?? null);
                 @endphp
                 <tr>
                     <td class="no">{{ $i + 1 }}</td>
