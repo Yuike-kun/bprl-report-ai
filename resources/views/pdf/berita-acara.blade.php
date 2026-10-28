@@ -349,9 +349,11 @@
             font-size: 10.5pt;
         }
 
-        /* ── Detail Lampiran — full-width below main body ───── */
+        /* ── Detail Lampiran — full-width ───── */
         .lampiran-column {
             width: 100%;
+            float: none;
+            margin: 0;
             font-size: 8.5pt;
             line-height: 1.35;
             color: #333;
