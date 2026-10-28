@@ -1,20 +1,18 @@
 <?php
+
 namespace App\Http\Controllers;
 
+use App\Mail\KonsultasiDikonfirmasiMail;
 use App\Models\ChildSchedule;
 use App\Models\DokumenKonsultasi;
 use App\Models\JadwalKonsultasi;
 use App\Models\LokasiKonsultasi;
 use App\Models\PermohonanKonsultasi;
-use App\Mail\KonsultasiDikonfirmasiMail;
-use App\Models\Province;
-use App\Models\Regency;
 use App\Models\User;
 use App\Notifications\NewPermohonanKonsultasi;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
@@ -42,24 +40,24 @@ class RequestFormController extends Controller
                         $used = (int) ($usageByChildSchedule[$child->id] ?? 0);
 
                         return [
-                            'id'               => $child->id,
-                            'waktu'            => $child->waktu,
+                            'id' => $child->id,
+                            'waktu' => $child->waktu,
                             'kuota_konsultasi' => $child->kuota_konsultasi,
-                            'sisa_kuota'       => max(0, $child->kuota_konsultasi - $used),
+                            'sisa_kuota' => max(0, $child->kuota_konsultasi - $used),
                         ];
                     })
                     ->values();
 
                 return [
-                    'id'                   => $schedule->id,
-                    'tanggal'              => $schedule->tanggal,
-                    'waktu_awal'           => $schedule->waktu_awal,
-                    'waktu_akhir'          => $schedule->waktu_akhir,
-                    'pelaksanaan'          => $schedule->pelaksanaan,
+                    'id' => $schedule->id,
+                    'tanggal' => $schedule->tanggal,
+                    'waktu_awal' => $schedule->waktu_awal,
+                    'waktu_akhir' => $schedule->waktu_akhir,
+                    'pelaksanaan' => $schedule->pelaksanaan,
                     'lokasi_konsultasi_id' => $schedule->lokasi_konsultasi_id,
-                    'lokasi_nama'          => $schedule->lokasi?->nama_lokasi,
-                    'kuota_konsultasi'     => $schedule->kuota_konsultasi,
-                    'child_schedules'      => $childSchedules,
+                    'lokasi_nama' => $schedule->lokasi?->nama_lokasi,
+                    'kuota_konsultasi' => $schedule->kuota_konsultasi,
+                    'child_schedules' => $childSchedules,
                 ];
             })
             ->values();
@@ -76,23 +74,29 @@ class RequestFormController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'nama_pemohon'            => ['required', 'string', 'max:255'],
-            'jabatan_pemohon'         => ['required', 'string', 'max:255'],
-            'instansi'                => ['required', 'string', 'max:255'],
-            'tanggal_konsultasi'      => ['required', 'date'],
-            'child_schedule_id'       => ['required', 'integer', 'exists:child_schedules,id'],
-            'pelaksanaan'             => ['required', 'in:Luring,Daring,Hybrid'],
-            'lokasi_konsultasi_id'    => ['nullable', 'exists:lokasi_konsultasis,id'],
-            'rencana_kegiatan'        => ['required', 'string'],
-            'kabupaten'               => ['required', 'integer', 'exists:regencies,id'],
-            'provinsi'                => ['required', 'integer', 'exists:provinces,id'],
-            'nomor_telepon'           => ['required', 'string', 'max:30'],
-            'email'                   => ['required', 'email', 'max:255'],
-            'permintaan_khusus'       => ['nullable', 'string'],
-            'tanda_tangan'            => ['required', 'string'],
+            'nama_pemohon' => ['required', 'string', 'max:255'],
+            'jabatan_pemohon' => ['required', 'string', 'max:255'],
+            'instansi' => ['required', 'string', 'max:255'],
+            'tanggal_konsultasi' => ['required', 'date'],
+            'child_schedule_id' => ['required', 'integer', 'exists:child_schedules,id'],
+            'pelaksanaan' => ['required', 'in:Luring,Daring,Hybrid'],
+            'lokasi_konsultasi_id' => ['nullable', 'exists:lokasi_konsultasis,id'],
+            'rencana_kegiatan' => ['required', 'string'],
+            'kabupaten' => ['required', 'integer', 'exists:regencies,id'],
+            'provinsi' => ['required', 'integer', 'exists:provinces,id'],
+            'nomor_telepon' => ['required', 'string', 'max:30'],
+            'email' => ['required', 'email', 'max:255'],
+            'permintaan_khusus' => ['nullable', 'string'],
+            'tanda_tangan' => ['required', 'string'],
             'setuju_syarat_ketentuan' => ['accepted'],
-            'bahan_konsultasi'        => ['nullable', 'array', 'max:5'],
-            'bahan_konsultasi.*'      => ['file', 'max:10240', 'mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,jpg,jpeg,png'],
+            'bahan_konsultasi' => ['nullable', 'array', 'max:5'],
+            'bahan_konsultasi.*' => ['file', 'max:10240', 'mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,jpg,jpeg,png'],
+            'disabilitas_penglihatan' => ['string', 'max:10'],
+            'disabilitas_pendengaran' => ['string', 'max:10'],
+            'disabilitas_mobilitas' => ['string', 'max:10'],
+            'disabilitas_ingatan' => ['string', 'max:10'],
+            'disabilitas_perawatan' => ['string', 'max:10'],
+            'disabilitas_komunikasi' => ['string', 'max:10'],
         ]);
 
         if (in_array($validated['pelaksanaan'], ['Luring', 'Hybrid'], true) && empty($validated['lokasi_konsultasi_id'])) {
@@ -105,7 +109,7 @@ class RequestFormController extends Controller
             $validated['lokasi_konsultasi_id'] = null;
         }
 
-        $childSchedule  = ChildSchedule::with('schedule')->find($validated['child_schedule_id']);
+        $childSchedule = ChildSchedule::with('schedule')->find($validated['child_schedule_id']);
         $parentSchedule = $childSchedule?->schedule;
 
         $isValidSlot = $parentSchedule
@@ -130,21 +134,27 @@ class RequestFormController extends Controller
         }
 
         $permohonan = PermohonanKonsultasi::create([
-            'jadwal_konsultasi_id'    => $parentSchedule->id,
-            'child_schedule_id'       => $childSchedule->id,
-            'waktu_konsultasi'        => $childSchedule->waktu,
-            'nama_pemohon'            => $validated['nama_pemohon'],
-            'jabatan_pemohon'         => $validated['jabatan_pemohon'],
-            'instansi'                => $validated['instansi'],
-            'rencana_kegiatan'        => $validated['rencana_kegiatan'],
-            'kabupaten'               => $validated['kabupaten'],
-            'provinsi'                => $validated['provinsi'],
-            'nomor_telepon'           => $validated['nomor_telepon'],
-            'email'                   => $validated['email'],
-            'permintaan_khusus'       => $validated['permintaan_khusus'],
+            'jadwal_konsultasi_id' => $parentSchedule->id,
+            'child_schedule_id' => $childSchedule->id,
+            'waktu_konsultasi' => $childSchedule->waktu,
+            'nama_pemohon' => $validated['nama_pemohon'],
+            'jabatan_pemohon' => $validated['jabatan_pemohon'],
+            'instansi' => $validated['instansi'],
+            'rencana_kegiatan' => $validated['rencana_kegiatan'],
+            'kabupaten' => $validated['kabupaten'],
+            'provinsi' => $validated['provinsi'],
+            'nomor_telepon' => $validated['nomor_telepon'],
+            'email' => $validated['email'],
+            'permintaan_khusus' => $validated['permintaan_khusus'],
             'setuju_syarat_ketentuan' => $validated['setuju_syarat_ketentuan'],
-            'tanda_tangan'            => $validated['tanda_tangan'],
-            'status'                  => 'draft',
+            'tanda_tangan' => $validated['tanda_tangan'],
+            'disabilitas_penglihatan' => $validated['disabilitas_penglihatan'] ?? 'tidak',
+            'disabilitas_pendengaran' => $validated['disabilitas_pendengaran'] ?? 'tidak',
+            'disabilitas_mobilitas' => $validated['disabilitas_mobilitas'] ?? 'tidak',
+            'disabilitas_ingatan' => $validated['disabilitas_ingatan'] ?? 'tidak',
+            'disabilitas_perawatan' => $validated['disabilitas_perawatan'] ?? 'tidak',
+            'disabilitas_komunikasi' => $validated['disabilitas_komunikasi'] ?? 'tidak',
+            'status' => 'draft',
         ]);
 
         User::query()
@@ -167,8 +177,8 @@ class RequestFormController extends Controller
                 $path = $file->store("bahan_konsultasi/{$permohonan->id}", 'public');
                 DokumenKonsultasi::create([
                     'permohonan_id' => $permohonan->id,
-                    'file_url'      => Storage::url($path),
-                    'file_name'     => $file->getClientOriginalName(),
+                    'file_url' => Storage::url($path),
+                    'file_name' => $file->getClientOriginalName(),
                 ]);
             }
         }
@@ -179,15 +189,15 @@ class RequestFormController extends Controller
             ->buildPdfFromTemplate();
 
         if ($pdfContent !== null) {
-            $fileName = 'Surat Konfirmasi KKPRL - ' . $permohonan->nama_pemohon . '.pdf';
+            $fileName = 'Surat Konfirmasi KKPRL - '.$permohonan->nama_pemohon.'.pdf';
             $path = "request-forms/{$permohonan->id}/{$fileName}";
 
             Storage::disk('public')->put($path, $pdfContent);
             $documentUrl = Storage::disk('public')->url($path);
             DokumenKonsultasi::create([
                 'permohonan_id' => $permohonan->id,
-                'file_url'      => $documentUrl,
-                'file_name'     => $fileName,
+                'file_url' => $documentUrl,
+                'file_name' => $fileName,
             ]);
         }
 

@@ -473,6 +473,34 @@ export default function PermohonanKonsultasiShow({ submission }: Props) {
                             </p>
                         </div>
 
+                        {/* Aksesibilitas Disabilitas */}
+                        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm ring-1 ring-slate-100">
+                            <div className="border-b border-slate-200 bg-slate-50 px-4 py-3 sm:px-5">
+                                <h3 className="text-base font-bold text-slate-900">Aksesibilitas untuk Disabilitas</h3>
+                            </div>
+                            <div className="divide-y divide-slate-100">
+                                {[
+                                    { label: 'Kesulitan melihat (meskipun memakai kacamata)', key: 'disabilitas_penglihatan' },
+                                    { label: 'Kesulitan mendengar (meskipun menggunakan alat bantu dengar)', key: 'disabilitas_pendengaran' },
+                                    { label: 'Kesulitan berjalan atau menaiki tangga', key: 'disabilitas_mobilitas' },
+                                    { label: 'Kesulitan mengingat atau berkonsentrasi', key: 'disabilitas_ingatan' },
+                                    { label: 'Kesulitan perawatan diri (membersihkan tubuh/berpakaian)', key: 'disabilitas_perawatan' },
+                                    { label: 'Kesulitan berkomunikasi (memahami atau dimengerti)', key: 'disabilitas_komunikasi' },
+                                ].map(({ label, key }) => {
+                                    const val = (submission as any)[key] as string | undefined;
+                                    const isYa = val === 'ya';
+                                    return (
+                                        <div key={key} className="flex items-center justify-between gap-3 px-4 py-2.5 sm:px-5">
+                                            <p className="text-sm text-slate-700">{label}</p>
+                                            <span className={`inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${isYa ? 'bg-orange-100 text-orange-700' : 'bg-emerald-50 text-emerald-700'}`}>
+                                                {isYa ? 'Ya' : 'Tidak'}
+                                            </span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
                         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm ring-1 ring-slate-100 sm:p-5">
                             <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
                                 <div className="flex items-center gap-2">

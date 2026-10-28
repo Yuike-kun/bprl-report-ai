@@ -192,6 +192,12 @@ export default function RequestForm() {
         email: '',
         permintaan_khusus: '',
         tanda_tangan: '',
+        disabilitas_penglihatan: 'tidak',
+        disabilitas_pendengaran: 'tidak',
+        disabilitas_mobilitas: 'tidak',
+        disabilitas_ingatan: 'tidak',
+        disabilitas_perawatan: 'tidak',
+        disabilitas_komunikasi: 'tidak',
         setuju_syarat_ketentuan: false,
         bahan_konsultasi: null,
     });
@@ -527,6 +533,174 @@ export default function RequestForm() {
                                     error={fieldError('tanda_tangan')}
                                     
                                 />
+                            </div>
+                        </div>
+                    </motion.div>
+
+                    {/* ============ Aksesibilitas Disabilitas (Kondisional) ============ */}
+                    <motion.div
+                        custom={2.5}
+                        variants={sectionVariants}
+                        initial="hidden"
+                        animate="visible"
+                        className="space-y-4"
+                    >
+                        <div className="border-b border-slate-100 pb-3">
+                            <MinimalSectionHeader 
+                                icon={UserRound} 
+                                title="Aksesibilitas untuk Disabilitas" 
+                                subtitle="Informasi tentang kendala yang mungkin Anda alami" 
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            {/* Pertanyaan 1: Penglihatan */}
+                            <div className="space-y-1">
+                                <Label className="text-xs font-medium text-slate-700">
+                                    1. Apakah Anda mengalami kesulitan melihat, meskipun memakai kacamata?
+                                </Label>
+                                <div className="flex items-center gap-3">
+                                    <label className="cursor-pointer flex items-center gap-1">
+                                        <Checkbox
+                                            value="ya"
+                                            checked={data.disabilitas_penglihatan === 'ya'}
+                                            onCheckedChange={(checked) => setData('disabilitas_penglihatan', checked ? 'ya' : 'tidak')}
+                                        />
+                                        Ya
+                                    </label>
+                                    <label className="cursor-pointer flex items-center gap-1">
+                                        <Checkbox
+                                            value="tidak"
+                                            checked={data.disabilitas_penglihatan === 'tidak'}
+                                            onCheckedChange={(checked) => setData('disabilitas_penglihatan', checked ? 'tidak' : 'ya')}
+                                        />
+                                        Tidak
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            {/* Pertanyaan 2: Pendengaran */}
+                            <div className="space-y-1">
+                                <Label className="text-xs font-medium text-slate-700">
+                                    2. Apakah Anda mengalami kesulitan mendengar, meskipun menggunakan alat bantu dengar?
+                                </Label>
+                                <div className="flex items-center gap-3">
+                                    <label className="cursor-pointer flex items-center gap-1">
+                                        <Checkbox
+                                            value="ya"
+                                            checked={data.disabilitas_pendengaran === 'ya'}
+                                            onCheckedChange={(checked) => setData('disabilitas_pendengaran', checked ? 'ya' : 'tidak')}
+                                        />
+                                        Ya
+                                    </label>
+                                    <label className="cursor-pointer flex items-center gap-1">
+                                        <Checkbox
+                                            value="tidak"
+                                            checked={data.disabilitas_pendengaran === 'tidak'}
+                                            onCheckedChange={(checked) => setData('disabilitas_pendengaran', checked ? 'tidak' : 'ya')}
+                                        />
+                                        Tidak
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            {/* Pertanyaan 3: Berjalan/Naik Tangga */}
+                            <div className="space-y-1">
+                                <Label className="text-xs font-medium text-slate-700">
+                                    3. Apakah Anda mengalami kesulitan berjalan atau menaiki tangga?
+                                </Label>
+                                <div className="flex items-center gap-3">
+                                    <label className="cursor-pointer flex items-center gap-1">
+                                        <Checkbox
+                                            value="ya"
+                                            checked={data.disabilitas_mobilitas === 'ya'}
+                                            onCheckedChange={(checked) => setData('disabilitas_mobilitas', checked ? 'ya' : 'tidak')}
+                                        />
+                                        Ya
+                                    </label>
+                                    <label className="cursor-pointer flex items-center gap-1">
+                                        <Checkbox
+                                            value="tidak"
+                                            checked={data.disabilitas_mobilitas === 'tidak'}
+                                            onCheckedChange={(checked) => setData('disabilitas_mobilitas', checked ? 'tidak' : 'ya')}
+                                        />
+                                        Tidak
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            {/* Pertanyaan 4: Ingat/Konsentrasi */}
+                            <div className="space-y-1">
+                                <Label className="text-xs font-medium text-slate-700">
+                                    4. Apakah Anda mengalami kesulitan mengingat atau berkonsentrasi?
+                                </Label>
+                                <div className="flex items-center gap-3">
+                                    <label className="cursor-pointer flex items-center gap-1">
+                                        <Checkbox
+                                            value="ya"
+                                            checked={data.disabilitas_ingatan === 'ya'}
+                                            onCheckedChange={(checked) => setData('disabilitas_ingatan', checked ? 'ya' : 'tidak')}
+                                        />
+                                        Ya
+                                    </label>
+                                    <label className="cursor-pointer flex items-center gap-1">
+                                        <Checkbox
+                                            value="tidak"
+                                            checked={data.disabilitas_ingatan === 'tidak'}
+                                            onCheckedChange={(checked) => setData('disabilitas_ingatan', checked ? 'tidak' : 'ya')}
+                                        />
+                                        Tidak
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            {/* Pertanyaan 5: Perawatan Diri */}
+                            <div className="space-y-1">
+                                <Label className="text-xs font-medium text-slate-700">
+                                    5. Apakah Anda mengalami kesulitan dengan perawatan diri seperti membersihkan seluruh tubuh atau berpakaian?
+                                </Label>
+                                <div className="flex items-center gap-3">
+                                    <label className="cursor-pointer flex items-center gap-1">
+                                        <Checkbox
+                                            value="ya"
+                                            checked={data.disabilitas_perawatan === 'ya'}
+                                            onCheckedChange={(checked) => setData('disabilitas_perawatan', checked ? 'ya' : 'tidak')}
+                                        />
+                                        Ya
+                                    </label>
+                                    <label className="cursor-pointer flex items-center gap-1">
+                                        <Checkbox
+                                            value="tidak"
+                                            checked={data.disabilitas_perawatan === 'tidak'}
+                                            onCheckedChange={(checked) => setData('disabilitas_perawatan', checked ? 'tidak' : 'ya')}
+                                        />
+                                        Tidak
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            {/* Pertanyaan 6: Komunikasi */}
+                            <div className="space-y-1">
+                                <Label className="text-xs font-medium text-slate-700">
+                                    6. Apakah Anda mengalami kesulitan berkomunikasi, misalnya memahami atau dimengerti?
+                                </Label>
+                                <div className="flex items-center gap-3">
+                                    <label className="cursor-pointer flex items-center gap-1">
+                                        <Checkbox
+                                            value="ya"
+                                            checked={data.disabilitas_komunikasi === 'ya'}
+                                            onCheckedChange={(checked) => setData('disabilitas_komunikasi', checked ? 'ya' : 'tidak')}
+                                        />
+                                        Ya
+                                    </label>
+                                    <label className="cursor-pointer flex items-center gap-1">
+                                        <Checkbox
+                                            value="tidak"
+                                            checked={data.disabilitas_komunikasi === 'tidak'}
+                                            onCheckedChange={(checked) => setData('disabilitas_komunikasi', checked ? 'tidak' : 'ya')}
+                                        />
+                                        Tidak
+                                    </label>
+                                </div>
                             </div>
                         </div>
                     </motion.div>

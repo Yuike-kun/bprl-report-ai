@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
@@ -20,9 +21,15 @@ class PermohonanKonsultasi extends Model
         'setuju_syarat_ketentuan',
         'staff_tanda_tangan',
         'tanda_tangan',
+        'disabilitas_penglihatan',
+        'disabilitas_pendengaran',
+        'disabilitas_mobilitas',
+        'disabilitas_ingatan',
+        'disabilitas_perawatan',
+        'disabilitas_komunikasi',
         'status',
         'provinsi',
-        'kabupaten',  // ← add these
+        'kabupaten',
     ];
 
     public function layanan()
