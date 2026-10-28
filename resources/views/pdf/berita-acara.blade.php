@@ -540,7 +540,14 @@
             return \Illuminate\Support\Facades\Storage::disk('public')->path($document->file_path);
         };
 
-        $rawRequesterSig = $documentPath($sigDoc);
+        // First try the uploaded representative signature document
+        $rawRequesterSig = $sigDoc ? $documentPath($sigDoc) : null;
+
+        // Fallback: use the original tanda_tangan from the consultation request (pemohon's drawn signature)
+        if (!$rawRequesterSig && $beritaAcara->permohonanKonsultasi) {
+            $rawRequesterSig = $beritaAcara->permohonanKonsultasi->tanda_tangan;
+        }
+
         $signaturePath = $getSignatureSrc($rawRequesterSig);
 
         // Petugas Pembuat Berita Acara (prioritize staff1 / staffMaker)
