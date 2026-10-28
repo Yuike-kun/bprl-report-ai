@@ -295,7 +295,7 @@
             width: 50%;
             border: none;
             padding: 6px;
-            text-align: center;
+            text-align: left;
             vertical-align: middle;
             background: #fafafa;
         }
