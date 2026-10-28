@@ -349,11 +349,9 @@
             font-size: 10.5pt;
         }
 
-        /* ── Detail Lampiran — right column of the page ─────────────── */
+        /* ── Detail Lampiran — full-width below main body ───── */
         .lampiran-column {
-            float: right;
-            width: 60mm;
-            margin-left: 5mm;
+            width: 100%;
             font-size: 8.5pt;
             line-height: 1.35;
             color: #333;
@@ -779,7 +777,7 @@
         </tbody>
     </table>
 
-    {{-- ── Attachments (right column) ── --}}
+    {{-- ── Attachments (full-width below main body) ── --}}
     <div class="page-break"></div>
     <div class="lampiran-column">
     <div class="lampiran-header">
