@@ -151,6 +151,10 @@ class PublicUploadSignatureController extends Controller
         // sections) instead of only the consultation-note section.
         $beritaAcara->update(['consultation_stage' => 'asistensi']);
 
+        // Also update the permohonan's tanda_tangan field so the signature
+        // upload page shows the newly uploaded signature immediately.
+        $permohonan->update(['tanda_tangan' => $imageData]);
+
         return redirect()
             ->route('signature-upload', [
                 'email' => $data['email'],
