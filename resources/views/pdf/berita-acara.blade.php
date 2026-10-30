@@ -194,6 +194,14 @@
             line-height: 1.4;
         }
 
+        .result-box {
+            padding: 4px 0;
+            margin-bottom: 10px;
+            text-align: justify;
+            font-size: 10.5pt;
+            line-height: 1.4;
+        }
+
         table.hasil-table {
             width: 100%;
             border-collapse: collapse;
@@ -276,11 +284,6 @@
         }
 
         /* ── Page Breaks & Attachments ─────────────────── */
-        .page-break {
-            page-break-before: auto;
-            page-break-inside: avoid;
-        }
-
 
         .lampiran-title {
             font-weight: bold;
@@ -632,17 +635,13 @@
 
     @if ($isAsistensi)
         <div class="section-title">1. Deskripsi rencana kegiatan untuk permohonan</div>
-        <table class="result-table">
-            <tr>
-                <td>
+        <div class="result-box">
                     <p><strong>Subjek Hukum</strong> : {{ $beritaAcara->legal_entity_name }}</p>
                     <p><strong>Rencana Kegiatan</strong> : {{ $activityDetail }}</p>
                     <p><strong>Luas/Panjang</strong> : {{ $beritaAcara->planned_area }}
                         {{ $beritaAcara->planned_area_unit }}</p>
                     <div>{!! \App\Support\BeritaAcaraHtml::render($beritaAcara->activity_description) !!}</div>
-                </td>
-            </tr>
-        </table>
+                </div>
 
         <div class="section-title">2. Lokasi yang akan dimohonkan</div>
         <p class="intro">
@@ -692,32 +691,16 @@
         @endif
 
         <div class="section-title">3. Informasi Pemanfaatan Ruang Laut Sekitar</div>
-        <table class="result-table">
-            <tr>
-                <td>{!! \App\Support\BeritaAcaraHtml::render($beritaAcara->surrounding_utilization) !!}</td>
-            </tr>
-        </table>
+        <div class="result-box">{!! \App\Support\BeritaAcaraHtml::render($beritaAcara->surrounding_utilization) !!}</div>
 
         <div class="section-title">4. Data Kondisi Terkini Lokasi dan Sekitar</div>
-        <table class="result-table">
-            <tr>
-                <td>{!! \App\Support\BeritaAcaraHtml::render($beritaAcara->environmental_condition) !!}</td>
-            </tr>
-        </table>
+        <div class="result-box">{!! \App\Support\BeritaAcaraHtml::render($beritaAcara->environmental_condition) !!}</div>
 
         <div class="section-title">5. Perizinan yang telah dimiliki oleh calon pemohon</div>
-        <table class="result-table">
-            <tr>
-                <td>{{ $ownedDocs ?: '-' }}</td>
-            </tr>
-        </table>
+        <div class="result-box">{{ $ownedDocs ?: '-' }}</div>
 
         <div class="section-title">6. Informasi Hal lainnya yang diperlukan</div>
-        <table class="result-table">
-            <tr>
-                <td>{!! \App\Support\BeritaAcaraHtml::render($beritaAcara->other_information) !!}</td>
-            </tr>
-        </table>
+        <div class="result-box">{!! \App\Support\BeritaAcaraHtml::render($beritaAcara->other_information) !!}</div>
 
         <p style="margin: 8px 0 4px 0;"><strong>Hasil Konsultasi</strong></p>
         <table class="hasil-table">
@@ -743,11 +726,7 @@
         </p>
 
         <div class="section-title">2. Catatan Hasil Konsultasi/Koordinasi</div>
-        <table class="result-table">
-            <tr>
-                <td>{!! \App\Support\BeritaAcaraHtml::render($beritaAcara->consultation_notes) !!}</td>
-            </tr>
-        </table>
+        <div class="result-box">{!! \App\Support\BeritaAcaraHtml::render($beritaAcara->consultation_notes) !!}</div>
     @endif
 
     <p class="closing">
@@ -793,7 +772,6 @@
     </table>
 
     {{-- ── Attachments (full-width below main body) ── --}}
-    <div class="page-break"></div>
     <div class="lampiran-column">
     <div class="lampiran-header">
         <p>Lampiran Berita Acara</p>
