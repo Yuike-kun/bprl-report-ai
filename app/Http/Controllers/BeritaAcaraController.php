@@ -747,7 +747,7 @@ class BeritaAcaraController extends Controller
 
         // Lampiran II: Peta/Hasil Plotting
         $section->addText(
-            "Lampiran II: Peta ".$($isAsistensi ? 'Hasil Plotting' : 'Plotting'),
+            "Lampiran II: Peta " . ($isAsistensi ? 'Hasil Plotting' : 'Plotting'),
             ['size' => 11, 'bold' => true]
         );
         $section->addTextBreak(1);
@@ -763,7 +763,7 @@ class BeritaAcaraController extends Controller
 
         // Lampiran III: Absensi
         $section->addText(
-            "Lampiran III: ".$($isAsistensi ? 'Absensi' : 'Absen'),
+            "Lampiran III: " . ($isAsistensi ? 'Absensi' : 'Absen'),
             ['size' => 11, 'bold' => true]
         );
         $section->addTextBreak(1);
