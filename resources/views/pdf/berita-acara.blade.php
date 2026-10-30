@@ -14,13 +14,14 @@
             font-family: "Arial", sans-serif;
             font-size: 11pt;
             color: #000;
-            line-height: 1.4;
+            line-height: 1.2;
             margin: 0;
             padding: 0;
         }
         
         p {
-            margin: 0 0 0.4em 0;
+            margin: 0 0 0.2em 0;
+            line-height: 1.3;
         }
 
         /* ── Kop Surat 1:1 Resmi KKP ────────────────────── */
@@ -173,7 +174,7 @@
         .section-title {
             font-weight: bold;
             font-size: 11pt;
-            margin: 6px 0 2px 0;
+            margin: 4px 0 2px 0;
             color: #000;
         }
 
