@@ -647,21 +647,7 @@
             dengan titik koordinat sebagai berikut:
         </p>
         @php
-            $coordinateRows = collect(preg_split('/\r\n|\r|\n/', trim($beritaAcara->coordinate_points ?? '')))
-                ->filter()
-                ->map(function ($line) {
-                    // Matches: "1. 121.805255,-2.289475"
-                    if (preg_match('/^\s*(\d+)\.\s*([\-\d.]+)\s*,\s*([\-\d.]+)\s*$/', $line, $m)) {
-                        return [
-                            'no' => $m[1],
-                            'lon' => $m[2],
-                            'lat' => $m[3],
-                        ];
-                    }
-                    return null;
-                })
-                ->filter()
-                ->values();
+            $coordinateRows = collect(\App\Support\CoordinatePoints::parse($beritaAcara->coordinate_points));
         @endphp
         @if ($coordinateRows->isNotEmpty())
             <table class="result-table coord-table">
