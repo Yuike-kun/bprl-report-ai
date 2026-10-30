@@ -18,11 +18,15 @@
             margin: 0;
             padding: 0;
         }
+        
+        p {
+            margin: 0 0 0.4em 0;
+        }
 
         /* ── Kop Surat 1:1 Resmi KKP ────────────────────── */
         .kop-surat {
             width: 100%;
-            margin: 0 0 10px 0;
+            margin: 0;
             padding: 0;
         }
 
@@ -133,7 +137,7 @@
             font-size: 11.5pt;
             font-weight: bold;
             text-transform: uppercase;
-            margin: 10px 0 2px 0;
+            margin: 0 0 2px 0;
             white-space: nowrap;
             letter-spacing: 0.2px;
         }
@@ -153,7 +157,7 @@
         /* ── Content Sections ──────────────────────────── */
         .intro {
             text-align: justify;
-            margin: 10px 0;
+            margin: 4px 0;
             line-height: 1.4;
         }
 
@@ -169,7 +173,7 @@
         .section-title {
             font-weight: bold;
             font-size: 11pt;
-            margin: 12px 0 4px 0;
+            margin: 6px 0 2px 0;
             color: #000;
         }
 
