@@ -339,6 +339,10 @@ return;
                                                         className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-all">
                                                         <FileText className="w-3.5 h-3.5" /> PDF
                                                     </a>
+                                                    <a href={`/berita-acara/${row.id}/docx`} target="_blank" rel="noreferrer"
+                                                        className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-all">
+                                                        <FileText className="w-3.5 h-3.5" /> DOCX
+                                                    </a>
                                                     <Link href={`/berita-acara/${row.id}`}
                                                         className="p-1.5 rounded-lg hover:bg-blue-50 text-slate-400 hover:text-blue-600 transition-colors">
                                                         <Eye className="w-3.5 h-3.5" />

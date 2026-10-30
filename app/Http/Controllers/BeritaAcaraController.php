@@ -16,6 +16,9 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
+use PhpOffice\PhpWord\IOFactory;
+use PhpOffice\PhpWord\PhpWord;
+use PhpOffice\PhpWord\Settings;
 
 class BeritaAcaraController extends Controller
 {
@@ -497,5 +500,295 @@ class BeritaAcaraController extends Controller
         }
 
         return BeritaAcaraPdfRenderer::render($beritaAcara);
+    }
+
+    public function docx(BeritaAcaraKonsultasi $beritaAcara)
+    {
+        // Authorization check - same as PDF endpoint
+        if (! auth()->user()->hasRole('admin')) {
+            $staffId = auth()->user()->staff->id ?? null;
+
+            abort_unless(
+                $staffId && ($beritaAcara->staff->contains('id', $staffId) || in_array($staffId, [
+                    $beritaAcara->staff_1_id,
+                    $beritaAcara->staff_2_id,
+                    $beritaAcara->staff_3_id,
+                    $beritaAcara->staff_4_id,
+                ])),
+                403
+            );
+        }
+
+        // Load necessary relationships
+        $beritaAcara->load([
+            'staff.user:id,name',
+            'documents',
+            'permohonanKonsultasi.assign_to_staff.Staff.user',
+            'request_form',
+            'provinsi',
+            'kabupaten',
+        ]);
+
+        // Determine if asistensi stage
+        $isAsistensi = $beritaAcara->consultation_stage === 'asistensi';
+
+        // Helper to get province name
+        $provinceName = $beritaAcara->provinsi?->name ?? '';
+
+        // Get date components
+        $hari = $beritaAcara->created_at?->translatedFormat('dddd') ?? '';
+        $tglAngka = $beritaAcara->created_at?->format('j') ?? '';
+        $bulanKata = $beritaAcara->created_at?->translatedFormat('MMMM') ?? '';
+        $tahun = $beritaAcara->created_at?->format('Y') ?? '';
+
+        // Permit type label (assuming there's an accessor or method)
+        $permitTypeLabel = $beritaAcara->jenis_permohonan_label ?? $beritaAcara->jenis_permohonan ?? '';
+
+        // Activity detail (from request_form or computed)
+        $activityDetail = $beritaAcara->request_form?->rencana_kegiatan ?? '';
+
+        // Water name, district name, regency label (from relationships or computed)
+        $waterName = $beritaAcara->lokasi?->nama_lokasi ?? '';
+        $districtName = $beritaAcara->kecamatan ?? '';
+        $regencyLabel = $beritaAcara->kabupaten?->name ?? '';
+
+        // Coordinate points
+        $coordinatePoints = $beritaAcara->coordinate_points ?? '';
+
+        // Create new PHPWord document
+        Settings::setPdfRendererPath(base_path('vendor/phpoffice/phpword'));
+        Settings::setPdfRendererName('DomPDF');
+        $phpWord = new PhpWord();
+
+        // Add section with default style
+        $section = $phpWord->addSection([
+            'marginLeft' => 1500,   // 15mm in twips
+            'marginRight' => 1500,
+            'marginTop' => 1000,    // 10mm
+            'marginBottom' => 1200, // 12mm
+        ]);
+
+        // Add logo (if exists)
+        $logoPath = public_path('logo_klp.png');
+        if (file_exists($logoPath)) {
+            $section->addImage($logoPath, [
+                'width' => 250,   // 25mm
+                'height' => 250,
+                'marginLeft' => 0,
+                'marginRight' => 300, // spacer
+                'align' => 'left',
+                'padding' => 0,
+            ]);
+        }
+
+        // Header table (kop surat) - simplified
+        $headerTable = $section->addTable([
+            'borderSize' => 0,
+            'cellMargin' => 0,
+            'width' => '100%', // full width
+            'align' => 'left',
+        ]);
+
+        $headerTable->addRow();
+        $headerTable->addCell(3000)->addText(''); // Logo cell spacer
+        $headerTable->addCell(6000)->addTextBlock(
+            "KEMENTERIAN KELAUTAN DAN PERIKANAN\n".
+            "DIREKTORAT JENDERAL PENATAAN RUANG LAUT\n".
+            "BALAI PENATAAN RUANG LAUT MAKASSAR\n".
+            "JALAN MAKMUR DAENG SITAKKA NOMOR 129 MAROS 90511, TELEPON (0411) 371337\n".
+            "FAKSIMILI (0411) 371337\n".
+            "LAMAN WWW.KKP.GO.ID SUREL BPRLMAKASSAR@KKP.GO.ID",
+            [
+                'align' => 'center',
+                'size' => 11,
+                'bold' => true,
+            ]
+        );
+
+        $section->addTextBreak(1);
+
+        // Title
+        $section->addText(
+            "BERITA ACARA PENDAMPINGAN PERMOHONAN",
+            [
+                'align' => 'center',
+                'size' => 12,
+                'bold' => true,
+            ]
+        );
+
+        $section->addTextBreak(1);
+
+        // Document number and subject
+        $section->addText(
+            "Nomor: {$beritaAcara->berita_acara_number}",
+            ['align' => 'center', 'size' => 11]
+        );
+        $section->addText(
+            ucwords(strtolower($beritaAcara->legal_entity_name))." di ".$provinceName,
+            ['align' => 'center', 'size' => 11]
+        );
+
+        $section->addTextBreak(2);
+
+        // Introduction
+        $section->addText(
+            "Pada hari ini ".ucfirst($hari)." tanggal ".$tglAngka." Bulan ".$bulanKata." Tahun ".$tahun.", kami yang bertanda tangan di bawah ini telah melaksanakan Pendampingan Permohonan atas rencana permohonan ".$permitTypeLabel." untuk permohonan",
+            ['align' => 'left', 'size' => 11]
+        );
+
+        $section->addTextBreak(1);
+
+        // Attendees list
+        $section->addText("Diikuti oleh:", ['size' => 11]);
+        $attendeeList = $section->addTextList([]);
+        $allStaff = $beritaAcara->staff
+            ->map(fn($s) => [
+                'name' => $s->user->name ?? 'Petugas Pendamping',
+                'position' => $s->position ?? 'Petugas Pendamping',
+            ])
+            ->toArray();
+
+        foreach ($allStaff as $staff) {
+            $attendeeList->addListItem(
+                $staff['name'].' ('.$staff['position'].')',
+                []
+            );
+        }
+        $attendeeList->addListItem(
+            $beritaAcara->requester_name.' ('.$beritaAcara->requester_position.')',
+            []
+        );
+
+        $section->addTextBreak(1);
+
+        // Results section (only if asistensi)
+        if ($isAsistensi) {
+            $section->addText("Berdasarkan hasil pelaksanaan pendampingan permohonan, diperoleh hasil sebagai berikut:", ['size' => 11]);
+            $section->addTextBreak(1);
+
+            // 1. Deskripsi rencana kegiatan
+            $section->addText("1. Deskripsi rencana kegiatan untuk permohonan", ['size' => 11, 'bold' => true]);
+            $section->addTextBreak(1);
+            $section->addText("Subjek Hukum : ".$beritaAcara->legal_entity_name, ['size' => 11]);
+            $section->addText("Rencana Kegiatan : ".$activityDetail, ['size' => 11]);
+            $section->addText("Luas/Panjang : ".$beritaAcara->planned_area.' '.$beritaAcara->planned_area_unit, ['size' => 11]);
+
+            // Activity description (rendered HTML converted to text)
+            $activityDesc = \App\Support\BeritaAcaraHtml::render($beritaAcara->activity_description);
+            // Strip HTML tags for simple text conversion
+            $plainDesc = strip_tags($activityDesc);
+            $plainDesc = preg_replace('/\s+/', ' ', $plainDesc);
+            $section->addText($plainDesc, ['size' => 11]);
+            $section->addTextBreak(1);
+
+            // 2. Lokasi
+            $section->addText("2. Lokasi yang akan dimohonkan", ['size' => 11, 'bold' => true]);
+            $section->addTextBreak(1);
+            $section->addText(
+                "Adapun rencana lokasi kegiatan ".$activityDetail." yang akan dilakukan oleh".
+                " ".$beritaAcara->legal_entity_name." terletak di perairan ".$waterName." di".
+                " Kecamatan ".$districtName.", ".$regencyLabel.", Provinsi ".$provinceName.
+                " dengan titik koordinat sebagai berikut:",
+                ['size' => 11]
+            );
+            $section->addTextBreak(1);
+
+            // Coordinates table
+            $coordTable = $section->addTable(['borderSize' => 0, 'cellMargin' => 50]);
+            $coordTable->addRow();
+            $coordTable->addCell(2000)->addText('No.', ['bold' => true]);
+            $coordTable->addCell(3000)->addText('Longitude', ['bold' => true]);
+            $coordTable->addCell(3000)->addText('Latitude', ['bold' => true]);
+
+            $coordinateRows = collect(preg_split('/\r\n|\r|\n/', trim($coordinatePoints ?? '')))
+                ->filter()
+                ->map(function ($line) {
+                    if (preg_match('/^\s*(\d+)\.\s*([\-\d.]+)\s*,\s*([\-\d.]+)\s*$/', $line, $m)) {
+                        return [
+                            'no' => $m[1],
+                            'lon' => $m[2],
+                            'lat' => $m[3],
+                        ];
+                    }
+                    return null;
+                })
+                ->filter()
+                ->values();
+
+            foreach ($coordinateRows as $row) {
+                $coordTable->addRow();
+                $coordTable->addCell(2000)->addText($row['no'], []);
+                $coordTable->addCell(3000)->addText($row['lon'], []);
+                $coordTable->addCell(3000)->addText($row['lat'], []);
+            }
+
+            $section->addTextBreak(1);
+        }
+
+        // Lampiran section
+        $section->addTextBreak(1);
+        $section->addText("LAMPORAN", ['size' => 12, 'bold' => true, 'align' => 'center']);
+        $section->addTextBreak(1);
+
+        // Lampiran I: Dokumentasi
+        $section->addText("Lampiran I: Dokumentasi", ['size' => 11, 'bold' => true]);
+        $section->addTextBreak(1);
+        $docsByType = $beritaAcara->documents->groupBy('document_type');
+        $dokumentasi = $docsByType->get('dokumentasi_konsultasi', collect());
+        if ($dokumentasi->isNotEmpty()) {
+            foreach ($dokumentasi as $doc) {
+                $section->addText("- ".$doc->file_name, ['size' => 11]);
+            }
+        } else {
+            $section->addText("-", ['size' => 11]);
+        }
+        $section->addTextBreak(1);
+
+        // Lampiran II: Peta/Hasil Plotting
+        $section->addText(
+            "Lampiran II: Peta ".$($isAsistensi ? 'Hasil Plotting' : 'Plotting'),
+            ['size' => 11, 'bold' => true]
+        );
+        $section->addTextBreak(1);
+        $petaDocs = $docsByType->get('peta_hasil_plotting', collect());
+        if ($petaDocs->isNotEmpty()) {
+            foreach ($petaDocs as $doc) {
+                $section->addText("- ".$doc->file_name, ['size' => 11]);
+            }
+        } else {
+            $section->addText("-", ['size' => 11]);
+        }
+        $section->addTextBreak(1);
+
+        // Lampiran III: Absensi
+        $section->addText(
+            "Lampiran III: ".$($isAsistensi ? 'Absensi' : 'Absen'),
+            ['size' => 11, 'bold' => true]
+        );
+        $section->addTextBreak(1);
+        $absensiDocs = $docsByType->get('absensi_pendampingan', collect());
+        if ($absensiDocs->isNotEmpty()) {
+            foreach ($absensiDocs as $doc) {
+                $section->addText("- ".$doc->file_name, ['size' => 11]);
+            }
+        } else {
+            $section->addText("-", ['size' => 11]);
+        }
+
+        // Generate filename
+        $time_file = $beritaAcara->created_at?->format('YmdHis') ?? now()->format('YmdHis');
+        $requester_filename = $beritaAcara->request_form->nama_pemohon ?? ($beritaAcara->requester_name ?? 'pemohon');
+        $filename = "Berita Acara - {$requester_filename} - {$time_file}.docx";
+
+        // Save to temporary file and return response
+        $tempFile = tempnam(sys_get_temp_dir(), 'berita_acara_');
+        $objWriter = IOFactory::createWriter($phpWord, 'Word2007');
+        $objWriter->save($tempFile);
+
+        return response()->download($tempFile, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
+        ])->deleteFileAfterSend(true);
     }
 }

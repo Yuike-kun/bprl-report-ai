@@ -233,6 +233,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/berita-acara/{beritaAcara}/pdf', [BeritaAcaraController::class, 'pdf'])
         ->name('berita-acara.pdf');
 
+    Route::get('/berita-acara/{beritaAcara}/docx', [BeritaAcaraController::class, 'docx'])
+        ->name('berita-acara.docx');
+
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('password.update');
