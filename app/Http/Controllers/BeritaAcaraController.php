@@ -525,15 +525,23 @@ class BeritaAcaraController extends Controller
             'documents',
             'permohonanKonsultasi.assign_to_staff.Staff.user',
             'request_form',
-            'provinsi',
-            'kabupaten',
         ]);
 
         // Determine if asistensi stage
         $isAsistensi = $beritaAcara->consultation_stage === 'asistensi';
 
-        // Helper to get province name
-        $provinceName = $beritaAcara->provinsi?->name ?? '';
+        // Province/regency/district are stored as string values, not relationships
+        $provinceName = $beritaAcara->province;
+        $regencyName = $beritaAcara->regency;
+        $districtName = $beritaAcara->district;
+        $regencyLabel = preg_match('/^(Kabupaten|Kota)\b/i', (string) $regencyName)
+            ? (string) $regencyName
+            : 'Kabupaten '.(string) $regencyName;
+
+        // Water name (may have "Lainnya" fallback)
+        $waterName = $beritaAcara->water_name === 'Lainnya' 
+            ? ($beritaAcara->water_name_other ?? '') 
+            : $beritaAcara->water_name;
 
         // Get date components
         $hari = $beritaAcara->created_at?->translatedFormat('dddd') ?? '';
@@ -541,16 +549,14 @@ class BeritaAcaraController extends Controller
         $bulanKata = $beritaAcara->created_at?->translatedFormat('MMMM') ?? '';
         $tahun = $beritaAcara->created_at?->format('Y') ?? '';
 
-        // Permit type label (assuming there's an accessor or method)
-        $permitTypeLabel = $beritaAcara->jenis_permohonan_label ?? $beritaAcara->jenis_permohonan ?? '';
+        // Permit type label
+        $permitTypeLabel = [
+            'persetujuan' => 'Persetujuan KKPRL',
+            'konfirmasi' => 'Konfirmasi KKPRL',
+        ][$beritaAcara->permit_type] ?? $beritaAcara->permit_type;
 
         // Activity detail (from request_form or computed)
         $activityDetail = $beritaAcara->request_form?->rencana_kegiatan ?? '';
-
-        // Water name, district name, regency label (from relationships or computed)
-        $waterName = $beritaAcara->lokasi?->nama_lokasi ?? '';
-        $districtName = $beritaAcara->kecamatan ?? '';
-        $regencyLabel = $beritaAcara->kabupaten?->name ?? '';
 
         // Coordinate points
         $coordinatePoints = $beritaAcara->coordinate_points ?? '';
@@ -641,7 +647,6 @@ class BeritaAcaraController extends Controller
 
         // Attendees list
         $section->addText("Diikuti oleh:", ['size' => 11]);
-        $attendeeList = $section->addTextList([]);
         $allStaff = $beritaAcara->staff
             ->map(fn($s) => [
                 'name' => $s->user->name ?? 'Petugas Pendamping',
@@ -650,14 +655,14 @@ class BeritaAcaraController extends Controller
             ->toArray();
 
         foreach ($allStaff as $staff) {
-            $attendeeList->addListItem(
-                $staff['name'].' ('.$staff['position'].')',
-                []
+            $section->addText(
+                "- ".$staff['name'].' ('.$staff['position'].')',
+                ['size' => 11]
             );
         }
-        $attendeeList->addListItem(
-            $beritaAcara->requester_name.' ('.$beritaAcara->requester_position.')',
-            []
+        $section->addText(
+            "- ".$beritaAcara->requester_name.' ('.$beritaAcara->requester_position.')',
+            ['size' => 11]
         );
 
         $section->addTextBreak(1);
