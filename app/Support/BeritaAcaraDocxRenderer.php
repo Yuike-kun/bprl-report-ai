@@ -389,7 +389,7 @@ class BeritaAcaraDocxRenderer
     {
         $tanggal = Carbon::parse($ba->consultation_date)->locale('id');
         $right = ['alignment' => Jc::RIGHT, 'spaceAfter' => 0, 'keepNext' => true];
-        $section->addText('Lampiran Berita Acara', ['size' => 10.5], $right + ['spaceBefore' => 360]);
+        $section->addText('Lampiran Berita Acara', ['size' => 10.5], array_merge($right, ['pageBreakBefore' => true]));
         $section->addText('Nomor : '.$ba->berita_acara_number, ['size' => 10.5], $right);
         $section->addText('Tanggal : '.$tanggal->translatedFormat('d F Y'), ['size' => 10.5], array_merge($right, ['spaceAfter' => 160, 'keepNext' => false]));
 

@@ -360,6 +360,7 @@
 
         /* ── Detail Lampiran — full-width ───── */
         .lampiran-column {
+            page-break-before: always;
             width: 100%;
             float: none;
             margin: 0;
