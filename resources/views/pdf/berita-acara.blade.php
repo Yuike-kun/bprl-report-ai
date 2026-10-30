@@ -789,9 +789,6 @@
                             <img src="{{ $p }}">
                         @else
                             {{ $doc->file_name }}
-                            @if ($url = $docUrl($doc))
-                                <br><a href="{{ $url }}" style="font-size: 8pt;">{{ $url }}</a>
-                            @endif
                         @endif
                     </td>
                 @endforeach
@@ -816,12 +813,7 @@
                         <img src="{{ $p }}" style="max-width: 100%; max-height: 280px;">
                     </div>
                 @else
-                    <p class="file-line link-line">
-                        {{ $doc->file_name }}
-                        @if ($url = $docUrl($doc))
-                            <br><a href="{{ $url }}">{{ $url }}</a>
-                        @endif
-                    </p>
+                    <p class="file-line">{{ $doc->file_name }}</p>
                 @endif
             @endforeach
         @endif
