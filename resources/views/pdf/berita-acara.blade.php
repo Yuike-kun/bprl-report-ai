@@ -14,20 +14,15 @@
             font-family: "Arial", sans-serif;
             font-size: 11pt;
             color: #000;
-            line-height: 1.2;
+            line-height: 1.4;
             margin: 0;
             padding: 0;
-        }
-        
-        p {
-            margin: 0 0 0.1em 0;
-            line-height: 1.2;
         }
 
         /* ── Kop Surat 1:1 Resmi KKP ────────────────────── */
         .kop-surat {
             width: 100%;
-            margin: 0;
+            margin: 0 0 10px 0;
             padding: 0;
         }
 
@@ -138,7 +133,7 @@
             font-size: 11.5pt;
             font-weight: bold;
             text-transform: uppercase;
-            margin: 0 0 2px 0;
+            margin: 10px 0 2px 0;
             white-space: nowrap;
             letter-spacing: 0.2px;
         }
@@ -158,8 +153,8 @@
         /* ── Content Sections ──────────────────────────── */
         .intro {
             text-align: justify;
-            margin: 4px 0;
-            line-height: 1.2;
+            margin: 10px 0;
+            line-height: 1.4;
         }
 
         ol.attendees {
@@ -174,7 +169,7 @@
         .section-title {
             font-weight: bold;
             font-size: 11pt;
-            margin: 2px 0 1px 0;
+            margin: 12px 0 4px 0;
             color: #000;
         }
 
@@ -234,7 +229,7 @@
 
         .closing {
             text-align: justify;
-            margin: 8px 0 6px 0;
+            margin: 12px 0 10px 0;
             line-height: 1.4;
         }
 
