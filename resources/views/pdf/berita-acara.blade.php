@@ -382,6 +382,18 @@
             overflow-wrap: break-word;
         }
 
+        .lampiran-column .link-line {
+            margin: 0 0 3px 12px;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        .lampiran-column .link-line a {
+            color: #0b3ea6;
+            font-size: 8pt;
+            text-decoration: underline;
+        }
+
         .lampiran-column .file-line:last-child {
             border-bottom: none;
         }
@@ -760,90 +772,51 @@
         <p>Nomor : {{ $beritaAcara->berita_acara_number }}</p>
         <p>Tanggal : {{ $tanggal->translatedFormat('d F Y') }}</p>
     </div>
-    <div class="lampiran-title">Lampiran I: Dokumentasi</div>
-    <table class="doc-grid">
-        @foreach ($docsByType->get('dokumentasi_konsultasi', collect())->chunk(2) as $row)
-            <tr>
-                @foreach ($row as $doc)
-                    <td>
-                        @if ($p = $documentPath($doc))
-                            <img src="{{ $p }}">
-                        @else
-                            {{ $doc->file_name }}
-                        @endif
-                    </td>
-                @endforeach
-            </tr>
-        @endforeach
-    </table>
-
-    <div class="lampiran-title">Lampiran II: Peta {{ $isAsistensi ? 'Hasil Plotting' : 'Plotting' }}</div>
     @php
-        $petaDocs = $docsByType->get('peta_hasil_plotting', collect());
-    @endphp
-    @if ($petaDocs->isEmpty())
-        <p class="file-line">-</p>
-    @else
-        @foreach ($petaDocs as $doc)
-            @if (($p = $documentPath($doc)) && in_array(strtolower(pathinfo($p, PATHINFO_EXTENSION)), ['jpg', 'jpeg', 'png']))
-                <div style="margin-bottom: 8px;">
-                    <img src="{{ $p }}" style="max-width: 100%; max-height: 280px;">
-                </div>
-            @else
-                <p class="file-line">
-                    <strong>{{ $doc->file_name }}</strong> <em>(Dokumen PDF terlampir utuh pada halaman lanjutan berkas
-                        ini)</em>
-                </p>
-            @endif
-        @endforeach
-    @endif
+        $lampiranSections = [
+            ['Lampiran I: Dokumentasi', [[null, 'dokumentasi_konsultasi']]],
+            ['Lampiran II: Peta ' . ($isAsistensi ? 'Hasil Plotting' : 'Plotting'), [[null, 'peta_hasil_plotting']]],
+            ['Lampiran III: ' . ($isAsistensi ? 'Absensi' : 'Absen'), [[null, 'absensi_pendampingan']]],
+        ];
 
-    <div class="lampiran-title">Lampiran III: {{ $isAsistensi ? 'Absensi' : 'Absen' }}</div>
-    @php
-        $absensiDocs = $docsByType->get('absensi_pendampingan', collect());
+        if ($isAsistensi) {
+            $lampiranSections[] = [
+                'Lampiran IV: Dokumen Konsultasi',
+                [
+                    ['Dokumen Rencana Bangunan dan Instalasi di Laut', 'rencana_bangunan_instalasi'],
+                    ['Dokumen Informasi Pemanfaatan Ruang Laut', 'informasi_pemanfaatan_ruang_laut'],
+                    ['Dokumen Data Kondisi Terkini Lokasi dan Sekitar', 'data_kondisi_terkini'],
+                    ['Dokumen Persyaratan Lainnya', 'persyaratan_lainnya'],
+                    ['Dokumen Titik Koordinat Lokasi', 'titik_koordinat'],
+                ],
+            ];
+        }
     @endphp
-    @if ($absensiDocs->isEmpty())
-        <p class="file-line">-</p>
-    @else
-        @foreach ($absensiDocs as $doc)
-            @if (($p = $documentPath($doc)) && in_array(strtolower(pathinfo($p, PATHINFO_EXTENSION)), ['jpg', 'jpeg', 'png']))
-                <div style="margin-bottom: 8px;">
-                    <img src="{{ $p }}" style="max-width: 100%; max-height: 280px;">
-                </div>
-            @else
-                <p class="file-line">
-                    <strong>{{ $doc->file_name }}</strong> <em>(Dokumen PDF terlampir utuh pada halaman lanjutan berkas
-                        ini)</em>
-                </p>
-            @endif
-        @endforeach
-    @endif
 
-    @if ($isAsistensi)
-        <div class="lampiran-title">Lampiran IV: Dokumen Konsultasi</div>
-        @foreach ([
-        'rencana_bangunan_instalasi' => 'Dokumen Rencana Bangunan dan Instalasi di Laut',
-        'informasi_pemanfaatan_ruang_laut' => 'Dokumen Informasi Pemanfaatan Ruang Laut',
-        'data_kondisi_terkini' => 'Dokumen Data Kondisi Terkini Lokasi dan Sekitar',
-        'persyaratan_lainnya' => 'Dokumen Persyaratan Lainnya',
-        'titik_koordinat' => 'Dokumen Titik Koordinat Lokasi',
-    ] as $type => $label)
+    @foreach ($lampiranSections as [$sectionTitle, $groups])
+        <div class="lampiran-title">{{ $sectionTitle }}</div>
+        @foreach ($groups as [$groupLabel, $type])
             @php
-                $matchingDocs = $docsByType->get($type, collect());
+                $groupDocs = $docsByType->get($type, collect());
             @endphp
-            <p class="file-line">
-                <strong>{{ $label }}:</strong>
-                @if ($matchingDocs->isEmpty())
-                    -
-                @else
-                    {{ $matchingDocs->pluck('file_name')->implode(', ') }}
-                    @if ($matchingDocs->contains(fn($d) => strtolower(pathinfo($d->file_path ?? '', PATHINFO_EXTENSION)) === 'pdf'))
-                        <em>(terlampir pada berkas PDF ini)</em>
+            @if ($groupLabel)
+                <p class="file-line"><strong>{{ $groupLabel }}:</strong>{{ $groupDocs->isEmpty() ? ' -' : '' }}</p>
+            @elseif ($groupDocs->isEmpty())
+                <p class="file-line">-</p>
+            @endif
+            @foreach ($groupDocs as $doc)
+                @php
+                    $docUrl = $doc->file_path ? \Illuminate\Support\Facades\Storage::disk('public')->url($doc->file_path) : null;
+                @endphp
+                <p class="file-line link-line">
+                    {{ $loop->iteration }}. {{ $doc->file_name }}
+                    @if ($docUrl)
+                        <br><a href="{{ $docUrl }}">{{ $docUrl }}</a>
                     @endif
-                @endif
-            </p>
+                </p>
+            @endforeach
         @endforeach
-    @endif
+    @endforeach
     </div><!-- /lampiran-column -->
 
 </body>
