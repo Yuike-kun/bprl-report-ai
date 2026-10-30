@@ -272,7 +272,8 @@
 
         /* ── Page Breaks & Attachments ─────────────────── */
         .page-break {
-            page-break-before: always;
+            page-break-before: auto;
+            page-break-inside: avoid;
         }
 
 
