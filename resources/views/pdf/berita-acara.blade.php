@@ -7,7 +7,7 @@
     <style>
         /* ── Base & Typography ─────────────────────────── */
         @page {
-            margin: 10mm 15mm 12mm 15mm;
+            margin: 1in;
         }
 
         body {

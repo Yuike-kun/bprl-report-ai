@@ -18,7 +18,7 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class BeritaAcaraDocxRenderer
 {
-    private const CONTENT_WIDTH = 10206;
+    private const CONTENT_WIDTH = 9026;
 
     private const BLUE = '0B3EA6';
 
@@ -71,10 +71,10 @@ class BeritaAcaraDocxRenderer
         $section = $phpWord->addSection([
             'pageSizeW' => 11906,
             'pageSizeH' => 16838,
-            'marginLeft' => 850,
-            'marginRight' => 850,
-            'marginTop' => 567,
-            'marginBottom' => 680,
+            'marginLeft' => 1440,
+            'marginRight' => 1440,
+            'marginTop' => 1440,
+            'marginBottom' => 1440,
         ]);
 
         $isAsistensi = $ba->consultation_stage === 'asistensi';
@@ -132,13 +132,13 @@ class BeritaAcaraDocxRenderer
         $table = $section->addTable(self::NO_BORDERS + ['cellMargin' => 0, 'width' => self::CONTENT_WIDTH, 'unit' => TblWidth::TWIP, 'layout' => 'fixed']);
         $table->addRow();
 
-        $logoCell = $table->addCell(1500, ['valign' => 'center']);
+        $logoCell = $table->addCell(1300, ['valign' => 'center']);
         $logo = public_path('logo_klp.png');
         if (is_file($logo)) {
             $this->scaledImage($logoCell, $logo, 71, 71, ['alignment' => Jc::LEFT]);
         }
 
-        $textCell = $table->addCell(7206, ['valign' => 'center']);
+        $textCell = $table->addCell(6426, ['valign' => 'center']);
         $center = ['alignment' => Jc::CENTER, 'spaceAfter' => 0, 'lineHeight' => 1.0];
         $textCell->addText('KEMENTERIAN KELAUTAN DAN PERIKANAN', ['bold' => true, 'size' => 12, 'color' => self::BLUE], $center);
         $textCell->addText('DIREKTORAT JENDERAL PENATAAN RUANG LAUT', ['size' => 12.5, 'color' => self::BLUE], $center);
@@ -151,7 +151,7 @@ class BeritaAcaraDocxRenderer
         $run->addText(' SUREL ', ['size' => 7.5]);
         $run->addText('BPRLMAKASSAR@KKP.GO.ID', ['size' => 7.5, 'color' => self::BLUE, 'underline' => 'single']);
 
-        $table->addCell(1500);
+        $table->addCell(1300);
 
         $section->addText('', ['size' => 2], [
             'spaceBefore' => 60,
@@ -308,15 +308,15 @@ class BeritaAcaraDocxRenderer
         $center = ['alignment' => Jc::CENTER, 'spaceAfter' => 0];
 
         $table->addRow();
-        $table->addCell(1200, ['bgColor' => 'F0F0F0'])->addText('No', ['bold' => true, 'size' => 10.5], $center);
-        $table->addCell(4503, ['bgColor' => 'F0F0F0'])->addText('Bujur (Longitude)', ['bold' => true, 'size' => 10.5], $center);
-        $table->addCell(4503, ['bgColor' => 'F0F0F0'])->addText('Lintang (Latitude)', ['bold' => true, 'size' => 10.5], $center);
+        $table->addCell(1100, ['bgColor' => 'F0F0F0'])->addText('No', ['bold' => true, 'size' => 10.5], $center);
+        $table->addCell(3963, ['bgColor' => 'F0F0F0'])->addText('Bujur (Longitude)', ['bold' => true, 'size' => 10.5], $center);
+        $table->addCell(3963, ['bgColor' => 'F0F0F0'])->addText('Lintang (Latitude)', ['bold' => true, 'size' => 10.5], $center);
 
         foreach ($rows as $row) {
             $table->addRow();
-            $table->addCell(1200)->addText($row['no'], ['size' => 10.5], $center);
-            $table->addCell(4503)->addText($row['lon'], ['size' => 10.5], $center);
-            $table->addCell(4503)->addText($row['lat'], ['size' => 10.5], $center);
+            $table->addCell(1100)->addText($row['no'], ['size' => 10.5], $center);
+            $table->addCell(3963)->addText($row['lon'], ['size' => 10.5], $center);
+            $table->addCell(3963)->addText($row['lat'], ['size' => 10.5], $center);
         }
 
         $section->addTextBreak(0, ['size' => 4]);
@@ -329,7 +329,7 @@ class BeritaAcaraDocxRenderer
         $center = ['alignment' => Jc::CENTER, 'spaceAfter' => 0];
 
         $table->addRow(null, ['cantSplit' => true]);
-        foreach ([[600, 'No'], [3300, 'Nama'], [3306, 'Jabatan/Instansi'], [3000, 'Tanda Tangan']] as [$w, $label]) {
+        foreach ([[600, 'No'], [2900, 'Nama'], [2926, 'Jabatan/Instansi'], [2600, 'Tanda Tangan']] as [$w, $label]) {
             $table->addCell($w, ['bgColor' => 'F7F7F7', 'valign' => 'center'])->addText($label, ['bold' => true, 'size' => 10], $center + ['keepNext' => true]);
         }
 
@@ -362,10 +362,10 @@ class BeritaAcaraDocxRenderer
 
         $table->addRow(850, ['cantSplit' => true]);
         $table->addCell(600, ['valign' => 'center'])->addText((string) $no, ['size' => 10], $center);
-        $table->addCell(3300, ['valign' => 'center'])->addText($name, ['size' => 10], $left);
-        $table->addCell(3306, ['valign' => 'center'])->addText($position, ['size' => 10], $left);
+        $table->addCell(2900, ['valign' => 'center'])->addText($name, ['size' => 10], $left);
+        $table->addCell(2926, ['valign' => 'center'])->addText($position, ['size' => 10], $left);
 
-        $cell = $table->addCell(3000, ['valign' => 'center']);
+        $cell = $table->addCell(2600, ['valign' => 'center']);
         if ($imagePath) {
             $this->scaledImage($cell, $imagePath, 100, 36, ['alignment' => Jc::CENTER]);
         } else {
@@ -393,7 +393,7 @@ class BeritaAcaraDocxRenderer
                 $table->addRow();
                 foreach ($pair->values() as $doc) {
                     $cell = $table->addCell(self::CONTENT_WIDTH / 2, ['valign' => 'center']);
-                    $this->documentInto($cell, $doc, 235, 190);
+                    $this->documentInto($cell, $doc, 205, 170);
                 }
                 if ($pair->count() === 1) {
                     $table->addCell(self::CONTENT_WIDTH / 2);
@@ -435,7 +435,7 @@ class BeritaAcaraDocxRenderer
         }
 
         foreach ($docs as $doc) {
-            $this->documentInto($section, $doc, 500, 280);
+            $this->documentInto($section, $doc, 440, 280);
         }
     }
 
