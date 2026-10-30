@@ -458,15 +458,15 @@ class BeritaAcaraDocxRenderer
             return;
         }
 
-        $container->addText((string) $doc->file_name, ['size' => 9], ['spaceAfter' => 40]);
+        $this->documentLink($container, $doc);
     }
 
-    private function documentLink($container, $doc, int $number): void
+    private function documentLink($container, $doc, ?int $number = null): void
     {
         $url = $doc->file_path ? Storage::disk('public')->url($doc->file_path) : null;
 
-        $run = $container->addTextRun(['indentation' => ['left' => 227], 'spaceAfter' => 40]);
-        $run->addText($number.'. '.$doc->file_name, ['size' => 9]);
+        $run = $container->addTextRun(['indentation' => ['left' => $number ? 227 : 0], 'spaceAfter' => 40]);
+        $run->addText(($number ? $number.'. ' : '').$doc->file_name, ['size' => 9]);
 
         if ($url) {
             $run->addTextBreak();
