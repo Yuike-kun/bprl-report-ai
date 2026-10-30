@@ -2,9 +2,9 @@ import { Head } from '@inertiajs/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowLeft, Globe, Loader2, Send } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import AppLayout from './layout';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import AppLayout from './layout';
 
 type Source = {
     title: string;
@@ -77,14 +77,17 @@ function TypingMarkdown({
             i += charsPerTick;
             setShown(text.slice(0, i));
             onTick?.();
+
             if (i >= text.length) {
                 clearInterval(id);
+
                 if (!doneRef.current) {
                     doneRef.current = true;
                     onDone?.();
                 }
             }
         }, 16);
+
         return () => clearInterval(id);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [text]);

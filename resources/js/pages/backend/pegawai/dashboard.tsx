@@ -1,5 +1,3 @@
-import Heading from "@/components/backend/heading";
-import MainLayout from "@/pages/backend/layout";
 import { usePage, Link } from "@inertiajs/react";
 import {
     FileText,
@@ -9,8 +7,10 @@ import {
     Calendar,
     UserCheck,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import Heading from "@/components/backend/heading";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import MainLayout from "@/pages/backend/layout";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                               */
@@ -98,6 +98,7 @@ export default function PegawaiDashboard() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         {stats.map((item, idx) => {
                             const Icon = item.icon;
+
                             return (
                                 <Card key={idx} className="border-slate-200 shadow-sm hover:shadow-md transition-all">
                                     <CardContent className="p-5 flex items-center justify-between">

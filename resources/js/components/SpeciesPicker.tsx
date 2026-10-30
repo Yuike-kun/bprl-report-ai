@@ -1,4 +1,5 @@
-import React, { useState, type ChangeEvent } from 'react';
+import React, { useState  } from 'react';
+import type {ChangeEvent} from 'react';
 import { fieldExampleWrapClass, fieldExampleFillClass, fieldInputClass, fieldLabelClass, fieldHintClass } from '../pages/kkprl-konsultasi-form';
 
 export interface SpeciesPickerProps {
@@ -35,8 +36,12 @@ export const SpeciesPicker = React.memo(function SpeciesPicker({
       />
       <div className="grid max-h-[260px] grid-cols-1 gap-x-3.5 gap-y-0.5 overflow-y-auto pr-1 sm:grid-cols-2">
         {species.map((sp, i) => {
-          if (q && !sp.toLowerCase().includes(q)) return null;
+          if (q && !sp.toLowerCase().includes(q)) {
+return null;
+}
+
           const id = `${name}_${i}`;
+
           return (
             <div key={sp} className="mb-1.5 flex items-center gap-2">
               <input

@@ -1,12 +1,12 @@
-import MainLayout from "../../layout";
 import { Head, Link, useForm } from "@inertiajs/react";
 import { ArrowLeft, Save } from "lucide-react";
 
+import { ComboboxSearch } from "@/components/backend/combobox-searchable";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ComboboxSearch } from "@/components/backend/combobox-searchable";
+import MainLayout from "../../layout";
 
 type Location = {
     id: number;

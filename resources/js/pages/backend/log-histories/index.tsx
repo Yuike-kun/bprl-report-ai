@@ -1,4 +1,3 @@
-import MainLayout from "../layout";
 import { Head, router } from "@inertiajs/react";
 import { History, Search, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -6,6 +5,7 @@ import { useMemo, useState } from "react";
 import { PaginatedTable } from "@/components/backend/paginated-table";
 import { Pagination } from "@/components/backend/pagination";
 import { Button } from "@/components/ui/button";
+import MainLayout from "../layout";
 
 type LogItem = {
     id: number;

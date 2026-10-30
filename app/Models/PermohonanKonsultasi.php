@@ -30,6 +30,7 @@ class PermohonanKonsultasi extends Model
         'status',
         'provinsi',
         'kabupaten',
+        'nomor_permohonan',
     ];
 
     public function layanan()

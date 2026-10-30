@@ -1,6 +1,7 @@
-import { alertError } from '@/lib/alert';
-import React, { useState, useRef, type ClipboardEvent, type DragEvent } from 'react';
 import { Clipboard, X, Upload } from 'lucide-react';
+import React, { useState, useRef   } from 'react';
+import type {ClipboardEvent, DragEvent} from 'react';
+import { alertError } from '@/lib/alert';
 
 interface ImageFieldProps {
     name: string;
@@ -30,11 +31,17 @@ export const ImageField = React.memo(function ImageField({
         const incoming = Array.from(fileList).filter((f) => {
             if (!ALLOWED_TYPES.includes(f.type)) {
                 alertError('Format file tidak didukung. Hanya PNG dan JPG/JPEG yang diperbolehkan.');
+
                 return false;
             }
+
             return true;
         });
-        if (!incoming.length) return;
+
+        if (!incoming.length) {
+return;
+}
+
         const next = [...images, ...incoming];
         onChange(name, maxFiles ? next.slice(0, maxFiles) : next);
     }, [images, maxFiles, name, onChange]);
@@ -51,21 +58,35 @@ export const ImageField = React.memo(function ImageField({
 
     const handlePaste = React.useCallback((e: ClipboardEvent<HTMLDivElement>) => {
         const items = e.clipboardData?.items;
-        if (!items) return;
+
+        if (!items) {
+return;
+}
+
         const files: File[] = [];
+
         for (const item of items) {
             if (item.type.indexOf('image/') === 0) {
                 const f = item.getAsFile();
-                if (f) files.push(f);
+
+                if (f) {
+files.push(f);
+}
             }
         }
-        if (files.length) addFiles(files);
+
+        if (files.length) {
+addFiles(files);
+}
     }, [addFiles]);
 
     const handleDrop = React.useCallback((e: DragEvent<HTMLDivElement>) => {
         e.preventDefault();
         setDragOver(false);
-        if (e.dataTransfer.files?.length) addFiles(e.dataTransfer.files);
+
+        if (e.dataTransfer.files?.length) {
+addFiles(e.dataTransfer.files);
+}
     }, [addFiles]);
 
     return (
@@ -125,7 +146,10 @@ export const ImageField = React.memo(function ImageField({
                 multiple
                 className="hidden"
                 onChange={(e) => {
-                    if (e.target.files) addFiles(e.target.files);
+                    if (e.target.files) {
+addFiles(e.target.files);
+}
+
                     e.target.value = '';
                 }}
             />

@@ -25,6 +25,7 @@ type Submission = {
     tanda_tangan?: string | null;
     status: string;
     created_at: string;
+    nomor_permohonan?: string | null;
     jadwal?: {
         tanggal?: string;
         waktu_awal?: string;
@@ -36,7 +37,7 @@ type Submission = {
 
 type Props = {
     submissions?: Submission[] | null;
-    queryParams?: { email?: string; nomor_telepon?: string };
+    queryParams?: { nomor_permohonan?: string };
     lookupError?: string | null;
     flash?: { success?: string; error?: string };
 };
@@ -44,8 +45,6 @@ type Props = {
 function SubmissionCard({ submission }: { submission: Submission }) {
     const { data, setData, post, processing, errors } = useForm({
         id: submission.id,
-        email: submission.email,
-        nomor_telepon: submission.nomor_telepon,
         tanda_tangan: submission.tanda_tangan ?? '',
     });
 
@@ -70,7 +69,7 @@ function SubmissionCard({ submission }: { submission: Submission }) {
                 <div className="flex flex-wrap items-center justify-between gap-2">
                     <div>
                         <span className="font-mono text-[10px] font-semibold tracking-wider text-slate-400 uppercase">
-                            ID PERMOHONAN #{submission.id}
+                            NOMOR PERMOHONAN #{submission.nomor_permohonan ?? submission.id}
                         </span>
                         <h3 className="mt-0.5 text-lg font-bold text-slate-900">
                             {submission.nama_pemohon}
@@ -121,11 +120,11 @@ function SubmissionCard({ submission }: { submission: Submission }) {
                             {submission.jadwal?.tanggal
                                 ? new Date(
                                       submission.jadwal.tanggal,
-                                  ).toLocaleDateString('id-ID', {
-                                      day: '2-digit',
-                                      month: 'long',
-                                      year: 'numeric',
-                                  })
+                                    ).toLocaleDateString('id-ID', {
+                                          day: '2-digit',
+                                          month: 'long',
+                                          year: 'numeric',
+                                      })
                                 : '-'}{' '}
                             ({submission.jadwal?.waktu_awal ?? ''} -{' '}
                             {submission.jadwal?.waktu_akhir ?? ''})
@@ -153,7 +152,8 @@ function SubmissionCard({ submission }: { submission: Submission }) {
                         onChange={(val) => setData('tanda_tangan', val)}
                         error={
                             scopedError('tanda_tangan') ??
-                            scopedError('nomor_telepon')
+                            /* Note: No email/nomer telephone field anymore */
+                            null
                         }
                     />
 
@@ -180,9 +180,8 @@ export default function PublicSignatureUpload({
     lookupError,
     flash,
 }: Props) {
-    const [searchEmail, setSearchEmail] = useState(queryParams?.email ?? '');
-    const [searchNohp, setSearchNohp] = useState(
-        queryParams?.nomor_telepon ?? '',
+    const [searchNomorPermohonan, setSearchNomorPermohonan] = useState(
+        queryParams?.nomor_permohonan ?? ''
     );
 
     const handleSearch = (e: React.FormEvent) => {
@@ -190,14 +189,13 @@ export default function PublicSignatureUpload({
         router.get(
             '/signature-upload',
             {
-                email: searchEmail.trim() || undefined,
-                nomor_telepon: searchNohp.trim() || undefined,
+                nomor_permohonan: searchNomorPermohonan.trim() || undefined,
             },
-            { preserveState: false },
+            { preserveState: false }
         );
     };
 
-    const hasQuery = Boolean(queryParams?.email || queryParams?.nomor_telepon);
+    const hasQuery = Boolean(queryParams?.nomor_permohonan);
     const found = (submissions?.length ?? 0) > 0;
 
     return (
@@ -219,14 +217,14 @@ export default function PublicSignatureUpload({
                                 Upload Tanda Tangan Permohonan Konsultasi
                             </p>
                         </div>
+                        <a
+                            href="/request-form"
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-xs transition hover:bg-slate-100"
+                        >
+                            <ArrowLeft className="h-3.5 w-3.5" /> Formulir
+                            Permohonan
+                        </a>
                     </div>
-                    <a
-                        href="/request-form"
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-xs transition hover:bg-slate-100"
-                    >
-                        <ArrowLeft className="h-3.5 w-3.5" /> Formulir
-                        Permohonan
-                    </a>
                 </div>
             </header>
 
@@ -239,42 +237,30 @@ export default function PublicSignatureUpload({
                             Cari Permohonan Konsultasi Anda
                         </h2>
                         <p className="mt-0.5 text-xs text-slate-500">
-                            Masukkan alamat email dan No. HP yang Anda gunakan
-                            saat membuat permohonan. No. HP berfungsi sebagai
-                            kata sandi.
+                            Masukkan nomor permohonan konsultasi Anda untuk melanjutkan.
+                            Nomor permohonan dapat Anda lihat di surat konfirmasi yang
+                            dikirim melalui email setelah pengajuan permohonan.
                         </p>
                     </div>
 
                     <form
                         onSubmit={handleSearch}
-                        className="grid gap-3 sm:grid-cols-[1.2fr_1fr_auto]"
+                        className="space-y-4"
                     >
                         <div>
                             <label className="mb-1 block text-[11px] font-semibold text-slate-600">
-                                Email Pemohon
+                                Nomor Permohonan
                             </label>
                             <input
-                                type="email"
+                                type="text"
                                 required
-                                placeholder="email@pemohon.com"
-                                value={searchEmail}
-                                onChange={(e) => setSearchEmail(e.target.value)}
+                                placeholder="PERMOHONAN-YYYYMMDDHHIISS-XXXX"
+                                value={searchNomorPermohonan}
+                                onChange={(e) => setSearchNomorPermohonan(e.target.value)}
                                 className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
                             />
                         </div>
-                        <div>
-                            <label className="mb-1 block text-[11px] font-semibold text-slate-600">
-                                No. HP (Kata Sandi)
-                            </label>
-                            <input
-                                type="password"
-                                required
-                                placeholder="081234567890"
-                                value={searchNohp}
-                                onChange={(e) => setSearchNohp(e.target.value)}
-                                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
-                            />
-                        </div>
+
                         <div className="flex items-end">
                             <Button
                                 type="submit"
@@ -341,9 +327,10 @@ export default function PublicSignatureUpload({
                                 Data Permohonan Tidak Ditemukan
                             </h3>
                             <p className="mx-auto mt-1 max-w-md text-xs text-slate-500">
-                                Mohon periksa kembali alamat email dan No. HP
-                                yang Anda masukkan. Keduanya harus sesuai dengan
-                                data saat membuat permohonan.
+                                Mohon periksa kembali nomor permohonan yang
+                                Anda masukkan. Pastikan nomor permohonan sesuai
+                                dengan yang tercantum dalam surat konfirmasi
+                                yang Anda terima melalui email.
                             </p>
                         </div>
                     )

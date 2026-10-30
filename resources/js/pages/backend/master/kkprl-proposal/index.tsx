@@ -1,12 +1,12 @@
-import MainLayout from '../../layout';
 import { Head, Link, router } from '@inertiajs/react';
 import { Eye, FileSpreadsheet, Plus, Search, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
+import Heading from '@/components/backend/heading';
 import { PaginatedTable } from '@/components/backend/paginated-table';
 import { Pagination } from '@/components/backend/pagination';
 import { Button } from '@/components/ui/button';
-import Heading from '@/components/backend/heading';
+import MainLayout from '../../layout';
 
 type KkprlProposalItem = {
     id: number;

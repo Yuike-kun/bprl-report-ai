@@ -1,17 +1,18 @@
-import MainLayout from "../layout";
-import ApplicantIdentityForm from "./forms/applicant-identity-form";
 import { useForm, Head, Link } from "@inertiajs/react";
-import { useState } from "react";
-import SeaConstructionAndInstallation from "./forms/sea_construction_and_installation";
-import ReclamationRequirements from "./forms/reclamation-requirements";
-import CurrentLocationData from "./forms/current_location_data";
-import SpaceUtilizationInfo from "./forms/space_utilization_info";
-import AiAnalysisForm, { AiNarasi } from "./forms/ai_form";
-import Review from "./forms/review";
-import TabsVertical, { TAB_MENU } from "./tabs-vertical";
 import { FileText, ChevronRight, ArrowLeft, AlertCircle, Sparkles } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import MainLayout from "../layout";
+import type { AiNarasi } from "./forms/ai_form";
+import AiAnalysisForm from "./forms/ai_form";
+import ApplicantIdentityForm from "./forms/applicant-identity-form";
+import CurrentLocationData from "./forms/current_location_data";
+import ReclamationRequirements from "./forms/reclamation-requirements";
+import Review from "./forms/review";
+import SeaConstructionAndInstallation from "./forms/sea_construction_and_installation";
+import SpaceUtilizationInfo from "./forms/space_utilization_info";
+import TabsVertical, { TAB_MENU } from "./tabs-vertical";
 
 type UploadedFile = { name: string; data: string } | null;
 
@@ -104,7 +105,11 @@ export default function GeneralDraftCreate({ draft, draftId, draft_id }: Props) 
             onSuccess: (page) => {
                 const props = page.props as any;
                 const id = props?.draft_id || props?.draftId || savedDraftId;
-                if (id) setResolvedDraftId(id);
+
+                if (id) {
+setResolvedDraftId(id);
+}
+
                 if (!completedTabs.includes("review")) {
                     setCompletedTabs(prev => [...prev, "review"]);
                 }
@@ -117,17 +122,22 @@ export default function GeneralDraftCreate({ draft, draftId, draft_id }: Props) 
 
     const goNext = () => {
         const next = TAB_MENU[activeIndex + 1];
+
         if (next) {
             if (!completedTabs.includes(activeTab)) {
                 setCompletedTabs(prev => [...prev, activeTab]);
             }
+
             setActiveTab(next.id);
         }
     };
 
     const goPrev = () => {
         const prev = TAB_MENU[activeIndex - 1];
-        if (prev) setActiveTab(prev.id);
+
+        if (prev) {
+setActiveTab(prev.id);
+}
     };
 
     return (

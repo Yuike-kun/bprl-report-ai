@@ -92,11 +92,14 @@ function Navbar({ scrolled }: { scrolled: boolean }) {
             }
         };
         const onKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') setOpen(false);
+            if (e.key === 'Escape') {
+setOpen(false);
+}
         };
         document.addEventListener('mousedown', onPointerDown);
         document.addEventListener('touchstart', onPointerDown);
         document.addEventListener('keydown', onKeyDown);
+
         return () => {
             document.removeEventListener('mousedown', onPointerDown);
             document.removeEventListener('touchstart', onPointerDown);

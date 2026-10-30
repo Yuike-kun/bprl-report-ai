@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
 import { Check, ChevronsUpDown, Loader2 } from 'lucide-react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator
 } from '@/components/ui/command';
@@ -31,7 +31,10 @@ const responseCache = new Map<string, { data: any[]; ts: number }>();
 const inflightRequests = new Map<string, Promise<any[]>>();
 
 function getLabel(item: any, labelKey: string | ((item: any) => string)): string {
-  if (typeof labelKey === 'function') return labelKey(item);
+  if (typeof labelKey === 'function') {
+return labelKey(item);
+}
+
   return String(item?.[labelKey] ?? '');
 }
 
@@ -41,6 +44,7 @@ function getValue(item: any, valueKey: string): string {
 
 function buildCacheKey(prefix: string, fetchUrl: string, searchParam: string | string[], q: string) {
   const keys = Array.isArray(searchParam) ? searchParam.join(',') : searchParam;
+
   return `${prefix}::${fetchUrl}::${keys}::${q}`;
 }
 
@@ -48,8 +52,12 @@ function buildCacheKey(prefix: string, fetchUrl: string, searchParam: string | s
  * Get CSRF token from meta tag (Laravel standard)
  */
 function getCsrfToken(): string {
-  if (typeof document === 'undefined') return '';
+  if (typeof document === 'undefined') {
+return '';
+}
+
   const meta = document.querySelector('meta[name="csrf-token"]');
+
   return meta?.getAttribute('content') ?? '';
 }
 
@@ -86,19 +94,25 @@ export function ComboboxSearch({
 
   const fetchOptions = useCallback(async (q: string, signal: AbortSignal): Promise<any[]> => {
     // If no fetchUrl, only static options are available
-    if (!fetchUrl) return [];
+    if (!fetchUrl) {
+return [];
+}
 
     const cacheKey = buildCacheKey(currentPageCachePrefix, fetchUrl, searchParam, q);
 
     // 1. Check cache
     const cached = responseCache.get(cacheKey);
+
     if (cached && Date.now() - cached.ts < CACHE_TTL_MS) {
       return cached.data;
     }
 
     // 2. Deduplicate inflight requests
     const inflight = inflightRequests.get(cacheKey);
-    if (inflight) return inflight;
+
+    if (inflight) {
+return inflight;
+}
 
     // 3. Fetch with CSRF token for Laravel compatibility
     const promise = (async () => {
@@ -118,17 +132,21 @@ export function ComboboxSearch({
         },
       });
 
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) {
+throw new Error(`HTTP ${res.status}`);
+}
 
       const json = await res.json();
       // Handle both { data: [...] } and { data: { data: [...] } } formats
       const items = Array.isArray(json) ? json : (Array.isArray(json.data) ? json.data : (json.data?.data ?? []));
 
       responseCache.set(cacheKey, { data: items, ts: Date.now() });
+
       return items;
     })();
 
     inflightRequests.set(cacheKey, promise);
+
     try {
       return await promise;
     } finally {
@@ -137,7 +155,9 @@ export function ComboboxSearch({
   }, [fetchUrl, searchParam]);
 
   const search = useCallback((q: string) => {
-    if (timerRef.current) clearTimeout(timerRef.current);
+    if (timerRef.current) {
+clearTimeout(timerRef.current);
+}
 
     timerRef.current = setTimeout(async () => {
       abortRef.current?.abort();
@@ -145,21 +165,35 @@ export function ComboboxSearch({
       abortRef.current = controller;
 
       setLoading(true);
+
       try {
         const items = await fetchOptions(q, controller.signal);
-        if (!controller.signal.aborted) setOptions(items);
+
+        if (!controller.signal.aborted) {
+setOptions(items);
+}
       } catch (err: any) {
-        if (err.name !== 'AbortError' && !controller.signal.aborted) setOptions([]);
+        if (err.name !== 'AbortError' && !controller.signal.aborted) {
+setOptions([]);
+}
       } finally {
-        if (!controller.signal.aborted) setLoading(false);
+        if (!controller.signal.aborted) {
+setLoading(false);
+}
       }
     }, DEBOUNCE_MS);
   }, [fetchOptions]);
 
   function handleOpenChange(next: boolean) {
-    if (disabled) return;
+    if (disabled) {
+return;
+}
+
     setOpen(next);
-    if (next && options.length === 0 && staticOptions.length === 0) search('');
+
+    if (next && options.length === 0 && staticOptions.length === 0) {
+search('');
+}
   }
 
   function handleQueryChange(q: string) {
@@ -172,8 +206,12 @@ export function ComboboxSearch({
     if (fetchUrl && staticOptions.length === 0) {
       search('');
     }
+
     return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
+      if (timerRef.current) {
+clearTimeout(timerRef.current);
+}
+
       abortRef.current?.abort();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -212,6 +250,7 @@ export function ComboboxSearch({
                     const id = getValue(opt, valueKey);
                     const isSelected = String(value) === id;
                     const label = getLabel(opt, labelKey);
+
                     return (
                       <CommandItem
                         key={id}
@@ -247,6 +286,7 @@ export function ComboboxSearch({
                   const id = getValue(opt, valueKey);
                   const isSelected = String(value) === id;
                   const label = getLabel(opt, labelKey);
+
                   return (
                     <CommandItem
                       key={id}

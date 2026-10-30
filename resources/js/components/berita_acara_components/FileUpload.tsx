@@ -1,5 +1,5 @@
-import { useRef } from 'react';
 import { Upload, X } from 'lucide-react';
+import { useRef } from 'react';
 import { FieldError } from './FieldError';
 
 export function FileUpload({
@@ -29,12 +29,14 @@ export function FileUpload({
         const picked = Array.from(e.target.files || []).filter(
             (f): f is File => !!f,
         );
+
         if (multiple) {
             const merged = [...files, ...picked].slice(0, max ?? 5);
             onChange(merged);
         } else if (picked.length) {
             onChange([picked[0]]);
         }
+
         e.target.value = '';
     };
 

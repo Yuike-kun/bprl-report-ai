@@ -110,6 +110,7 @@ export const FIELD_GROUPS: FieldGroup[] = [
 /** Nama unik untuk dipakai sebagai atribut 'name' pada <input> HTML. */
 export function formFieldName(source: string, key: string): string {
     const safeKey = key.replace(/ /g, '_').replace(/\//g, '_');
+
     return `${source}__${safeKey}`;
 }
 
@@ -119,13 +120,21 @@ export function getValue(
     propData: any,
     lapData: any,
 ): string {
-    if (source === 'prop') return propData[key] || '';
-    if (source === 'lap') return lapData[key] || '';
+    if (source === 'prop') {
+return propData[key] || '';
+}
+
+    if (source === 'lap') {
+return lapData[key] || '';
+}
+
     if (source === 'prop_loc') {
         const parts = propData._lokasi_parts || [];
         const idx = parseInt(key, 10);
+
         return idx < parts.length ? parts[idx] : '';
     }
+
     return '';
 }
 
@@ -141,13 +150,21 @@ export function applyFormValues(
     const lokasiParts: string[] = [
         ...(propData._lokasi_parts || ['', '', '', '']),
     ];
-    while (lokasiParts.length < 4) lokasiParts.push('');
+
+    while (lokasiParts.length < 4) {
+lokasiParts.push('');
+}
 
     for (const [, fields] of FIELD_GROUPS) {
         for (const [source, key] of fields) {
             const fname = formFieldName(source, key);
-            if (!(fname in form)) continue;
+
+            if (!(fname in form)) {
+continue;
+}
+
             const val = (form[fname] || '').trim();
+
             if (source === 'prop') {
                 propData[key] = val;
             } else if (source === 'lap') {
@@ -160,5 +177,6 @@ export function applyFormValues(
     }
 
     propData._lokasi_parts = lokasiParts;
+
     return { propData, lapData };
 }

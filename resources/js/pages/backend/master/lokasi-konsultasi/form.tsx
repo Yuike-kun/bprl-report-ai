@@ -1,10 +1,10 @@
-import MainLayout from "../../layout";
 import { Link, useForm } from "@inertiajs/react";
 import { ArrowLeft, MapPin, Save } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import MainLayout from "../../layout";
 
 type Location = {
     id: number;
@@ -28,6 +28,7 @@ export default function LokasiKonsultasiForm({ mode, location }: Props) {
 
         if (isEdit && location) {
             put(`/master/lokasi-konsultasi/${location.id}`);
+
             return;
         }
 

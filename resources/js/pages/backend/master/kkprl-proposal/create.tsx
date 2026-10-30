@@ -1,9 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
 import { useForm, Head } from '@inertiajs/react';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
-import HomeLayout from '../../layout';
 import {
     Info,
     Upload,
@@ -16,8 +11,13 @@ import {
     RotateCcw,
     Home,
 } from 'lucide-react';
-import Heading from '@/components/backend/heading';
+import React, { useCallback, useEffect, useState } from 'react';
 import { ComboboxSearch } from '@/components/backend/combobox-searchable';
+import Heading from '@/components/backend/heading';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import HomeLayout from '../../layout';
 
 const sections = [
     {
@@ -140,6 +140,7 @@ const PillChoice = ({
                             onChange(opt);
                         } else {
                             const current = value as string[];
+
                             if (isSelected) {
                                 onChange(current.filter((v) => v !== opt));
                             } else {
@@ -531,7 +532,10 @@ export default function Create() {
 
         sections.forEach((s) => {
             const el = document.getElementById(s.id);
-            if (el) observer.observe(el);
+
+            if (el) {
+observer.observe(el);
+}
         });
 
         return () => observer.disconnect();
@@ -539,6 +543,7 @@ export default function Create() {
 
     const scrollToSection = (id: string) => {
         const el = document.getElementById(id);
+
         if (el) {
             const top = el.getBoundingClientRect().top + window.scrollY - 96;
             window.scrollTo({ top, behavior: 'smooth' });
@@ -609,6 +614,7 @@ export default function Create() {
                         </p>
                         {sections.map((s) => {
                             const isActive = activeSection === s.id;
+
                             return (
                                 <button
                                     key={s.id}
@@ -746,18 +752,23 @@ export default function Create() {
                                             'permohonan_konsultasi_id',
                                             val,
                                         );
+
                                         if (item) {
-                                            if (item.nama_pemohon)
-                                                setData(
+                                            if (item.nama_pemohon) {
+setData(
                                                     'applicant_name',
                                                     item.nama_pemohon,
                                                 );
-                                            if (item.instansi)
-                                                setData(
+}
+
+                                            if (item.instansi) {
+setData(
                                                     'company_name',
                                                     item.instansi,
                                                 );
+}
                                         }
+
                                         // Reset berita acara when permohonan changes
                                         setData('berita_acara_id', '');
                                     }}
@@ -792,7 +803,10 @@ export default function Create() {
                                         item: BeritaAcaraOption | undefined,
                                     ) => {
                                         setData('berita_acara_id', val);
-                                        if (!item) return;
+
+                                        if (!item) {
+return;
+}
 
                                         // Auto-link permohonan konsultasi
                                         if (item.request_form_id) {
@@ -803,34 +817,47 @@ export default function Create() {
                                         }
 
                                         // Pemohon
-                                        if (item.requester_name)
-                                            setData(
+                                        if (item.requester_name) {
+setData(
                                                 'applicant_name',
                                                 item.requester_name,
                                             );
-                                        if (item.requester_position)
-                                            setData(
+}
+
+                                        if (item.requester_position) {
+setData(
                                                 'applicant_position',
                                                 item.requester_position,
                                             );
-                                        if (item.legal_entity_name)
-                                            setData(
+}
+
+                                        if (item.legal_entity_name) {
+setData(
                                                 'company_name',
                                                 item.legal_entity_name,
                                             );
-                                        if (item.contact_email)
-                                            setData(
+}
+
+                                        if (item.contact_email) {
+setData(
                                                 'email',
                                                 item.contact_email,
                                             );
+}
 
                                         // Lokasi
-                                        if (item.province)
-                                            setData('province', item.province);
-                                        if (item.regency)
-                                            setData('regency', item.regency);
-                                        if (item.district)
-                                            setData('district', item.district);
+                                        if (item.province) {
+setData('province', item.province);
+}
+
+                                        if (item.regency) {
+setData('regency', item.regency);
+}
+
+                                        if (item.district) {
+setData('district', item.district);
+}
+
                                         if (item.water_name) {
                                             const wName =
                                                 item.water_name === 'Lainnya' &&
@@ -839,16 +866,20 @@ export default function Create() {
                                                     : item.water_name;
                                             setData('water_name', wName);
                                         }
-                                        if (item.planned_area)
-                                            setData(
+
+                                        if (item.planned_area) {
+setData(
                                                 'area_size',
                                                 String(item.planned_area),
                                             );
-                                        if (item.coordinate_points)
-                                            setData(
+}
+
+                                        if (item.coordinate_points) {
+setData(
                                                 'coordinates',
                                                 item.coordinate_points,
                                             );
+}
 
                                         // Kegiatan & Status
                                         if (item.existing_condition) {
@@ -867,6 +898,7 @@ export default function Create() {
                                                 ] || 'Rencana',
                                             );
                                         }
+
                                         if (item.activity_category) {
                                             setData(
                                                 'activity_category',
@@ -876,6 +908,7 @@ export default function Create() {
                                                     : 'Non Berusaha',
                                             );
                                         }
+
                                         if (item.activity_type) {
                                             setData(
                                                 'activity_type',
@@ -887,16 +920,19 @@ export default function Create() {
                                         }
 
                                         // Deskripsi
-                                        if (item.activity_description)
-                                            setData(
+                                        if (item.activity_description) {
+setData(
                                                 'activity_description',
                                                 item.activity_description,
                                             );
-                                        if (item.surrounding_utilization)
-                                            setData(
+}
+
+                                        if (item.surrounding_utilization) {
+setData(
                                                 'marine_spatial_activity_description',
                                                 item.surrounding_utilization,
                                             );
+}
 
                                         // Dokumen Pendukung
                                         if (

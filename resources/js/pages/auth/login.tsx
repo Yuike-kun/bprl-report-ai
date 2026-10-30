@@ -1,9 +1,4 @@
-import { useState } from 'react';
 import { useForm, Link } from '@inertiajs/react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
     Activity,
     ArrowLeft,
@@ -17,6 +12,11 @@ import {
     Loader2,
     LogIn,
 } from 'lucide-react';
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 export default function LoginPage({ status }) {
     const { data, setData, post, processing, errors } = useForm({

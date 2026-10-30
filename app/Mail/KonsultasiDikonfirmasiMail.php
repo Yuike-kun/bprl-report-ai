@@ -106,6 +106,7 @@ class KonsultasiDikonfirmasiMail extends Mailable
 
         return Pdf::loadView('pdf.surat-konfirmasi-kkprl', [
             'permohonan' => $this->permohonan,
+            'nomorPermohonan' => $this->permohonan->nomor_permohonan,
             'hariTanggal' => $hariTanggal,
             'tanggalSurat' => Carbon::now()->locale('id')->translatedFormat('d F Y'),
             'signatureData' => $signatureData,

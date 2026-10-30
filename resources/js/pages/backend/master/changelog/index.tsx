@@ -1,4 +1,3 @@
-import MainLayout from "../../layout";
 import { Head, Link, router, useForm } from "@inertiajs/react";
 import { History, Pencil, Plus, Search, Trash2, Sparkles, Bug, Wrench, Download, Upload, FileText, AlertCircle } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -14,6 +13,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
+import MainLayout from "../../layout";
 
 type ChangelogItem = {
     id: number;
@@ -79,7 +79,10 @@ export default function ChangelogIndex({ changelogs, filters, success, errors }:
 
     const handleImportSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!data.file) return;
+
+        if (!data.file) {
+return;
+}
 
         post("/master/changelog/import", {
             onSuccess: () => {

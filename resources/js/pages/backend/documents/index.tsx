@@ -1,5 +1,3 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
-import MainLayout from '../layout';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import {
     FolderArchive,
@@ -24,10 +22,12 @@ import {
     RefreshCw,
     FileSearch,
 } from 'lucide-react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 
 import { PaginatedTable } from '@/components/backend/paginated-table';
 import { Pagination } from '@/components/backend/pagination';
 import { Button } from '@/components/ui/button';
+import MainLayout from '../layout';
 
 type DocumentItem = {
     id: number;
@@ -103,6 +103,7 @@ export default function DocumentManagementIndex({
     useEffect(() => {
         if (isInitialMount.current) {
             isInitialMount.current = false;
+
             return;
         }
 
@@ -144,18 +145,23 @@ export default function DocumentManagementIndex({
 
     const getFileIcon = (ext: string) => {
         const lower = ext.toLowerCase();
+
         if (lower === 'pdf') {
             return <FileText className="h-5 w-5 text-red-500" />;
         }
+
         if (['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg'].includes(lower)) {
             return <FileImage className="h-5 w-5 text-emerald-500" />;
         }
+
         if (['doc', 'docx'].includes(lower)) {
             return <FileText className="h-5 w-5 text-blue-600" />;
         }
+
         if (['xls', 'xlsx', 'csv'].includes(lower)) {
             return <FileSpreadsheet className="h-5 w-5 text-teal-600" />;
         }
+
         return <File className="h-5 w-5 text-slate-400" />;
     };
 

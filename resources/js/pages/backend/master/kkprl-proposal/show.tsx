@@ -1,4 +1,3 @@
-import MainLayout from "../../layout";
 import { Head, Link, router } from "@inertiajs/react";
 import {
     ArrowLeft,
@@ -19,6 +18,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import MainLayout from "../../layout";
 
 type KkprlProposal = {
     id: number;

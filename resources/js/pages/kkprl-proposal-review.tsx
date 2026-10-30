@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
 import { Head, useForm, router } from '@inertiajs/react';
+import React, { useState } from 'react';
 import DocxPreviewViewer from '@/components/DocxPreviewViewer';
-import AppLayout from './layout';
 import { FIELD_GROUPS, formFieldName, getValue } from './field-groups';
+import AppLayout from './layout';
 
 interface ProposalData {
     id: number;

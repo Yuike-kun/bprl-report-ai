@@ -25,6 +25,7 @@
                             <div style="display:inline-block;background:#e8f3ff;border:1px solid #c9e3fb;border-radius:999px;color:#1261a0;font-size:11px;font-weight:700;letter-spacing:.6px;padding:6px 10px;text-transform:uppercase;">Permohonan baru</div>
                             <h1 style="color:#102a43;font-size:24px;line-height:1.25;margin:16px 0 10px;">Ada permohonan konsultasi baru</h1>
                             <p style="color:#526579;font-size:15px;line-height:1.6;margin:0;">Pengajuan baru telah masuk dan menunggu pemeriksaan Tim BPRL.</p>
+                            <p style="color:#526579;font-size:14px;line-height:1.5;margin-top:12px;"><strong>Nomor Permohonan:</strong> {{ $permohonan->nomor_permohonan ?? '-' }}</p>
                         </td>
                     </tr>
                     <tr>

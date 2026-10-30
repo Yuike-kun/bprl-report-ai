@@ -1,4 +1,3 @@
-import MainLayout from "../../layout";
 import { Head, Link, router } from "@inertiajs/react";
 import { Building2, MapPin, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -6,6 +5,7 @@ import { useMemo, useState } from "react";
 import { PaginatedTable } from "@/components/backend/paginated-table";
 import { Pagination } from "@/components/backend/pagination";
 import { Button } from "@/components/ui/button";
+import MainLayout from "../../layout";
 
 type Location = {
     id: number;
@@ -41,6 +41,7 @@ export default function LokasiKonsultasiIndex({ locations, filters, success }: P
         }
 
         const normalized = search.toLowerCase();
+
         return locations.data.filter(location =>
             location.nama_lokasi.toLowerCase().includes(normalized)
         );

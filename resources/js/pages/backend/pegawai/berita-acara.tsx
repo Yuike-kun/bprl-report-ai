@@ -1,6 +1,4 @@
-import { useState, useEffect } from 'react';
 import { usePage } from '@inertiajs/react';
-import MainLayout from '@/pages/backend/layout';
 import {
     ClipboardCheck,
     FileCheck2,
@@ -15,7 +13,9 @@ import {
     Layers,
     BadgeCheck,
 } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { ComboboxMultiSearch } from '@/components/backend/combobox-multi-searchable';
+import { ComboboxSearch } from '@/components/backend/combobox-searchable';
 import {
     FormLabel,
     FieldError,
@@ -39,8 +39,8 @@ import type {
     BeritaAcaraFormProps,
     FormData,
 } from '@/components/types/berita-acara';
+import MainLayout from '@/pages/backend/layout';
 import { useBeritaAcaraForm } from '@/props/hooks/useBeritaAcaraForm';
-import { ComboboxSearch } from '@/components/backend/combobox-searchable';
 
 export default function BeritaAcara({
     staffList,
@@ -90,11 +90,14 @@ export default function BeritaAcara({
             const res = await fetch(`/api/geolocation/provinces?search=`);
             const json = await res.json();
             const item = (json.data ?? []).find((e: any) => String(e.id) === id);
+
             if (item) {
                 set('province', item.name);
                 setLocationIds((prev) => ({ ...prev, province: String(item.id) }));
+
                 return item;
             }
+
             return null;
         };
 
@@ -102,11 +105,14 @@ export default function BeritaAcara({
             const res = await fetch(`/api/geolocation/regencies?province_id=${provinceId}&search=`);
             const json = await res.json();
             const item = (json.data ?? []).find((e: any) => String(e.id) === regencyId);
+
             if (item) {
                 set('regency', item.name);
                 setLocationIds((prev) => ({ ...prev, regency: String(item.id) }));
+
                 return item;
             }
+
             return null;
         };
 
@@ -114,6 +120,7 @@ export default function BeritaAcara({
             const res = await fetch(`/api/geolocation/districts?regency_id=${regencyId}&search=`);
             const json = await res.json();
             const item = (json.data ?? []).find((e: any) => String(e.id) === districtId);
+
             if (item) {
                 set('district', item.name);
                 setLocationIds((prev) => ({ ...prev, district: String(item.id) }));
@@ -123,8 +130,10 @@ export default function BeritaAcara({
         const run = async () => {
             if (form.province && isNumericId(form.province)) {
                 const prov = await resolveProvince(form.province);
+
                 if (prov && form.regency && isNumericId(form.regency)) {
                     const reg = await resolveRegency(String(prov.id), form.regency);
+
                     if (reg && form.district && isNumericId(form.district)) {
                         await resolveDistrict(String(reg.id), form.district);
                     }
@@ -138,32 +147,50 @@ export default function BeritaAcara({
 
     // Name-to-ID resolution for newly typed / selected values (non-numeric names)
     useEffect(() => {
-        if (!form.province || locationIds.province || /^\d+$/.test(form.province)) return;
+        if (!form.province || locationIds.province || /^\d+$/.test(form.province)) {
+return;
+}
+
         fetch(`/api/geolocation/provinces?search=${encodeURIComponent(form.province)}`)
             .then((response) => response.json())
             .then((json) => {
                 const item = (json.data ?? []).find((entry: any) => entry.name === form.province);
-                if (item) setLocationIds((prev) => ({ ...prev, province: String(item.id) }));
+
+                if (item) {
+setLocationIds((prev) => ({ ...prev, province: String(item.id) }));
+}
             });
     }, [form.province, locationIds.province]);
 
     useEffect(() => {
-        if (!form.regency || locationIds.regency || !locationIds.province || /^\d+$/.test(form.regency)) return;
+        if (!form.regency || locationIds.regency || !locationIds.province || /^\d+$/.test(form.regency)) {
+return;
+}
+
         fetch(`/api/geolocation/regencies?province_id=${locationIds.province}&search=${encodeURIComponent(form.regency)}`)
             .then((response) => response.json())
             .then((json) => {
                 const item = (json.data ?? []).find((entry: any) => entry.name === form.regency);
-                if (item) setLocationIds((prev) => ({ ...prev, regency: String(item.id) }));
+
+                if (item) {
+setLocationIds((prev) => ({ ...prev, regency: String(item.id) }));
+}
             });
     }, [form.regency, locationIds.province, locationIds.regency]);
 
     useEffect(() => {
-        if (!form.district || locationIds.district || !locationIds.regency || /^\d+$/.test(form.district)) return;
+        if (!form.district || locationIds.district || !locationIds.regency || /^\d+$/.test(form.district)) {
+return;
+}
+
         fetch(`/api/geolocation/districts?regency_id=${locationIds.regency}&search=${encodeURIComponent(form.district)}`)
             .then((response) => response.json())
             .then((json) => {
                 const item = (json.data ?? []).find((entry: any) => entry.name === form.district);
-                if (item) setLocationIds((prev) => ({ ...prev, district: String(item.id) }));
+
+                if (item) {
+setLocationIds((prev) => ({ ...prev, district: String(item.id) }));
+}
             });
     }, [form.district, locationIds.regency, locationIds.district]);
 
@@ -173,6 +200,7 @@ export default function BeritaAcara({
 
     const selectedStaffOptions = selectedStaffIds.map((id) => {
         const staff = staffList.find((s) => String(s.id) === id);
+
         return staff
             ? { id: Number(staff.id), name: staff.name }
             : { id: Number(id), name: `Staf #${id}` };
@@ -224,7 +252,9 @@ export default function BeritaAcara({
                         <div
                             key={n}
                             onClick={() => {
-                                if (n === 1 && step === 2) backToStep1();
+                                if (n === 1 && step === 2) {
+backToStep1();
+}
                             }}
                             className={`flex flex-1 items-center gap-2 ${n === 1 && step === 2 ? 'cursor-pointer' : ''}`}
                         >
@@ -518,6 +548,7 @@ export default function BeritaAcara({
                                 <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                                     {ACTIVITY_DETAILS.map((a) => {
                                         const isChecked = form.activity_detail.includes(a);
+
                                         return (
                                             <label
                                                 key={a}
@@ -999,6 +1030,7 @@ export default function BeritaAcara({
                                                     form.owned_documents.includes(
                                                         doc,
                                                     );
+
                                                 return (
                                                     <label
                                                         key={doc}

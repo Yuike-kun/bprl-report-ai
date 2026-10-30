@@ -1,5 +1,6 @@
 import { CheckCircle2, FileUp, Trash2, UploadCloud } from 'lucide-react';
-import { useRef, useState, ReactNode } from 'react';
+import type { ReactNode } from 'react';
+import { useRef, useState } from 'react';
 
 export default function DocumentUpload({
     number,
@@ -25,6 +26,7 @@ export default function DocumentUpload({
         n > 1048576
             ? `${(n / 1048576).toFixed(2)} MB`
             : `${Math.ceil(n / 1024)} KB`;
+
     return (
         <section className="rounded-2xl bg-white p-[23px] shadow-[0_6px_24px_#123a6314]">
             <div className="flex items-center gap-[11px]">

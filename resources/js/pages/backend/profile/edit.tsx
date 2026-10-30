@@ -1,8 +1,10 @@
-import MainLayout from "../layout";
 import { useForm, usePage, router } from "@inertiajs/react";
+import { CheckCircle2, Camera, Upload, X } from "lucide-react";
+import type { FormEventHandler, ChangeEvent } from "react";
+import { useRef, useState } from "react";
+import SignaturePad from "@/components/signature-pad";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
     Card,
     CardContent,
@@ -10,10 +12,9 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import SignaturePad from "@/components/signature-pad";
-import { FormEventHandler, useRef, useState, ChangeEvent } from "react";
-import { CheckCircle2, Camera, Upload, X } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import MainLayout from "../layout";
 
 /* ─── Avatar Upload ─── */
 function AvatarUploadForm({ user }: { user: any }) {
@@ -29,11 +30,17 @@ function AvatarUploadForm({ user }: { user: any }) {
 
     const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
         const picked = e.target.files?.[0];
-        if (!picked) return;
+
+        if (!picked) {
+return;
+}
+
         if (picked.size > 2 * 1024 * 1024) {
             setError("Ukuran file maksimal 2 MB.");
+
             return;
         }
+
         setError(null);
         setFile(picked);
         setPreview(URL.createObjectURL(picked));
@@ -42,12 +49,19 @@ function AvatarUploadForm({ user }: { user: any }) {
     const handleRemovePreview = () => {
         setPreview(null);
         setFile(null);
-        if (inputRef.current) inputRef.current.value = "";
+
+        if (inputRef.current) {
+inputRef.current.value = "";
+}
     };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!file) return;
+
+        if (!file) {
+return;
+}
+
         setUploading(true);
         setSuccess(false);
         setError(null);
@@ -60,7 +74,10 @@ function AvatarUploadForm({ user }: { user: any }) {
                     setSuccess(true);
                     setPreview(null);
                     setFile(null);
-                    if (inputRef.current) inputRef.current.value = "";
+
+                    if (inputRef.current) {
+inputRef.current.value = "";
+}
                 },
                 onError: (errs) => {
                     setError(errs.avatar ?? "Upload gagal. Coba lagi.");
@@ -311,6 +328,7 @@ function UpdatePasswordForm() {
                     reset("password", "password_confirmation");
                     passwordInput.current?.focus();
                 }
+
                 if (errors.current_password) {
                     reset("current_password");
                     currentPasswordInput.current?.focus();

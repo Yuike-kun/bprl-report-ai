@@ -1,11 +1,11 @@
-import MainLayout from "../layout";
 import { Head, Link, useForm } from "@inertiajs/react";
 import { ArrowLeft, UserRound } from "lucide-react";
-import { FormEvent } from "react";
+import type { FormEvent } from "react";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
+import MainLayout from "../layout";
 
 export default function StaffCreate() {
     const { data, setData, post, processing, errors } = useForm({

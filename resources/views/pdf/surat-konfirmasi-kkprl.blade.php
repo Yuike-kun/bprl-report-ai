@@ -110,6 +110,9 @@
 
     <h1>Surat Konfirmasi KKPRL</h1>
     <div class="subject">Konfirmasi Permohonan Konsultasi</div>
+    @if(isset($nomorPermohonan) && $nomorPermohonan)
+    <p><strong>Nomor Permohonan:</strong> {{ $nomorPermohonan }}</p>
+    @endif
 
     <p>Dengan hormat,</p>
     <p>

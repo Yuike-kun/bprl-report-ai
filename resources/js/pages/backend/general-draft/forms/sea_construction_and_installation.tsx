@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
     Select,
     SelectContent,
@@ -45,6 +45,7 @@ export default function SeaConstructionAndInstallation({ data, onChange, errors 
     const provinsiOptions = useMemo(() => Object.keys(PROVINSI_MAP).map(p => ({ value: p, label: p })), []);
     const kabupatenOptions = useMemo(() => {
         const prov = data.provinsi || Object.keys(PROVINSI_MAP)[0];
+
         return PROVINSI_MAP[prov as keyof typeof PROVINSI_MAP]?.kabList.map(k => ({ value: k.name, label: k.name })) || [];
     }, [data.provinsi]);
 

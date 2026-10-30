@@ -10,7 +10,10 @@ export function ExistingFiles({
     onRemove: (d: ExistingDocument) => void;
     onReplace?: (d: ExistingDocument) => void;
 }) {
-    if (!docs.length) return null;
+    if (!docs.length) {
+return null;
+}
+
     return (
         <ul className="mb-2 space-y-1.5">
             {docs.map((d) => (

@@ -1,6 +1,6 @@
-import Heading from '@/components/backend/heading';
-import MainLayout from './layout';
 import { usePage, Link } from '@inertiajs/react';
+import { router } from '@inertiajs/react';
+import ApexCharts from 'apexcharts';
 import {
     Users,
     FileText,
@@ -27,6 +27,10 @@ import {
     EyeOff,
     Inbox,
 } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import Heading from '@/components/backend/heading';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
 import {
     Card,
     CardContent,
@@ -34,11 +38,7 @@ import {
     CardTitle,
     CardDescription,
 } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
-import { useEffect, useRef, useState } from 'react';
-import ApexCharts from 'apexcharts';
-import { router } from '@inertiajs/react';
+import MainLayout from './layout';
 
 interface UserAuth {
     id: number;
@@ -165,7 +165,10 @@ function statusColor(status?: string): string {
 }
 
 function statusLabel(status?: string): string {
-    if (!status) return 'Draft';
+    if (!status) {
+return 'Draft';
+}
+
     return status
         .split('_')
         .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
@@ -189,7 +192,11 @@ function AdminDashboardView({ data }: { data?: DashboardData }) {
                 const res = await fetch('/api/notifications', {
                     headers: { Accept: 'application/json' },
                 });
-                if (!res.ok || cancelled) return;
+
+                if (!res.ok || cancelled) {
+return;
+}
+
                 const json = await res.json();
                 // New consultation notifications carry a permohonan_id — we can
                 // prepend them to the list if not already present.
@@ -197,6 +204,7 @@ function AdminDashboardView({ data }: { data?: DashboardData }) {
                     id: string;
                     permohonan_id?: number | null;
                 }>;
+
                 if (incoming.length && !cancelled) {
                     setLatestList((prev) => prev); // no-op; list is refreshed server-side on reload
                 }
@@ -205,11 +213,15 @@ function AdminDashboardView({ data }: { data?: DashboardData }) {
             }
         };
         const id = setInterval(tick, 30_000);
-        return () => { cancelled = true; clearInterval(id); };
+
+        return () => {
+ cancelled = true; clearInterval(id); 
+};
     }, []);
 
     const refreshLatest = async () => {
         setRefreshing(true);
+
         try {
             router.visit('/dashboard', { preserveScroll: true, preserveState: true });
         } finally {
@@ -236,7 +248,9 @@ function AdminDashboardView({ data }: { data?: DashboardData }) {
     ) || [0, 0, 0, 0, 0, 0];
 
     useEffect(() => {
-        if (!chartRef.current) return;
+        if (!chartRef.current) {
+return;
+}
 
         const options = {
             chart: {
@@ -326,6 +340,7 @@ function AdminDashboardView({ data }: { data?: DashboardData }) {
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
                 {adminStats.map((item, index) => {
                     const Icon = item.icon;
+
                     return (
                         <div
                             key={index}
@@ -416,6 +431,7 @@ function AdminDashboardView({ data }: { data?: DashboardData }) {
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                                 {data.loginHistory.map((u) => {
                                     const initial = u.name?.charAt(0)?.toUpperCase() || 'U';
+
                                     return (
                                         <div key={u.id} className="relative flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50/30 p-3 hover:bg-slate-50 transition-colors shadow-md">
                                             <div className="relative">
@@ -452,6 +468,7 @@ function AdminDashboardView({ data }: { data?: DashboardData }) {
                             <div className="flex flex-col gap-3">
                                 {data.loginHistory.map((u) => {
                                     const initial = u.name?.charAt(0)?.toUpperCase() || 'U';
+
                                     return (
                                         <div key={u.id} className="relative flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/30 p-3 hover:bg-slate-50 transition-colors">
                                             <div className="flex items-center gap-3 min-w-0">
@@ -643,6 +660,7 @@ function PetugasDashboardView({ data }: { data?: DashboardData }) {
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
                 {stats.map((item, idx) => {
                     const Icon = item.icon;
+
                     return (
                         <div
                             key={idx}
@@ -792,6 +810,7 @@ function PemohonDashboardView({ data }: { data?: DashboardData }) {
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
                 {stats.map((item, idx) => {
                     const Icon = item.icon;
+
                     return (
                         <div
                             key={idx}

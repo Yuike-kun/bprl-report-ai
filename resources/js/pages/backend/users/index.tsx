@@ -1,4 +1,3 @@
-import MainLayout from "../layout";
 import { Head, Link, router } from "@inertiajs/react";
 import { Pencil, Plus, Search, Trash2, UserRound } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -6,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { PaginatedTable } from "@/components/backend/paginated-table";
 import { Pagination } from "@/components/backend/pagination";
 import { Button } from "@/components/ui/button";
+import MainLayout from "../layout";
 import { ROLES } from "./const";
 
 type User = {
@@ -43,6 +43,7 @@ export default function UsersIndex({ users, filters, success }: Props) {
     useEffect(() => {
         if (isInitialMount.current) {
             isInitialMount.current = false;
+
             return;
         }
 

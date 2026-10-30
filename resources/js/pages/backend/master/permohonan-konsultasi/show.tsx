@@ -1,4 +1,3 @@
-import MainLayout from '../../layout';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import {
     ArrowLeft,
@@ -16,9 +15,10 @@ import {
     UserRound,
     XCircle,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { ComboboxMultiSearch } from '@/components/backend/combobox-multi-searchable';
 import { useEffect, useState } from 'react';
+import { ComboboxMultiSearch } from '@/components/backend/combobox-multi-searchable';
+import { Button } from '@/components/ui/button';
+import MainLayout from '../../layout';
 
 type Submission = {
     id: number;
@@ -118,8 +118,10 @@ export default function PermohonanKonsultasiShow({ submission }: Props) {
     const handleDelete = () => {
         if (
             !window.confirm(`Hapus permohonan dari ${submission.nama_pemohon}?`)
-        )
-            return;
+        ) {
+return;
+}
+
         router.delete(`/master/permohonan-konsultasi/${submission.id}`);
     };
 
@@ -489,6 +491,7 @@ export default function PermohonanKonsultasiShow({ submission }: Props) {
                                 ].map(({ label, key }) => {
                                     const val = (submission as any)[key] as string | undefined;
                                     const isYa = val === 'ya';
+
                                     return (
                                         <div key={key} className="flex items-center justify-between gap-3 px-4 py-2.5 sm:px-5">
                                             <p className="text-sm text-slate-700">{label}</p>

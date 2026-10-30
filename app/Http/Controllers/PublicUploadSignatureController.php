@@ -25,15 +25,25 @@ class PublicUploadSignatureController extends Controller
 {
     public function index(Request $request): Response
     {
+        $nomorPermohonan = trim((string) $request->query('nomor_permohonan', ''));
         $email = trim((string) $request->query('email', ''));
         $nohp = trim((string) $request->query('nomor_telepon', ''));
 
         $lookupError = null;
         $submissions = collect();
 
-        if ($email !== '' || $nohp !== '') {
+        if ($nomorPermohonan !== '') {
+            $submissions = PermohonanKonsultasi::query()
+                ->with(['jadwal.lokasi'])
+                ->where('nomor_permohonan', $nomorPermohonan)
+                ->get();
+
+            if ($submissions->isEmpty()) {
+                $lookupError = 'Nomor permohonan tidak ditemukan.';
+            }
+        } elseif ($email !== '' || $nohp !== '') {
             if ($email === '' || $nohp === '') {
-                $lookupError = 'Email dan No. HP harus diisi keduanya.';
+                $lookupError = 'Email dan No. HP harus diisi keduanya jika tidak menggunakan Nomor Permohonan.';
             } else {
                 $submissions = PermohonanKonsultasi::query()
                     ->with(['jadwal.lokasi'])
@@ -47,6 +57,7 @@ class PublicUploadSignatureController extends Controller
         return Inertia::render('public/signature-upload', [
             'submissions' => $submissions,
             'queryParams' => [
+                'nomor_permohonan' => $nomorPermohonan,
                 'email' => $email,
                 'nomor_telepon' => $nohp,
             ],
@@ -62,8 +73,9 @@ class PublicUploadSignatureController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'id' => ['required', 'integer', 'exists:permohonan_konsultasis,id'],
-            'email' => ['required', 'email', 'max:255'],
-            'nomor_telepon' => ['required', 'string', 'max:30'],
+            'nomor_permohonan' => ['nullable', 'string', 'max:100'],
+            'email' => ['nullable', 'email', 'max:255'],
+            'nomor_telepon' => ['nullable', 'string', 'max:30'],
             'tanda_tangan' => ['required', 'string'],
         ]);
 
@@ -75,17 +87,32 @@ class PublicUploadSignatureController extends Controller
 
         $data = $validator->validated();
 
-        // The id only selects which card to update; access still requires the
-        // full email + phone pair to match that same permohonan.
-        $permohonan = PermohonanKonsultasi::query()
-            ->where('id', $data['id'])
-            ->where('email', $data['email'])
-            ->first();
+        $query = PermohonanKonsultasi::query()->where('id', $data['id']);
 
-        if (! $permohonan || ! Phone::matches($permohonan->nomor_telepon, $data['nomor_telepon'])) {
-            return redirect()->back()->withErrors([
-                "cards.{$data['id']}.nomor_telepon" => 'Email atau No. HP tidak sesuai dengan data permohonan.',
-            ]);
+        if (! empty($data['nomor_permohonan'])) {
+            $query->where('nomor_permohonan', $data['nomor_permohonan']);
+            $permohonan = $query->first();
+
+            if (! $permohonan) {
+                return redirect()->back()->withErrors([
+                    "cards.{$data['id']}.nomor_permohonan" => 'Nomor permohonan tidak sesuai.',
+                ]);
+            }
+        } else {
+            if (empty($data['email']) || empty($data['nomor_telepon'])) {
+                return redirect()->back()->withErrors([
+                    "cards.{$data['id']}.email" => 'Email dan Nomor Telepon diperlukan jika tanpa Nomor Permohonan.',
+                ]);
+            }
+
+            $query->where('email', $data['email']);
+            $permohonan = $query->first();
+
+            if (! $permohonan || ! Phone::matches($permohonan->nomor_telepon, $data['nomor_telepon'])) {
+                return redirect()->back()->withErrors([
+                    "cards.{$data['id']}.nomor_telepon" => 'Email atau No. HP tidak sesuai dengan data permohonan.',
+                ]);
+            }
         }
 
         // Find the BA for this permohonan
@@ -155,12 +182,17 @@ class PublicUploadSignatureController extends Controller
         // upload page shows the newly uploaded signature immediately.
         $permohonan->update(['tanda_tangan' => $imageData]);
 
+        $redirectParams = [];
+        if (! empty($data['nomor_permohonan'])) {
+            $redirectParams['nomor_permohonan'] = $data['nomor_permohonan'];
+        } elseif (! empty($data['email']) && ! empty($data['nomor_telepon'])) {
+            $redirectParams['email'] = $data['email'];
+            $redirectParams['nomor_telepon'] = $data['nomor_telepon'];
+        }
+
         return redirect()
-            ->route('signature-upload', [
-                'email' => $data['email'],
-                'nomor_telepon' => $data['nomor_telepon'],
-            ])
-            ->with('success', "Tanda tangan untuk permohonan #{$permohonan->id} berhasil disimpan/diperbarui.");
+            ->route('signature-upload', $redirectParams)
+            ->with('success', "Tanda tangan untuk permohonan " . ($permohonan->nomor_permohonan ? "#{$permohonan->nomor_permohonan}" : "#{$permohonan->id}") . " berhasil disimpan/diperbarui.");
     }
 
     /**

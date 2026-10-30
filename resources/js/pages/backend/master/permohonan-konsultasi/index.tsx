@@ -1,8 +1,7 @@
-import MainLayout from '../../layout';
 import { Head, Link, router } from '@inertiajs/react';
+import ApexCharts from 'apexcharts';
 import { ChevronDown, ChevronUp, ExternalLink, Eye, File, FileImage, FileSpreadsheet, FileText, Paperclip, Pencil, Plus, Search, TrendingUp, Trash2, UserRound } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import ApexCharts from 'apexcharts';
 
 import { PaginatedTable } from '@/components/backend/paginated-table';
 import { Pagination } from '@/components/backend/pagination';
@@ -18,6 +17,7 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog"
+import MainLayout from '../../layout';
 
 type Submission = {
     id: number;
@@ -87,7 +87,9 @@ export default function PermohonanKonsultasiIndex({
     const selectedYear = chartData?.selectedYear ?? new Date().getFullYear();
 
     useEffect(() => {
-        if (!showChart || !chartRef.current || !chartData) return;
+        if (!showChart || !chartRef.current || !chartData) {
+return;
+}
 
         const currentChart = viewMode === 'monthly' ? chartData.monthly : chartData.yearly;
 
@@ -151,6 +153,7 @@ export default function PermohonanKonsultasiIndex({
     useEffect(() => {
         if (isInitialMount.current) {
             isInitialMount.current = false;
+
             return;
         }
 

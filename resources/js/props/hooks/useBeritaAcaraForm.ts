@@ -1,5 +1,5 @@
-import { useState, useCallback, useEffect } from 'react';
 import { router } from '@inertiajs/react';
+import { useState, useCallback, useEffect } from 'react';
 import { isRichTextEmpty } from '@/components/berita_acara_components';
 import type { ExistingDocument, FormData } from '@/components/types/berita-acara';
 import { EMPTY_FORM } from '@/components/types/berita-acara';
@@ -56,8 +56,13 @@ export function useBeritaAcaraForm(
                 activity_detail: activityDetail,
             };
         }
-        if (typeof window === 'undefined') return { ...EMPTY_FORM };
+
+        if (typeof window === 'undefined') {
+return { ...EMPTY_FORM };
+}
+
         const saved = localStorage.getItem(storageKey);
+
         if (saved) {
             try {
                 return { ...EMPTY_FORM, ...JSON.parse(saved) };
@@ -65,6 +70,7 @@ export function useBeritaAcaraForm(
                 return { ...EMPTY_FORM };
             }
         }
+
         return { ...EMPTY_FORM };
     };
 
@@ -81,7 +87,10 @@ export function useBeritaAcaraForm(
 
     // Persist drafts for new (non-edit) submissions only.
     useEffect(() => {
-        if (isEdit) return;
+        if (isEdit) {
+return;
+}
+
         localStorage.setItem(storageKey, JSON.stringify(form));
     }, [form, storageKey, isEdit]);
 
@@ -90,7 +99,9 @@ export function useBeritaAcaraForm(
     // Only relevant when creating a new Berita Acara — in edit mode the
     // record already carries the correct values.
     useEffect(() => {
-        if (isEdit || !konsultasi) return;
+        if (isEdit || !konsultasi) {
+return;
+}
 
         // `assign_to_staff` comes from a pivot table with no FK constraint, so
         // it can hold a staff id that's since been deleted. Only pre-fill ids
@@ -143,7 +154,10 @@ export function useBeritaAcaraForm(
     );
 
     const removeExistingDoc = useCallback((doc: ExistingDocument) => {
-        if (!confirm(`Hapus file "${doc.file_name}"?`)) return;
+        if (!confirm(`Hapus file "${doc.file_name}"?`)) {
+return;
+}
+
         const endpoint = adminMode
             ? `/berita-acara/documents/${doc.id}`
             : `/berita-acara/documents/${doc.id}/pegawai`;
@@ -173,15 +187,19 @@ export function useBeritaAcaraForm(
                 !form.consultation_result
             ) {
                 alertError('Harap lengkapi semua field wajib di Langkah 2 terlebih dahulu.');
+
                 return false;
             }
+
             return true;
         }
 
         if (isRichTextEmpty(form.consultation_notes)) {
             alertError('Harap isi catatan hasil Konsultasi/Koordinasi terlebih dahulu.');
+
             return false;
         }
+
         return true;
     }, [form, isAsistensi]);
 
@@ -203,9 +221,12 @@ export function useBeritaAcaraForm(
             !form.water_name
         ) {
             alertError('Harap lengkapi semua field wajib di Langkah 1 terlebih dahulu.');
+
             return false;
         }
+
         setStep(2);
+
         return true;
     }, [form]);
 
@@ -217,7 +238,9 @@ export function useBeritaAcaraForm(
     }, [storageKey]);
 
     const handleSubmit = useCallback(() => {
-        if (!validateStep2()) return;
+        if (!validateStep2()) {
+return;
+}
 
         setSubmitting(true);
         const fd = new FormData();
@@ -242,7 +265,11 @@ export function useBeritaAcaraForm(
             const endpoint = adminMode
                 ? `/berita-acara/${berita_acara.id}`
                 : `/berita-acara/${berita_acara.id}/pegawai`;
-            if (adminMode) fd.append('_method', 'PUT');
+
+            if (adminMode) {
+fd.append('_method', 'PUT');
+}
+
             router.post(endpoint, fd, {
                 forceFormData: true,
                 preserveScroll: true,
@@ -258,6 +285,7 @@ export function useBeritaAcaraForm(
                 },
                 onFinish: () => setSubmitting(false),
             });
+
             return;
         }
 

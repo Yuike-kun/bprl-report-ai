@@ -1,9 +1,9 @@
-import MainLayout from '../../layout';
 import { Link, useForm } from '@inertiajs/react';
 import { ArrowLeft, CalendarDays, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import MainLayout from '../../layout';
 
 type Holiday = {
     id: number;
@@ -37,6 +37,7 @@ export default function HolidayForm({ mode, holiday }: Props) {
 
     const submit = (event: React.FormEvent) => {
         event.preventDefault();
+
         if (isEdit && holiday) {
             put(`/master/hari-libur/${holiday.id}`);
         } else {

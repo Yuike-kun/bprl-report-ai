@@ -1,7 +1,7 @@
+import { Download, CheckCircle2, Save } from "lucide-react";
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Download, CheckCircle2, Save } from "lucide-react";
 
 type Props = {
     data: Record<string, any>;
@@ -69,8 +69,14 @@ const FIELD_GROUPS: { title: string; fields: Record<string, string> }[] = [
 ];
 
 function formatValue(value: any) {
-    if (value === null || value === undefined || value === "") return null;
-    if (typeof value === "object" && value?.name) return value.name;
+    if (value === null || value === undefined || value === "") {
+return null;
+}
+
+    if (typeof value === "object" && value?.name) {
+return value.name;
+}
+
     return String(value);
 }
 
@@ -91,6 +97,7 @@ export default function Review({ data, onConfirm, isProcessing, isCompleted, dra
             form.target = "_blank";
 
             const csrfMeta = document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement;
+
             if (csrfMeta?.content) {
                 const csrfInput = document.createElement("input");
                 csrfInput.type = "hidden";
@@ -140,7 +147,9 @@ export default function Review({ data, onConfirm, isProcessing, isCompleted, dra
                                 .map(([key, label]) => ({ key, label, value: formatValue(data[key]) }))
                                 .filter((row) => row.value !== null);
 
-                            if (rows.length === 0) return null;
+                            if (rows.length === 0) {
+return null;
+}
 
                             return (
                                 <div key={group.title} className="rounded-lg border bg-slate-50/50 p-4">

@@ -1,15 +1,15 @@
-import MainLayout from '../../layout';
+import { Popover as PopoverPrimitive } from '@base-ui/react/popover';
 import { router, useForm } from '@inertiajs/react';
 import { CalendarDays, ChevronLeft, ChevronRight, LockKeyhole, Pencil, Plus, Save, Trash2, Upload, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { PaginatedTable } from '@/components/backend/paginated-table';
 import { Pagination } from '@/components/backend/pagination';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Popover as PopoverPrimitive } from '@base-ui/react/popover';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
+import MainLayout from '../../layout';
 
 type Holiday = {
     id: number;
@@ -64,8 +64,12 @@ function DatePopoverForm({
     });
 
     useEffect(() => {
-        if (!state) return;
+        if (!state) {
+return;
+}
+
         clearErrors();
+
         if (state.mode === 'edit') {
             setData({
                 tanggal: state.holiday.tanggal.slice(0, 10),
@@ -80,10 +84,15 @@ function DatePopoverForm({
 
     const submit = (event: React.FormEvent) => {
         event.preventDefault();
+
         if (isEdit && holiday) {
-            put(`/master/hari-libur/${holiday.id}`, { onSuccess: () => { onClose(); reset(); } });
+            put(`/master/hari-libur/${holiday.id}`, { onSuccess: () => {
+ onClose(); reset(); 
+} });
         } else {
-            post('/master/hari-libur', { onSuccess: () => { onClose(); reset(); } });
+            post('/master/hari-libur', { onSuccess: () => {
+ onClose(); reset(); 
+} });
         }
     };
 
@@ -144,6 +153,7 @@ function Calendar({
             {monthNames.map((month, monthIndex) => {
                 const firstDay = new Date(year, monthIndex, 1).getDay();
                 const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+
                 return (
                     <div key={month} className="rounded-xl border border-slate-200 bg-white p-3">
                         <h3 className="mb-2 text-sm font-bold text-slate-800">{month}</h3>
@@ -157,6 +167,7 @@ function Calendar({
                                 const date = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                                 const holiday = byDate.get(date);
                                 const isLocked = holiday?.locked;
+
                                 return (
                                     <button
                                         key={date}
@@ -208,8 +219,12 @@ function HolidayModalForm({ state, onClose }: { state: DialogState; onClose: () 
     });
 
     useEffect(() => {
-        if (!state) return;
+        if (!state) {
+return;
+}
+
         clearErrors();
+
         if (state.mode === 'edit') {
             setData({ tanggal: state.holiday.tanggal.slice(0, 10), nama: state.holiday.nama, tipe: state.holiday.tipe, is_recurring: state.holiday.is_recurring });
         } else {
@@ -219,10 +234,15 @@ function HolidayModalForm({ state, onClose }: { state: DialogState; onClose: () 
 
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
+
         if (isEdit && holiday) {
-            put(`/master/hari-libur/${holiday.id}`, { onSuccess: () => { onClose(); reset(); } });
+            put(`/master/hari-libur/${holiday.id}`, { onSuccess: () => {
+ onClose(); reset(); 
+} });
         } else {
-            post('/master/hari-libur', { onSuccess: () => { onClose(); reset(); } });
+            post('/master/hari-libur', { onSuccess: () => {
+ onClose(); reset(); 
+} });
         }
     };
 
@@ -277,6 +297,7 @@ export default function HolidayIndex({ holidays, calendarHolidays, filters }: Pr
 
     const filtered = useMemo(() => {
         const q = search.trim().toLowerCase();
+
         return q ? holidays.data.filter((h) => `${h.nama} ${h.tipe}`.toLowerCase().includes(q)) : holidays.data;
     }, [holidays.data, search]);
 
@@ -286,13 +307,20 @@ export default function HolidayIndex({ holidays, calendarHolidays, filters }: Pr
     };
     const importNational = () => router.post('/master/hari-libur/import', { year });
     const remove = (holiday: Holiday) => {
-        if (!window.confirm(`Hapus hari libur ${holiday.nama}?`)) return;
+        if (!window.confirm(`Hapus hari libur ${holiday.nama}?`)) {
+return;
+}
+
         router.delete(`/master/hari-libur/${holiday.id}`);
     };
 
     const handleDateClick = (date: string, anchor: Element, holiday?: Holiday) => {
-        if (holiday?.locked) return;
+        if (holiday?.locked) {
+return;
+}
+
         anchorRef.current = anchor;
+
         if (holiday) {
             setPopover({ mode: 'edit', holiday, anchor });
         } else {
@@ -348,7 +376,11 @@ export default function HolidayIndex({ holidays, calendarHolidays, filters }: Pr
                     {/* Calendar with controlled popover */}
                     <PopoverPrimitive.Root
                         open={popoverOpen}
-                        onOpenChange={(open) => { if (!open) closePopover(); }}
+                        onOpenChange={(open) => {
+ if (!open) {
+closePopover();
+} 
+}}
                         modal={false}
                     >
                         {/* No trigger — we use an imperative anchor ref */}
@@ -443,7 +475,11 @@ export default function HolidayIndex({ holidays, calendarHolidays, filters }: Pr
             </div>
 
             {/* Modal dialog for header "Tambah" button and table edit button */}
-            <Dialog open={dialogOpen} onOpenChange={(open) => { if (!open) setDialog(null); }}>
+            <Dialog open={dialogOpen} onOpenChange={(open) => {
+ if (!open) {
+setDialog(null);
+} 
+}}>
                 <DialogContent className="max-w-md">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">

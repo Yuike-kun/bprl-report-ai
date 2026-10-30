@@ -1,4 +1,3 @@
-import MainLayout from "../layout";
 import { Head, Link, router } from "@inertiajs/react";
 import {
     FileText,
@@ -11,10 +10,11 @@ import {
     Download,
     AlertTriangle,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { PaginatedTable } from "@/components/backend/paginated-table";
 import { Pagination } from "@/components/backend/pagination";
+import { Button } from "@/components/ui/button";
+import MainLayout from "../layout";
 
 type Draft = {
     id: number;
@@ -88,7 +88,10 @@ export default function GeneralDraftIndex({ drafts, success }: Props) {
     );
 
     const handleDelete = () => {
-        if (!deleteTarget) return;
+        if (!deleteTarget) {
+return;
+}
+
         router.delete(`/general-draft/${deleteTarget.id}`, {
             onFinish: () => setDeleteTarget(null),
         });

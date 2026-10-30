@@ -9,8 +9,8 @@ import {
     Sparkles,
 } from 'lucide-react';
 import { useState } from 'react';
-import AppLayout from './layout';
 import DocumentUpload from '@/components/document-upload';
+import AppLayout from './layout';
 import logoEgerai from '/public/logo-egerai-icon.png';
 
 export default function Home() {
@@ -21,14 +21,19 @@ export default function Home() {
     const submit = () => {
         if (!proposal) {
             setError('Mohon unggah file proposal.');
+
             return;
         }
+
         setError('');
         setLoading(true);
 
         const fd = new FormData();
         fd.append('proposal', proposal);
-        if (report) fd.append('report', report);
+
+        if (report) {
+fd.append('report', report);
+}
 
         router.post('/kkprl/review', fd, {
             onError: (errors: any) => {
@@ -118,6 +123,7 @@ export default function Home() {
                             [Download, 'Download Dokumen', '#00B7CD'],
                         ].map(([Icon, label, color], i) => {
                             const I = Icon as typeof FileText;
+
                             return (
                                 <div
                                     className={`flex items-center gap-[10px] mb-3 transition-all duration-300 ease-in-out cursor-help cursor-z last:mb-0 p-3 hover:scale-110`}

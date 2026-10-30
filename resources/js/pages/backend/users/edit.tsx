@@ -1,8 +1,8 @@
-import MainLayout from "../layout";
 import { Head, Link, useForm, usePage } from "@inertiajs/react";
 import { ArrowLeft, UserRound } from "lucide-react";
-import { FormEvent } from "react";
-import { ROLES } from "./const";
+import type { FormEvent } from "react";
+import SignaturePad from "@/components/signature-pad";
+import { Button } from "@/components/ui/button";
 import {
     Select,
     SelectContent,
@@ -12,8 +12,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
-import { Button } from "@/components/ui/button";
-import SignaturePad from "@/components/signature-pad";
+import MainLayout from "../layout";
+import { ROLES } from "./const";
 
 type User = {
     id: number;

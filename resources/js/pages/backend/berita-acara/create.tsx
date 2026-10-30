@@ -1,14 +1,14 @@
-import { useState, useCallback, useRef, useEffect } from "react";
 import { router, usePage } from "@inertiajs/react";
-import MainLayout from "@/pages/backend/layout";
 import {
     ClipboardCheck, FileCheck2, ArrowRight, ArrowLeft, Upload, X, Check,
     User, Building2, MapPin, FileText, ChevronDown, AlertCircle, Loader2,
     Waves, Calendar, Hash, Radio, Layers, BadgeCheck
 } from "lucide-react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { ComboboxSearch } from "@/components/backend/combobox-searchable";
 import { RichTextEditor } from "@/components/berita_acara_components";
 import { alertError } from "@/lib/alert";
+import MainLayout from "@/pages/backend/layout";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -129,7 +129,10 @@ function FormLabel({ children, required }: { children: React.ReactNode; required
 }
 
 function FieldError({ message }: { message?: string }) {
-    if (!message) return null;
+    if (!message) {
+return null;
+}
+
     return (
         <p className="mt-1 text-xs text-red-600 flex items-center gap-1">
             <AlertCircle className="w-3 h-3 shrink-0" />
@@ -242,12 +245,14 @@ function FileUpload({ label, name, multiple, max, files, onChange, error }: {
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const picked = Array.from(e.target.files || []);
+
         if (multiple) {
             const merged = [...files, ...picked].slice(0, max ?? 5);
             onChange(merged);
         } else {
             onChange([picked[0]]);
         }
+
         e.target.value = "";
     };
 
@@ -359,8 +364,10 @@ export default function CreateBeritaAcara({ staffList, konsultasi, record }: Pro
             !form.activity_type || form.activity_detail.length === 0 || !form.province || !form.regency || !form.water_name
         ) {
             alertError("Harap lengkapi semua field wajib di Langkah 1 terlebih dahulu.");
+
             return;
         }
+
         setStep(2);
         window.scrollTo({ top: 0, behavior: "smooth" });
     };
@@ -610,6 +617,7 @@ export default function CreateBeritaAcara({ staffList, konsultasi, record }: Pro
                                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
                                     {ACTIVITY_DETAILS.map((a) => {
                                         const isChecked = form.activity_detail.includes(a);
+
                                         return (
                                             <label key={a}
                                                 className={`flex items-center gap-2 p-2.5 rounded-xl border cursor-pointer transition-all text-xs font-medium
@@ -817,6 +825,7 @@ export default function CreateBeritaAcara({ staffList, konsultasi, record }: Pro
                                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
                                     {OWNED_DOCUMENTS.map((doc) => {
                                         const checked = form.owned_documents.includes(doc);
+
                                         return (
                                             <label key={doc}
                                                 className={`flex items-center gap-2 p-3 rounded-xl border cursor-pointer transition-all text-xs font-medium
@@ -913,7 +922,9 @@ export default function CreateBeritaAcara({ staffList, konsultasi, record }: Pro
 
                         {/* Nav Buttons */}
                         <div className="flex items-center justify-between gap-3">
-                            <button type="button" onClick={() => { setStep(1); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                            <button type="button" onClick={() => {
+ setStep(1); window.scrollTo({ top: 0, behavior: "smooth" }); 
+}}
                                 className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 transition-all">
                                 <ArrowLeft className="w-4 h-4" /> Kembali ke Langkah 1
                             </button>

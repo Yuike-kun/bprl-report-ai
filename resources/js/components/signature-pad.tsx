@@ -1,5 +1,5 @@
-import { useRef, useState, useEffect } from "react";
 import { PenTool, Upload, Trash2, Check, Image as ImageIcon } from "lucide-react";
+import { useRef, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 
@@ -24,7 +24,10 @@ export default function SignaturePad({ value, onChange, error, label, required, 
     // default (its container uses aspect-square), so read the actual
     // rendered height from the DOM instead of a hardcoded rectangle height.
     useEffect(() => {
-        if (mode !== "draw" || !canvasRef.current) return;
+        if (mode !== "draw" || !canvasRef.current) {
+return;
+}
+
         const canvas = canvasRef.current;
         const rect = canvas.getBoundingClientRect();
 
@@ -34,6 +37,7 @@ export default function SignaturePad({ value, onChange, error, label, required, 
         canvas.height = rect.height * dpr;
 
         const ctx = canvas.getContext("2d");
+
         if (ctx) {
             ctx.scale(dpr, dpr);
             ctx.strokeStyle = "#0f172a"; // Slate-900 ink
@@ -48,7 +52,11 @@ export default function SignaturePad({ value, onChange, error, label, required, 
         if (value && mode === "draw" && canvasRef.current && !hasDrawn) {
             const canvas = canvasRef.current;
             const ctx = canvas.getContext("2d");
-            if (!ctx) return;
+
+            if (!ctx) {
+return;
+}
+
             const dpr = window.devicePixelRatio || 1;
 
             const img = new Image();
@@ -62,15 +70,21 @@ export default function SignaturePad({ value, onChange, error, label, required, 
     }, [value, mode]);
 
     const getPos = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
-        if (!canvasRef.current) return { x: 0, y: 0 };
+        if (!canvasRef.current) {
+return { x: 0, y: 0 };
+}
+
         const rect = canvasRef.current.getBoundingClientRect();
+
         if ("touches" in e) {
             const touch = e.touches[0];
+
             return {
                 x: touch.clientX - rect.left,
                 y: touch.clientY - rect.top,
             };
         }
+
         return {
             x: e.clientX - rect.left,
             y: e.clientY - rect.top,
@@ -81,6 +95,7 @@ export default function SignaturePad({ value, onChange, error, label, required, 
         setIsDrawing(true);
         const { x, y } = getPos(e);
         const ctx = canvasRef.current?.getContext("2d");
+
         if (ctx) {
             ctx.beginPath();
             ctx.moveTo(x, y);
@@ -88,9 +103,13 @@ export default function SignaturePad({ value, onChange, error, label, required, 
     };
 
     const draw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
-        if (!isDrawing || !canvasRef.current) return;
+        if (!isDrawing || !canvasRef.current) {
+return;
+}
+
         const { x, y } = getPos(e);
         const ctx = canvasRef.current.getContext("2d");
+
         if (ctx) {
             ctx.lineTo(x, y);
             ctx.stroke();
@@ -99,8 +118,12 @@ export default function SignaturePad({ value, onChange, error, label, required, 
     };
 
     const stopDrawing = () => {
-        if (!isDrawing) return;
+        if (!isDrawing) {
+return;
+}
+
         setIsDrawing(false);
+
         if (canvasRef.current && hasDrawn) {
             const dataUrl = canvasRef.current.toDataURL("image/png");
             onChange(dataUrl);
@@ -110,10 +133,12 @@ export default function SignaturePad({ value, onChange, error, label, required, 
     const clearCanvas = () => {
         if (canvasRef.current) {
             const ctx = canvasRef.current.getContext("2d");
+
             if (ctx) {
                 ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
             }
         }
+
         setHasDrawn(false);
         setFileName("");
         setLocalError("");
@@ -122,13 +147,17 @@ export default function SignaturePad({ value, onChange, error, label, required, 
 
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        if (!file) return;
+
+        if (!file) {
+return;
+}
 
         setLocalError("");
 
         if (file.size > 1 * 1024 * 1024) {
             setLocalError("Ukuran file terlalu besar. Maksimal ukuran gambar adalah 1MB.");
             onChange("");
+
             return;
         }
 
@@ -136,11 +165,14 @@ export default function SignaturePad({ value, onChange, error, label, required, 
         const reader = new FileReader();
         reader.onload = (event) => {
             const dataUrl = event.target?.result as string;
+
             if (dataUrl.length > 1.5 * 1024 * 1024) {
                 setLocalError("Data base64 file terlalu besar untuk diproses.");
                 onChange("");
+
                 return;
             }
+
             onChange(dataUrl);
         };
         reader.onerror = () => {

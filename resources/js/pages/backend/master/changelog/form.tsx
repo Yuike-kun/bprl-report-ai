@@ -1,4 +1,3 @@
-import MainLayout from "../../layout";
 import { Link, useForm } from "@inertiajs/react";
 import { ArrowLeft, History, Save, Tag, Calendar, FileText } from "lucide-react";
 
@@ -6,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import MainLayout from "../../layout";
 
 type ChangelogItem = {
     id: number;
@@ -37,6 +37,7 @@ export default function ChangelogForm({ mode, changelog }: Props) {
 
         if (isEdit && changelog) {
             put(`/master/changelog/${changelog.id}`);
+
             return;
         }
 

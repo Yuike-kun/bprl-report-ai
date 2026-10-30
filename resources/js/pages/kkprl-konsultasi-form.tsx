@@ -10,12 +10,14 @@ import {
 } from 'lucide-react';
 import {
     useState,
-    useRef,
-    type ChangeEvent,
-    type ClipboardEvent,
-    type DragEvent,
+    useRef
+    
+    
+    
 } from 'react';
+import type {ChangeEvent, ClipboardEvent, DragEvent} from 'react';
 import swal from 'sweetalert';
+import { ImageField } from '../components/ImageField';
 import AppLayout from './layout';
 
 export const cardClass =
@@ -84,7 +86,10 @@ function Example({
     name: string;
     onChange: (name: string, value: string) => void;
 }) {
-    if (!example) return null;
+    if (!example) {
+return null;
+}
+
     return (
         <div className={fieldExampleWrapClass}>
             <span>
@@ -115,6 +120,7 @@ export function TextField({
     const { props } = usePage();
     const errors = (props as any).errors || {};
     const fieldError = errors[name];
+
     return (
         <div className="mb-3">
             <label className={fieldLabelClass}>{label}</label>
@@ -164,8 +170,11 @@ export function DecimalField(props: BaseFieldProps) {
             onChange={(name, value) => {
                 let v = value.replace(/[^0-9.]/g, '');
                 const parts = v.split('.');
-                if (parts.length > 2)
-                    v = parts[0] + '.' + parts.slice(1).join('');
+
+                if (parts.length > 2) {
+v = parts[0] + '.' + parts.slice(1).join('');
+}
+
                 props.onChange(name, v);
             }}
         />
@@ -268,6 +277,7 @@ export function DateField({
     // value is stored already formatted ("02 Agustus 2026"); we keep a
     // separate raw <input type=date> value just for the picker UI.
     const [picker, setPicker] = useState('');
+
     return (
         <div className="mb-3">
             <label className={fieldLabelClass}>{label}</label>
@@ -276,7 +286,11 @@ export function DateField({
                 value={picker}
                 onChange={(e) => {
                     setPicker(e.target.value);
-                    if (!e.target.value) return onChange(name, '');
+
+                    if (!e.target.value) {
+return onChange(name, '');
+}
+
                     const [y, m, d] = e.target.value.split('-');
                     onChange(
                         name,
@@ -315,6 +329,7 @@ export function SelectWithOther({
     onOtherChange: (name: string, value: string) => void;
 }) {
     const isOther = value === '__other__';
+
     return (
         <div className="mb-3">
             <label className={fieldLabelClass}>{label}</label>
@@ -350,7 +365,6 @@ export function resolveOther(value: string, otherValue: string) {
     return value === '__other__' ? otherValue : value;
 }
 
-import { ImageField } from '../components/ImageField';
 
 /* ---------------- species-picker ---------------- */
 export const MANGROVE_SPECIES = [
@@ -443,8 +457,12 @@ export function SpeciesPicker({
             />
             <div className="grid max-h-[260px] grid-cols-2 gap-x-3.5 gap-y-0.5 overflow-y-auto pr-1 sm:grid-cols-3 lg:grid-cols-6">
                 {species.map((sp, i) => {
-                    if (q && !sp.toLowerCase().includes(q)) return null;
+                    if (q && !sp.toLowerCase().includes(q)) {
+return null;
+}
+
                     const id = `${name}_${i}`;
+
                     return (
                         <div
                             key={sp}
@@ -508,9 +526,13 @@ export function classifyCondition(
             [0, 25, 'Buruk'],
         ],
     };
+
     for (const [lo, hi, label] of rules[kind]) {
-        if (percent >= lo && percent < hi) return label;
+        if (percent >= lo && percent < hi) {
+return label;
+}
     }
+
     return '';
 }
 
@@ -555,6 +577,7 @@ export function WilayahCascade({ value, onChange }: WilayahCascadeProps) {
     const fetchJson = async (url: string) => {
         try {
             const res = await fetch(url);
+
             return await res.json();
         } catch {
             return null;
@@ -567,8 +590,13 @@ export function WilayahCascade({ value, onChange }: WilayahCascadeProps) {
         setDistricts([]);
         setVillages([]);
         const opt = PROVINSI_OPTIONS.find((p) => p.name === name);
-        if (!opt) return;
+
+        if (!opt) {
+return;
+}
+
         const res = await fetchJson(`/api/wilayah/regencies/${opt.bpsId}`);
+
         if (res?.success) {
             setRegencies(
                 res.data.map((d: any) => ({
@@ -586,8 +614,13 @@ export function WilayahCascade({ value, onChange }: WilayahCascadeProps) {
         const match = regencies.find(
             (r) => r.name.toLowerCase() === name.trim().toLowerCase(),
         );
-        if (!match) return;
+
+        if (!match) {
+return;
+}
+
         const res = await fetchJson(`/api/wilayah/districts/${match.code}`);
+
         if (res?.success) {
             setDistricts(
                 res.data.map((d: any) => ({
@@ -604,8 +637,13 @@ export function WilayahCascade({ value, onChange }: WilayahCascadeProps) {
         const match = districts.find(
             (d) => d.name.toLowerCase() === name.trim().toLowerCase(),
         );
-        if (!match) return;
+
+        if (!match) {
+return;
+}
+
         const res = await fetchJson(`/api/wilayah/villages/${match.code}`);
+
         if (res?.success) {
             setVillages(res.data.map((d: any) => titleCase(d.name)));
         }
@@ -826,6 +864,7 @@ export function DukungDocuments({
 
             {DUKUNG_ITEMS.map((item) => {
                 const state = value[item.key];
+
                 return (
                     <div className="mb-1.5" key={item.key}>
                         <div className={checkboxRowClass}>
@@ -1117,8 +1156,11 @@ function EcosystemField({
                         onChange={(e) => {
                             let v = e.target.value.replace(/[^0-9.]/g, '');
                             const parts = v.split('.');
-                            if (parts.length > 2)
-                                v = parts[0] + '.' + parts.slice(1).join('');
+
+                            if (parts.length > 2) {
+v = parts[0] + '.' + parts.slice(1).join('');
+}
+
                             const parsed = parseFloat(v.replace(',', '.'));
                             const auto = !isNaN(parsed)
                                 ? classifyCondition(kind, parsed)
@@ -1263,15 +1305,24 @@ export default function ManualProposalForm() {
         // reklamasi=true  → is_reclamation=1
         // nonReklamasi    → is_reclamation=0
         // neither checked → omit (field is nullable)
-        if (reklamasi) fd.append('is_reclamation', '1');
-        else if (nonReklamasi) fd.append('is_reclamation', '0');
+        if (reklamasi) {
+fd.append('is_reclamation', '1');
+} else if (nonReklamasi) {
+fd.append('is_reclamation', '0');
+}
 
         // ── Business / strategic-national classification ──────────────────────
-        if (kegiatanBerusaha) fd.append('is_business_activity', '1');
-        else if (nonBerusaha) fd.append('is_business_activity', '0');
+        if (kegiatanBerusaha) {
+fd.append('is_business_activity', '1');
+} else if (nonBerusaha) {
+fd.append('is_business_activity', '0');
+}
+
         // Only a "non-strategis" checkbox exists; strategic is the unchecked default state,
         // but we only submit an explicit value once the applicant has made a choice.
-        if (nonStrategis) fd.append('is_national_strategic', '0');
+        if (nonStrategis) {
+fd.append('is_national_strategic', '0');
+}
 
         // ── Activity status ───────────────────────────────────────────────────
         fd.append('activity_status', values.kegiatan_status ?? '');
@@ -1317,7 +1368,10 @@ export default function ManualProposalForm() {
         Object.entries(dukung).forEach(([key, d]) => {
             fd.append(`dukung_${key}`, d.checked ? '1' : '0');
             fd.append(`dukung_${key}_drive`, d.drive);
-            if (d.file) fd.append(`dukung_${key}_file`, d.file);
+
+            if (d.file) {
+fd.append(`dukung_${key}_file`, d.file);
+}
         });
         dukungCustomRows.forEach((row) => {
             fd.append('dukung_custom_nama[]', row.nama);
@@ -1339,10 +1393,15 @@ export default function ManualProposalForm() {
 
         // ── Coordinates ───────────────────────────────────────────────────────
         fd.append('coordinates', values.koordinat_manual ?? '');
-        if (koordinatFile) fd.append('upload_koordinat', koordinatFile);
+
+        if (koordinatFile) {
+fd.append('upload_koordinat', koordinatFile);
+}
 
         // ── Hydro-oceanography: laporan file ──────────────────────────────────
-        if (laporanFile) fd.append('hydro_oceanography_doc_path', laporanFile);
+        if (laporanFile) {
+fd.append('hydro_oceanography_doc_path', laporanFile);
+}
 
         // ── Ecosystem: Mangrove ───────────────────────────────────────────────
         fd.append(
@@ -1936,8 +1995,10 @@ export default function ManualProposalForm() {
                                                 setNonReklamasi(
                                                     e.target.checked,
                                                 );
-                                                if (e.target.checked)
-                                                    setReklamasi(false);
+
+                                                if (e.target.checked) {
+setReklamasi(false);
+}
                                             }}
                                             className="h-[18px] w-[18px] shrink-0 accent-[#1E63C7]"
                                         />
@@ -1955,8 +2016,10 @@ export default function ManualProposalForm() {
                                             checked={reklamasi}
                                             onChange={(e) => {
                                                 setReklamasi(e.target.checked);
-                                                if (e.target.checked)
-                                                    setNonReklamasi(false);
+
+                                                if (e.target.checked) {
+setNonReklamasi(false);
+}
                                             }}
                                             className="h-[18px] w-[18px] shrink-0 accent-[#1E63C7]"
                                         />
@@ -1976,8 +2039,10 @@ export default function ManualProposalForm() {
                                                 setKegiatanBerusaha(
                                                     e.target.checked,
                                                 );
-                                                if (e.target.checked)
-                                                    setNonBerusaha(false);
+
+                                                if (e.target.checked) {
+setNonBerusaha(false);
+}
                                             }}
                                             className="h-[18px] w-[18px] shrink-0 accent-[#1E63C7]"
                                         />
@@ -1997,8 +2062,10 @@ export default function ManualProposalForm() {
                                                 setNonBerusaha(
                                                     e.target.checked,
                                                 );
-                                                if (e.target.checked)
-                                                    setKegiatanBerusaha(false);
+
+                                                if (e.target.checked) {
+setKegiatanBerusaha(false);
+}
                                             }}
                                             className="h-[18px] w-[18px] shrink-0 accent-[#1E63C7]"
                                         />

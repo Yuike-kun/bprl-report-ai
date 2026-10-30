@@ -1,11 +1,11 @@
 import { Link, router } from "@inertiajs/react";
-import MainLayout from "@/pages/backend/layout";
+import ApexCharts from "apexcharts";
 import { Plus, Search, Eye, Pencil, Trash2, FileCheck2, ChevronLeft, ChevronRight, FileText, ChevronDown, ChevronUp, TrendingUp, CheckCircle, RotateCcw } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import ApexCharts from "apexcharts";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import MainLayout from "@/pages/backend/layout";
 
 const STATUS_BADGE: Record<string, { label: string; color: string }> = {
     draft: { label: "Draft", color: "bg-slate-100 text-slate-600" },
@@ -59,7 +59,9 @@ export default function BeritaAcaraIndex({ rows, filters, chartData }: Props) {
     const selectedYear = chartData?.selectedYear ?? new Date().getFullYear();
 
     useEffect(() => {
-        if (!showChart || !chartRef.current || !chartData) return;
+        if (!showChart || !chartRef.current || !chartData) {
+return;
+}
 
         const currentChart = viewMode === 'monthly' ? chartData.monthly : chartData.yearly;
 
@@ -123,6 +125,7 @@ export default function BeritaAcaraIndex({ rows, filters, chartData }: Props) {
     useEffect(() => {
         if (isInitialMount.current) {
             isInitialMount.current = false;
+
             return;
         }
 
@@ -139,13 +142,19 @@ export default function BeritaAcaraIndex({ rows, filters, chartData }: Props) {
 
     const handleStatusToggle = (id: number, targetStatus: string) => {
         const actionText = targetStatus === 'approved' ? 'memfinalkan (mengubah status ke Disetujui)' : 'mengembalikan status ke Draft';
-        if (!confirm(`Apakah Anda yakin ingin ${actionText} untuk berita acara ini?`)) return;
+
+        if (!confirm(`Apakah Anda yakin ingin ${actionText} untuk berita acara ini?`)) {
+return;
+}
 
         router.patch(`/berita-acara/${id}/status`, { status: targetStatus }, { preserveScroll: true });
     };
 
     const handleDelete = (id: number) => {
-        if (!confirm("Hapus data berita acara ini?")) return;
+        if (!confirm("Hapus data berita acara ini?")) {
+return;
+}
+
         router.delete(`/berita-acara/${id}`);
     };
 
@@ -287,6 +296,7 @@ export default function BeritaAcaraIndex({ rows, filters, chartData }: Props) {
                                 ) : rows.data.map((row, idx) => {
                                     const status_b = STATUS_BADGE[row.status] ?? { label: row.status, color: "bg-slate-100 text-slate-600" };
                                     const stage_b = STAGE_BADGE[row.consultation_stage] ?? { label: row.consultation_stage, color: "bg-slate-100 text-slate-600" };
+
                                     return (
                                         <tr key={row.id} className="hover:bg-blue-50/30 transition-colors">
                                             <td className="px-5 py-3 text-xs text-slate-400 font-mono">

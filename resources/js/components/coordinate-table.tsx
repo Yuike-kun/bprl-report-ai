@@ -9,6 +9,7 @@ export default function CoordinateTable({
     const [rows, setRows] = useState<Row[]>(initial);
     const update = (i: number, k: keyof Row, v: string) =>
         setRows(rows.map((r, n) => (n === i ? { ...r, [k]: v } : r)));
+
     return (
         <div className="coordinates">
             <div className="table-head">

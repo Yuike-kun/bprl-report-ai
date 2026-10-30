@@ -1,8 +1,8 @@
+import { Loader2, Sparkles, AlertCircle } from "lucide-react";
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Sparkles, AlertCircle } from "lucide-react";
 
 export type AiNarasi = {
     batimetri: string;
@@ -38,9 +38,13 @@ export default function AiForm({ data, onChange, errors }: Props) {
     const narasi = data.ai_narasi || {} as AiNarasi;
 
     const handleRun = async () => {
-        if (!hasSourceDoc) return;
+        if (!hasSourceDoc) {
+return;
+}
+
         setLoading(true);
         setError(null);
+
         try {
             const csrfMeta = document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement;
             const csrfToken = csrfMeta?.content || "";

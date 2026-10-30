@@ -1,22 +1,4 @@
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuGroup,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
-} from '@/components/ui/tooltip';
-import { cn } from '@/lib/utils';
+import { usePage, Link, router } from '@inertiajs/react';
 import {
     Settings,
     FileText,
@@ -45,10 +27,29 @@ import {
     SearchCheck,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { ReactNode, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import MENU_PEGAWAI from './pegawai/menu.json';
+import type { ReactNode} from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuGroup,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
 import MENU from './menu.json';
-import { usePage, Link, router } from '@inertiajs/react';
+import MENU_PEGAWAI from './pegawai/menu.json';
 
 const SIDEBAR_ROLES = ['admin', 'super_admin', 'pemohon'];
 // Roles with access to admin-only system settings and management features.
@@ -98,15 +99,18 @@ const sectionKey = (s: MenuSection) => (s.type === 'link' ? s.url : s.id);
 
 function useIsActive() {
     const { url } = usePage<any>();
+
     return (itemUrl: string) =>
         url === itemUrl || url.startsWith(itemUrl + '/') || url.startsWith(itemUrl + '?');
 }
 
 function visibleSectionsFor(user: any) {
     let NAV = MENU as unknown as MenuSection[];
+
     if (user?.role === 'pegawai') {
         NAV = MENU_PEGAWAI as unknown as MenuSection[];
     }
+
     return NAV.filter(
         (section) => !section.adminOnly || ADMIN_LEVEL_ROLES.includes(user?.role),
     );
@@ -231,18 +235,28 @@ function NotificationMenu() {
     const notifications = props.notifications ?? [];
 
     const formatNotificationTime = (createdAt?: string) => {
-        if (!createdAt) return 'Baru saja';
+        if (!createdAt) {
+return 'Baru saja';
+}
 
         const elapsedMinutes = Math.max(
             0,
             Math.floor((Date.now() - new Date(createdAt).getTime()) / 60000),
         );
 
-        if (elapsedMinutes < 1) return 'Baru saja';
-        if (elapsedMinutes < 60) return `${elapsedMinutes} mnt lalu`;
+        if (elapsedMinutes < 1) {
+return 'Baru saja';
+}
+
+        if (elapsedMinutes < 60) {
+return `${elapsedMinutes} mnt lalu`;
+}
 
         const elapsedHours = Math.floor(elapsedMinutes / 60);
-        if (elapsedHours < 24) return `${elapsedHours} jam lalu`;
+
+        if (elapsedHours < 24) {
+return `${elapsedHours} jam lalu`;
+}
 
         return new Date(createdAt).toLocaleDateString('id-ID', {
             day: '2-digit',
@@ -340,9 +354,11 @@ function Sidebar({
     user: any;
 }) {
     let NAV = MENU as unknown as MenuSection[];
+
     if (user?.role === 'pegawai') {
         NAV = MENU_PEGAWAI as unknown as MenuSection[];
     }
+
     const { url } = usePage<any>();
     const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
     const isItemActive = useIsActive();
@@ -363,8 +379,10 @@ function Sidebar({
         if (collapsed) {
             onExpand();
             setOpenGroups((prev) => ({ ...prev, [sectionId]: true }));
+
             return;
         }
+
         setOpenGroups((prev) => ({ ...prev, [sectionId]: !prev[sectionId] }));
     };
 
@@ -535,6 +553,7 @@ function Sidebar({
                                   url: section.url,
                                   icon: section.icon,
                               });
+
                               if (collapsed) {
                                   return (
                                       <Tooltip key={section.url}>
@@ -550,6 +569,7 @@ function Sidebar({
                                       </Tooltip>
                                   );
                               }
+
                               return <div key={section.url}>{link}</div>;
                           })(),
                 )}
@@ -701,6 +721,7 @@ function DesktopNav({ sections }: { sections: MenuSection[] }) {
         const container = containerRef.current;
         const key = activeSection ? sectionKey(activeSection) : null;
         const el = key ? itemRefs.current[key] : null;
+
         if (container && el) {
             const c = container.getBoundingClientRect();
             const r = el.getBoundingClientRect();
@@ -713,6 +734,7 @@ function DesktopNav({ sections }: { sections: MenuSection[] }) {
     useLayoutEffect(measure, [url]);
     useEffect(() => {
         window.addEventListener('resize', measure);
+
         return () => window.removeEventListener('resize', measure);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [url]);
@@ -735,6 +757,7 @@ function DesktopNav({ sections }: { sections: MenuSection[] }) {
             />
             {sections.map((section) => {
                 const key = sectionKey(section);
+
                 return (
                     <div
                         key={key}
@@ -760,6 +783,7 @@ function NavLink({
 }) {
     const isActive = useIsActive()(section.url);
     const Icon = getIcon(section.icon);
+
     return (
         <Link
             href={section.url}
@@ -823,6 +847,7 @@ function NavDropdown({
                 {section.items.map((child) => {
                     const ChildIcon = getIcon(child.icon);
                     const active = isItemActive(child.url);
+
                     return (
                         <DropdownMenuItem
                             key={child.url}
@@ -890,6 +915,7 @@ function MobileNav({ sections }: { sections: MenuSection[] }) {
                         if (section.type === 'link') {
                             const Icon = getIcon(section.icon);
                             const active = isItemActive(section.url);
+
                             return (
                                 <Link
                                     key={section.url}
@@ -962,6 +988,7 @@ function MobileNav({ sections }: { sections: MenuSection[] }) {
                                             const active = isItemActive(
                                                 child.url,
                                             );
+
                                             return (
                                                 <Link
                                                     key={child.url}
@@ -1115,11 +1142,15 @@ export default function MainLayout({
             setIsLoggingOut(true);
         };
         window.addEventListener('trigger-logout-animation', handleLogoutAnimation);
+
         return () => window.removeEventListener('trigger-logout-animation', handleLogoutAnimation);
     }, []);
 
     const renderOverlay = () => {
-        if (!isLoggingOut) return null;
+        if (!isLoggingOut) {
+return null;
+}
+
         return (
             <div 
                 className="fixed inset-0 flex flex-col items-center justify-center bg-slate-900/90 text-white animate-in fade-in duration-300"

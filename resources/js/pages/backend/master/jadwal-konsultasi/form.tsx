@@ -1,5 +1,3 @@
-import { alertError } from '@/lib/alert';
-import MainLayout from "../../layout";
 import { Link, useForm } from "@inertiajs/react";
 import {
     ArrowLeft,
@@ -13,10 +11,12 @@ import {
     Trash2,
 } from "lucide-react";
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useState } from "react";
+import { alertError } from '@/lib/alert';
+import MainLayout from "../../layout";
 
 type Location = {
     id: number;
@@ -90,22 +90,32 @@ const DURASI_PRESETS = [
 
 /* ─── date helpers ─── */
 function countWorkingDays(start: string, end: string): number {
-    if (!start || !end) return 0;
+    if (!start || !end) {
+return 0;
+}
+
     const [sY, sM, sD] = start.split("-").map(Number);
     const [eY, eM, eD] = end.split("-").map(Number);
     const startDate = new Date(sY, sM - 1, sD);
     const endDate = new Date(eY, eM - 1, eD);
-    if (endDate < startDate) return 0;
+
+    if (endDate < startDate) {
+return 0;
+}
 
     let count = 0;
     const current = new Date(startDate);
+
     while (current <= endDate) {
         const day = current.getDay();
+
         if (day !== 0 && day !== 6) {
             count++;
         }
+
         current.setDate(current.getDate() + 1);
     }
+
     return count;
 }
 
@@ -115,16 +125,23 @@ function generateSlotsForTimes(
     durasi: number,
     kuota: number
 ): ChildSchedule[] {
-    if (!waktuAwal || !waktuAkhir || durasi <= 0) return [];
+    if (!waktuAwal || !waktuAkhir || durasi <= 0) {
+return [];
+}
+
     const [startH, startM] = waktuAwal.split(":").map(Number);
     const [endH, endM] = waktuAkhir.split(":").map(Number);
     const startMinutes = startH * 60 + startM;
     const endMinutes = endH * 60 + endM;
-    if (endMinutes <= startMinutes) return [];
+
+    if (endMinutes <= startMinutes) {
+return [];
+}
 
     const slots: ChildSchedule[] = [];
     let current = startMinutes;
     let idCounter = 1;
+
     while (current + durasi <= endMinutes) {
         const sh = Math.floor(current / 60).toString().padStart(2, "0");
         const sm = (current % 60).toString().padStart(2, "0");
@@ -135,6 +152,7 @@ function generateSlotsForTimes(
         });
         current += durasi;
     }
+
     return slots;
 }
 
@@ -206,8 +224,10 @@ export default function JadwalKonsultasiForm({
     const addSession = () => {
         if (data.sessions.length >= 5) {
             alertError("Maksimal 5 sesi sekaligus dalam satu form.");
+
             return;
         }
+
         const nextId = data.sessions.length + 1;
         const isSecond = nextId === 2;
         const newSession = createInitialSession(
@@ -224,8 +244,10 @@ export default function JadwalKonsultasiForm({
     const removeSession = (sessionId: number) => {
         if (data.sessions.length <= 1) {
             alertError("Minimal harus ada 1 sesi jadwal.");
+
             return;
         }
+
         setData(
             "sessions",
             data.sessions.filter((s) => s.id !== sessionId)
@@ -300,22 +322,29 @@ export default function JadwalKonsultasiForm({
     const generateSessionSlots = (session: SessionConfig) => {
         if (!session.waktu_awal || !session.waktu_akhir) {
             alertError("Isi waktu awal dan waktu akhir terlebih dahulu.");
+
             return;
         }
+
         if (!session.durasiSlot || session.durasiSlot <= 0) {
             alertError("Durasi slot tidak valid.");
+
             return;
         }
+
         const slots = generateSlotsForTimes(
             session.waktu_awal,
             session.waktu_akhir,
             session.durasiSlot,
             session.bulkKuota || 1
         );
+
         if (slots.length === 0) {
             alertError("Waktu akhir harus lebih besar dari waktu awal.");
+
             return;
         }
+
         const total = slots.reduce((sum, s) => sum + s.kuota_konsultasi, 0);
 
         setData(
@@ -336,9 +365,13 @@ export default function JadwalKonsultasiForm({
         setData(
             "sessions",
             data.sessions.map((s) => {
-                if (s.id !== sessionId) return s;
+                if (s.id !== sessionId) {
+return s;
+}
+
                 const updatedSlots = s.jadwal.map((slot) => ({ ...slot, kuota_konsultasi: bulkKuota }));
                 const total = updatedSlots.reduce((sum, item) => sum + item.kuota_konsultasi, 0);
+
                 return {
                     ...s,
                     bulkKuota,
@@ -353,11 +386,15 @@ export default function JadwalKonsultasiForm({
         setData(
             "sessions",
             data.sessions.map((s) => {
-                if (s.id !== sessionId) return s;
+                if (s.id !== sessionId) {
+return s;
+}
+
                 const updatedSlots = s.jadwal.map((slot) =>
                     slot.id === slotId ? { ...slot, kuota_konsultasi: kuota } : slot
                 );
                 const total = updatedSlots.reduce((sum, item) => sum + item.kuota_konsultasi, 0);
+
                 return {
                     ...s,
                     jadwal: updatedSlots,
@@ -371,9 +408,13 @@ export default function JadwalKonsultasiForm({
         setData(
             "sessions",
             data.sessions.map((s) => {
-                if (s.id !== sessionId) return s;
+                if (s.id !== sessionId) {
+return s;
+}
+
                 const updatedSlots = s.jadwal.filter((slot) => slot.id !== slotId);
                 const total = updatedSlots.reduce((sum, item) => sum + item.kuota_konsultasi, 0);
+
                 return {
                     ...s,
                     jadwal: updatedSlots,
@@ -392,41 +433,54 @@ export default function JadwalKonsultasiForm({
 
     const generateEditJadwal = () => {
         const { waktu_awal, waktu_akhir } = data;
+
         if (!waktu_awal || !waktu_akhir) {
             alertError("Isi waktu awal dan waktu akhir terlebih dahulu.");
+
             return;
         }
+
         if (!editDurasiSlot || editDurasiSlot <= 0) {
             alertError("Durasi slot tidak valid.");
+
             return;
         }
+
         const slots = generateSlotsForTimes(waktu_awal, waktu_akhir, editDurasiSlot, editBulkKuota);
+
         if (slots.length === 0) {
             alertError("Waktu akhir harus lebih besar dari waktu awal.");
+
             return;
         }
+
         setEditJadwalAndRecalculate(slots);
     };
 
     const applyEditKuotaToAll = () => {
         if (data.jadwal.length === 0) {
             alertError("Belum ada slot jadwal. Generate jadwal terlebih dahulu.");
+
             return;
         }
+
         setEditJadwalAndRecalculate(data.jadwal.map((s) => ({ ...s, kuota_konsultasi: editBulkKuota })));
     };
 
     /* ─── Submit Handler ─── */
     const submit = (event: React.FormEvent) => {
         event.preventDefault();
+
         if (isEdit && schedule) {
             put(`/master/jadwal-konsultasi/${schedule.id}`);
+
             return;
         }
 
         // Validate create mode
         if (!data.tanggal_mulai && !data.tanggal) {
             alertError("Tentukan tanggal atau rentang tanggal.");
+
             return;
         }
 
@@ -729,6 +783,7 @@ export default function JadwalKonsultasiForm({
                                                             onChange={(e) => {
                                                                 const val = e.target.value as Schedule["pelaksanaan"];
                                                                 updateSessionField(session.id, "pelaksanaan", val);
+
                                                                 if (val === "Daring") {
                                                                     updateSessionField(session.id, "lokasi_konsultasi_id", "");
                                                                 }
@@ -777,6 +832,7 @@ export default function JadwalKonsultasiForm({
                                                                 onChange={(e) => {
                                                                     const val = e.target.value;
                                                                     updateSessionField(session.id, "durasiPreset", val);
+
                                                                     if (val !== "custom") {
                                                                         updateSessionField(session.id, "durasiSlot", Number(val));
                                                                     }
@@ -976,6 +1032,7 @@ export default function JadwalKonsultasiForm({
                                             onChange={(e) => {
                                                 const val = e.target.value as Schedule["pelaksanaan"];
                                                 setData("pelaksanaan", val);
+
                                                 if (val === "Daring") {
                                                     setData("lokasi_konsultasi_id", "");
                                                 }
@@ -1045,6 +1102,7 @@ export default function JadwalKonsultasiForm({
                                                 onChange={(e) => {
                                                     const val = e.target.value;
                                                     setEditDurasiPreset(val);
+
                                                     if (val !== "custom") {
                                                         setEditDurasiSlot(Number(val));
                                                     }

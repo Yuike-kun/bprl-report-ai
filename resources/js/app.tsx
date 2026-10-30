@@ -12,11 +12,20 @@ router.on('success', ({ detail: { page } }) => {
         errors?: Record<string, string | string[]>;
     };
 
-    if (props.flash?.success) alertSuccess(props.flash.success);
-    if (props.flash?.error) alertError(props.flash.error);
-    if (props.flash?.warning) alertWarning(props.flash.warning);
+    if (props.flash?.success) {
+alertSuccess(props.flash.success);
+}
+
+    if (props.flash?.error) {
+alertError(props.flash.error);
+}
+
+    if (props.flash?.warning) {
+alertWarning(props.flash.warning);
+}
 
     const firstError = Object.values(props.errors ?? {})[0];
+
     if (firstError) {
         alertError(Array.isArray(firstError) ? firstError[0] : firstError);
     }
@@ -34,7 +43,11 @@ createInertiaApp({
     },
     resolve: (name) => {
         const pages = import.meta.glob('./pages/**/*.tsx');
-        if (!pages[`./pages/${name}.tsx`]) throw new Error(`Page not found: ${name}`);
+
+        if (!pages[`./pages/${name}.tsx`]) {
+throw new Error(`Page not found: ${name}`);
+}
+
         return pages[`./pages/${name}.tsx`]() as any;
     },
     setup({ el, App, props }) {

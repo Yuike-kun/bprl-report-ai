@@ -155,6 +155,7 @@ class RequestFormController extends Controller
             'disabilitas_perawatan' => $validated['disabilitas_perawatan'] ?? 'tidak',
             'disabilitas_komunikasi' => $validated['disabilitas_komunikasi'] ?? 'tidak',
             'status' => 'draft',
+            'nomor_permohonan' => 'PERMOHONAN-' . now()->format('YmdHis') . '-' . str()->random(4),
         ]);
 
         User::query()
@@ -209,6 +210,7 @@ class RequestFormController extends Controller
             ->with('success', $request->user()?->isAdmin()
                 ? 'Permohonan konsultasi berhasil ditambahkan.'
                 : 'Permohonan konsultasi berhasil dikirim dan Surat Konfirmasi KKPRL berhasil dibuat dalam format PDF.')
+            ->with('nomor_permohonan', $permohonan->nomor_permohonan)
             ->with('document_url', $documentUrl);
     }
 }

@@ -1,12 +1,11 @@
-import MainLayout from "../../layout";
 import { Head, router, useForm } from "@inertiajs/react";
 import { CalendarClock, Loader2, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { PaginatedTable } from "@/components/backend/paginated-table";
 import { Pagination } from "@/components/backend/pagination";
-import { Button } from "@/components/ui/button";
 import SignaturePad from "@/components/signature-pad";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -14,6 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import MainLayout from "../../layout";
 
 type Signature = {
     id: number;
@@ -58,13 +58,18 @@ export default function TandaTanganUserIndex({ signatures, filters, success }: P
     // filter what we already have on screen first, no need to hit the server for this
     const filtered = useMemo(() => {
         const q = search.trim().toLowerCase();
-        if (!q) return signatures.data;
+
+        if (!q) {
+return signatures.data;
+}
+
         return signatures.data.filter((item) => item.name.toLowerCase().includes(q));
     }, [signatures.data, search]);
 
     useEffect(() => {
         if (skipFirstRun.current) {
             skipFirstRun.current = false;
+
             return;
         }
 
@@ -80,11 +85,14 @@ export default function TandaTanganUserIndex({ signatures, filters, success }: P
                     { preserveState: true, preserveScroll: true, replace: true }
                 );
             }
+
             return;
         }
 
         // found it on this page already, don't bother the server
-        if (filtered.length > 0) return;
+        if (filtered.length > 0) {
+return;
+}
 
         // nothing on this page matches, might be on another page — go ask
         const t = setTimeout(() => {
@@ -119,7 +127,10 @@ export default function TandaTanganUserIndex({ signatures, filters, success }: P
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!selected) return;
+
+        if (!selected) {
+return;
+}
 
         put(`/master/tanda-tangan-user/${selected.id}`, {
             preserveScroll: true,
@@ -128,7 +139,10 @@ export default function TandaTanganUserIndex({ signatures, filters, success }: P
     };
 
     const handleDelete = (item: Signature) => {
-        if (!window.confirm(`Hapus tanda tangan ${item.name}?`)) return;
+        if (!window.confirm(`Hapus tanda tangan ${item.name}?`)) {
+return;
+}
+
         router.delete(`/master/tanda-tangan-user/${item.id}`);
     };
 

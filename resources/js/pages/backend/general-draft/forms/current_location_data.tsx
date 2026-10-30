@@ -1,6 +1,6 @@
 import React from "react";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 type Props = {
     data: {
@@ -14,6 +14,7 @@ export default function CurrentLocationData({ data, onChange, errors }: Props) {
 
     const handleFileChange = (key: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
+
         if (file) {
             const reader = new FileReader();
 

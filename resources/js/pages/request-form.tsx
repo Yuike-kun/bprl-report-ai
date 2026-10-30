@@ -1,10 +1,7 @@
-import HomeLayout from './layout';
-import MainLayout from './backend/layout';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Link, useForm, usePage } from '@inertiajs/react';
+import swal from 'sweetalert';
+import { motion, AnimatePresence } from 'framer-motion';
+import type { LucideIcon } from 'lucide-react';
 import {
     ArrowLeft,
     BookOpen,
@@ -24,11 +21,13 @@ import {
     PenTool,
     Globe,
 } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
 import { useRef, useState } from 'react';
-import { Link, useForm, usePage } from '@inertiajs/react';
-import swal from 'sweetalert';
-import { motion, AnimatePresence } from 'framer-motion';
+
+import { ComboboxSearch } from '@/components/backend/combobox-searchable';
+import { FileUpload } from '@/components/berita_acara_components/FileUpload';
+import SignaturePad from '@/components/signature-pad';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
     Dialog,
     DialogContent,
@@ -37,10 +36,11 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog';
-
-import SignaturePad from '@/components/signature-pad';
-import { ComboboxSearch } from '@/components/backend/combobox-searchable';
-import { FileUpload } from '@/components/berita_acara_components/FileUpload';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import MainLayout from './backend/layout';
+import HomeLayout from './layout';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                               */
@@ -134,7 +134,10 @@ const itemVariants = {
 /*  Small helper components                                             */
 /* ------------------------------------------------------------------ */
 function FieldError({ message }: { message?: string }) {
-    if (!message) return null;
+    if (!message) {
+return null;
+}
+
     return (
         <motion.p
             initial={{ opacity: 0, y: -4 }}
@@ -230,6 +233,7 @@ export default function RequestForm() {
         const sisa = matchingSchedules
             .filter((s) => s.tanggal === tanggal)
             .reduce((sum, s) => sum + s.child_schedules.reduce((a, slot) => a + slot.sisa_kuota, 0), 0);
+
         return { tanggal, sisa };
     });
 
@@ -263,7 +267,10 @@ export default function RequestForm() {
     ];
 
     const fieldError = (field: keyof typeof data) => {
-        if (field === 'lokasi_konsultasi_id' && !needsLocation) return undefined;
+        if (field === 'lokasi_konsultasi_id' && !needsLocation) {
+return undefined;
+}
+
         return errors[field] || (attempted ? required(data[field]) : undefined);
     };
 
@@ -275,22 +282,37 @@ export default function RequestForm() {
         const hasMissing =
             requiredFields.some((f) => required(data[f])) ||
             (needsLocation && required(data.lokasi_konsultasi_id) !== undefined);
-        if (hasMissing) { setAttempted(true); return; }
+
+        if (hasMissing) {
+ setAttempted(true);
+
+ return; 
+}
+
         post('/request-form', {
             preserveScroll: true,
             forceFormData: true,
             onSuccess: (page) => {
                 reset();
                 setAttempted(false);
-                if (adminMode) return;
+
+                if (adminMode) {
+return;
+}
+
                 const documentUrl = (page.props.flash as PageProps['flash'])?.document_url;
+
                 if (documentUrl) {
                     swal({
                         title: 'Berhasil',
                         text: 'Permohonan konsultasi berhasil dikirim dan Surat Konfirmasi KKPRL berhasil dibuat dalam format PDF.',
                         icon: 'success',
                         buttons: { cancel: 'Tutup', download: { text: 'Download PDF', value: 'download' } } as any,
-                    }).then((value) => { if (value === 'download') window.location.href = documentUrl; });
+                    }).then((value) => {
+ if (value === 'download') {
+window.location.href = documentUrl;
+} 
+});
                 } else {
                     swal('Berhasil', 'Permohonan berhasil dikirim, tetapi link PDF belum tersedia.', 'success');
                 }
@@ -780,6 +802,7 @@ export default function RequestForm() {
                                         { value: 'Daring' as const, label: 'Daring', desc: 'Online', icon: Globe },
                                     ].map(({ value, label, desc, icon: Icon }) => {
                                         const active = data.pelaksanaan === value;
+
                                         return (
                                             <button
                                                 key={value}
@@ -878,6 +901,7 @@ export default function RequestForm() {
                                                 {dateCards.map((card) => {
                                                     const active = data.tanggal_konsultasi === card.tanggal;
                                                     const dateObj = new Date(card.tanggal);
+
                                                     return (
                                                         <motion.button
                                                             key={card.tanggal}
@@ -971,6 +995,7 @@ export default function RequestForm() {
                                             {timeSlots.map((slot) => {
                                                 const active = data.child_schedule_id === String(slot.id);
                                                 const full = slot.sisa_kuota === 0;
+
                                                 return (
                                                     <motion.button
                                                         key={slot.id}

@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { router } from '@inertiajs/react';
 import { Check, ChevronsUpDown, Loader2, X } from 'lucide-react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Command,
@@ -17,7 +18,6 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-import { router } from '@inertiajs/react';
 
 interface Option {
   id: number;
@@ -64,15 +64,21 @@ export function ComboboxMultiSearch({
   const search = useCallback(
     (q: string) => {
       // Clear previous timer
-      if (timerRef.current) clearTimeout(timerRef.current);
+      if (timerRef.current) {
+clearTimeout(timerRef.current);
+}
+
       // Cancel in-flight request
-      if (abortControllerRef.current) abortControllerRef.current.abort();
+      if (abortControllerRef.current) {
+abortControllerRef.current.abort();
+}
 
       timerRef.current = setTimeout(async () => {
         const controller = new AbortController();
         abortControllerRef.current = controller;
 
         setLoading(true);
+
         try {
           const params = new URLSearchParams({
             [searchParam]: q,
@@ -93,7 +99,9 @@ export function ComboboxMultiSearch({
             },
           });
 
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          if (!res.ok) {
+throw new Error(`HTTP ${res.status}`);
+}
 
           const json = await res.json();
 
@@ -124,15 +132,23 @@ export function ComboboxMultiSearch({
   // ✅ Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-      if (abortControllerRef.current) abortControllerRef.current.abort();
+      if (timerRef.current) {
+clearTimeout(timerRef.current);
+}
+
+      if (abortControllerRef.current) {
+abortControllerRef.current.abort();
+}
     };
   }, []);
 
   // Initial load when popover opens
   function handleOpenChange(next: boolean) {
     setOpen(next);
-    if (next && options.length === 0) search('');
+
+    if (next && options.length === 0) {
+search('');
+}
   }
 
   function handleQueryChange(q: string) {
@@ -162,6 +178,7 @@ export function ComboboxMultiSearch({
     const raw = labelKey ? opt[labelKey] : undefined;
     const fallback = opt.name ?? opt.label ?? opt.title ?? `Item #${opt.id}`;
     const display = String(raw ?? fallback).trim();
+
     return display || `Item #${opt.id}`;
   };
 
@@ -181,6 +198,7 @@ export function ComboboxMultiSearch({
             <div className="flex flex-wrap gap-1 flex-1">
               {selectedItems.map((opt, idx) => {
                 const displayValue = getDisplayValue(opt);
+
                 return (
                   <div
                     key={`chip-${opt.id}`}

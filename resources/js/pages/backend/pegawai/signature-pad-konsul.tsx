@@ -1,5 +1,3 @@
-import { useMemo, useState } from 'react';
-import MainLayout from '../layout';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import {
     PenTool,
@@ -13,11 +11,12 @@ import {
     Eye,
     Clipboard,
 } from 'lucide-react';
+import { useMemo, useState } from 'react';
 
 import { PaginatedTable } from '@/components/backend/paginated-table';
 import { Pagination } from '@/components/backend/pagination';
-import { Button } from '@/components/ui/button';
 import SignaturePad from '@/components/signature-pad';
+import { Button } from '@/components/ui/button';
 import {
     Dialog,
     DialogContent,
@@ -25,6 +24,7 @@ import {
     DialogTitle,
     DialogDescription,
 } from '@/components/ui/dialog';
+import MainLayout from '../layout';
 
 type Konsultasi = {
     id: number;
@@ -82,7 +82,10 @@ export default function SignaturePadKonsul({ konsultasi, filters }: Props) {
 
     const filtered = useMemo(() => {
         const query = search.trim().toLowerCase();
-        if (!query) return konsultasi.data;
+
+        if (!query) {
+return konsultasi.data;
+}
 
         return konsultasi.data.filter(
             (item) =>
@@ -106,7 +109,10 @@ export default function SignaturePadKonsul({ konsultasi, filters }: Props) {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!selected) return;
+
+        if (!selected) {
+return;
+}
 
         post(`/pegawai/signature-konsultasi/${selected.id}`, {
             preserveScroll: true,
