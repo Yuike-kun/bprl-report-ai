@@ -21,6 +21,7 @@ import MainLayout from '../../layout';
 
 type Submission = {
     id: number;
+    nomor_permohonan: string;
     nama_pemohon: string;
     instansi: string;
     email: string;
@@ -314,6 +315,9 @@ return;
                             #
                         </th>
                         <th className="px-5 py-3 text-left text-xs font-semibold tracking-wider whitespace-nowrap text-slate-500 uppercase">
+                            No. Permohonan
+                        </th>
+                        <th className="px-5 py-3 text-left text-xs font-semibold tracking-wider whitespace-nowrap text-slate-500 uppercase">
                             Pemohon
                         </th>
                         <th className="px-5 py-3 text-left text-xs font-semibold tracking-wider whitespace-nowrap text-slate-500 uppercase">
@@ -340,7 +344,7 @@ return;
                 emptyState={
                     <tr>
                         <td
-                            colSpan={7}
+                            colSpan={8}
                             className="py-16 text-center text-slate-400"
                         >
                             <Search className="mx-auto mb-3 h-10 w-10 text-slate-200" />
@@ -372,6 +376,11 @@ return;
                     >
                         <td className="px-5 py-4 font-mono text-xs text-slate-400">
                             {baseNumber + index}
+                        </td>
+                        <td className="px-5 py-4">
+                            <span className="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 font-mono text-xs font-medium text-slate-600">
+                                {item.nomor_permohonan}
+                            </span>
                         </td>
                         <td className="px-5 py-4">
                             <div>
