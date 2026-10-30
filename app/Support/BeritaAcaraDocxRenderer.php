@@ -8,6 +8,7 @@ use App\Models\Province;
 use App\Models\Regency;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
+use PhpOffice\PhpWord\Element\AbstractContainer;
 use PhpOffice\PhpWord\IOFactory;
 use PhpOffice\PhpWord\PhpWord;
 use PhpOffice\PhpWord\Shared\Html;
@@ -382,52 +383,90 @@ class BeritaAcaraDocxRenderer
         $section->addText('Nomor : '.$ba->berita_acara_number, ['size' => 10.5], $right);
         $section->addText('Tanggal : '.$tanggal->translatedFormat('d F Y'), ['size' => 10.5], array_merge($right, ['spaceAfter' => 160, 'keepNext' => false]));
 
-        $sections = [
-            ['Lampiran I: Dokumentasi', [[null, 'dokumentasi_konsultasi']]],
-            ['Lampiran II: Peta '.($isAsistensi ? 'Hasil Plotting' : 'Plotting'), [[null, 'peta_hasil_plotting']]],
-            ['Lampiran III: '.($isAsistensi ? 'Absensi' : 'Absen'), [[null, 'absensi_pendampingan']]],
-        ];
-
-        if ($isAsistensi) {
-            $sections[] = ['Lampiran IV: Dokumen Konsultasi', [
-                ['Dokumen Rencana Bangunan dan Instalasi di Laut', 'rencana_bangunan_instalasi'],
-                ['Dokumen Informasi Pemanfaatan Ruang Laut', 'informasi_pemanfaatan_ruang_laut'],
-                ['Dokumen Data Kondisi Terkini Lokasi dan Sekitar', 'data_kondisi_terkini'],
-                ['Dokumen Persyaratan Lainnya', 'persyaratan_lainnya'],
-                ['Dokumen Titik Koordinat Lokasi', 'titik_koordinat'],
-            ]];
+        $this->lampiranTitle($section, 'Lampiran I: Dokumentasi');
+        $dokumentasi = $docsByType->get('dokumentasi_konsultasi', collect());
+        if ($dokumentasi->isEmpty()) {
+            $this->p($section, '-', [], ['size' => 9]);
+        } else {
+            $table = $section->addTable(self::NO_BORDERS + ['cellMargin' => 60, 'width' => self::CONTENT_WIDTH, 'unit' => TblWidth::TWIP, 'layout' => 'fixed']);
+            foreach ($dokumentasi->chunk(2) as $pair) {
+                $table->addRow();
+                foreach ($pair->values() as $doc) {
+                    $cell = $table->addCell(self::CONTENT_WIDTH / 2, ['valign' => 'center']);
+                    $this->documentInto($cell, $doc, 205, 170);
+                }
+                if ($pair->count() === 1) {
+                    $table->addCell(self::CONTENT_WIDTH / 2);
+                }
+            }
         }
 
-        foreach ($sections as [$title, $groups]) {
-            $this->lampiranTitle($section, $title);
+        $this->lampiranTitle($section, 'Lampiran II: Peta '.($isAsistensi ? 'Hasil Plotting' : 'Plotting'));
+        $this->documentList($section, $docsByType->get('peta_hasil_plotting', collect()));
 
-            foreach ($groups as [$label, $type]) {
-                $docs = $docsByType->get($type, collect());
+        $this->lampiranTitle($section, 'Lampiran III: '.($isAsistensi ? 'Absensi' : 'Absen'));
+        $this->documentList($section, $docsByType->get('absensi_pendampingan', collect()));
 
-                if ($label !== null) {
-                    $run = $section->addTextRun(['spaceAfter' => 20, 'keepNext' => $docs->isNotEmpty()]);
-                    $run->addText($label.':', ['bold' => true, 'size' => 9]);
-                    if ($docs->isEmpty()) {
-                        $run->addText(' -', ['size' => 9]);
-                    }
-                } elseif ($docs->isEmpty()) {
-                    $this->p($section, '-', [], ['size' => 9]);
-                }
+        if (! $isAsistensi) {
+            return;
+        }
 
-                foreach ($docs->values() as $n => $doc) {
-                    $this->documentLink($section, $n + 1, $doc);
-                }
+        $this->lampiranTitle($section, 'Lampiran IV: Dokumen Konsultasi');
+        foreach ([
+            'rencana_bangunan_instalasi' => 'Dokumen Rencana Bangunan dan Instalasi di Laut',
+            'informasi_pemanfaatan_ruang_laut' => 'Dokumen Informasi Pemanfaatan Ruang Laut',
+            'data_kondisi_terkini' => 'Dokumen Data Kondisi Terkini Lokasi dan Sekitar',
+            'persyaratan_lainnya' => 'Dokumen Persyaratan Lainnya',
+            'titik_koordinat' => 'Dokumen Titik Koordinat Lokasi',
+        ] as $type => $label) {
+            $docs = $docsByType->get($type, collect());
+
+            $run = $section->addTextRun(['spaceAfter' => 20, 'keepNext' => $docs->isNotEmpty()]);
+            $run->addText($label.':', ['bold' => true, 'size' => 9]);
+            if ($docs->isEmpty()) {
+                $run->addText(' -', ['size' => 9]);
+            }
+
+            foreach ($docs->values() as $n => $doc) {
+                $this->documentLink($section, $doc, $n + 1);
             }
         }
     }
 
-    private function documentLink($section, int $number, $doc): void
+    private function documentList($section, $docs): void
     {
-        $indent = ['indentation' => ['left' => 227], 'spaceAfter' => 40];
+        if ($docs->isEmpty()) {
+            $this->p($section, '-', [], ['size' => 9]);
+
+            return;
+        }
+
+        foreach ($docs as $doc) {
+            $this->documentInto($section, $doc, 440, 280);
+        }
+    }
+
+    private function documentInto(AbstractContainer $container, $doc, int $maxW, int $maxH): void
+    {
+        $path = $doc->file_path && Storage::disk('public')->exists($doc->file_path)
+            ? Storage::disk('public')->path($doc->file_path)
+            : null;
+
+        $isImage = $path && in_array(strtolower(pathinfo($path, PATHINFO_EXTENSION)), ['jpg', 'jpeg', 'png', 'gif'], true);
+
+        if ($isImage && $this->scaledImage($container, $path, $maxW, $maxH, ['alignment' => Jc::CENTER])) {
+            return;
+        }
+
+        $this->documentLink($container, $doc);
+    }
+
+    private function documentLink($container, $doc, ?int $number = null): void
+    {
         $url = $doc->file_path ? Storage::disk('public')->url($doc->file_path) : null;
 
-        $run = $section->addTextRun($indent);
-        $run->addText($number.'. '.$doc->file_name, ['size' => 9]);
+        $run = $container->addTextRun(['indentation' => ['left' => $number ? 227 : 0], 'spaceAfter' => 40]);
+        $run->addText(($number ? $number.'. ' : '').$doc->file_name, ['size' => 9]);
 
         if ($url) {
             $run->addTextBreak();

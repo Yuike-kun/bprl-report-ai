@@ -773,50 +773,83 @@
         <p>Tanggal : {{ $tanggal->translatedFormat('d F Y') }}</p>
     </div>
     @php
-        $lampiranSections = [
-            ['Lampiran I: Dokumentasi', [[null, 'dokumentasi_konsultasi']]],
-            ['Lampiran II: Peta ' . ($isAsistensi ? 'Hasil Plotting' : 'Plotting'), [[null, 'peta_hasil_plotting']]],
-            ['Lampiran III: ' . ($isAsistensi ? 'Absensi' : 'Absen'), [[null, 'absensi_pendampingan']]],
-        ];
-
-        if ($isAsistensi) {
-            $lampiranSections[] = [
-                'Lampiran IV: Dokumen Konsultasi',
-                [
-                    ['Dokumen Rencana Bangunan dan Instalasi di Laut', 'rencana_bangunan_instalasi'],
-                    ['Dokumen Informasi Pemanfaatan Ruang Laut', 'informasi_pemanfaatan_ruang_laut'],
-                    ['Dokumen Data Kondisi Terkini Lokasi dan Sekitar', 'data_kondisi_terkini'],
-                    ['Dokumen Persyaratan Lainnya', 'persyaratan_lainnya'],
-                    ['Dokumen Titik Koordinat Lokasi', 'titik_koordinat'],
-                ],
-            ];
-        }
+        $docUrl = static fn($d) => $d->file_path
+            ? \Illuminate\Support\Facades\Storage::disk('public')->url($d->file_path)
+            : null;
+        $isImageFile = static fn($p) => $p && in_array(strtolower(pathinfo($p, PATHINFO_EXTENSION)), ['jpg', 'jpeg', 'png'], true);
     @endphp
 
-    @foreach ($lampiranSections as [$sectionTitle, $groups])
+    <div class="lampiran-title">Lampiran I: Dokumentasi</div>
+    <table class="doc-grid">
+        @foreach ($docsByType->get('dokumentasi_konsultasi', collect())->chunk(2) as $row)
+            <tr>
+                @foreach ($row as $doc)
+                    <td>
+                        @if ($isImageFile($p = $documentPath($doc)))
+                            <img src="{{ $p }}">
+                        @else
+                            {{ $doc->file_name }}
+                            @if ($url = $docUrl($doc))
+                                <br><a href="{{ $url }}" style="font-size: 8pt;">{{ $url }}</a>
+                            @endif
+                        @endif
+                    </td>
+                @endforeach
+            </tr>
+        @endforeach
+    </table>
+
+    @foreach ([
+        ['Lampiran II: Peta ' . ($isAsistensi ? 'Hasil Plotting' : 'Plotting'), 'peta_hasil_plotting'],
+        ['Lampiran III: ' . ($isAsistensi ? 'Absensi' : 'Absen'), 'absensi_pendampingan'],
+    ] as [$sectionTitle, $type])
         <div class="lampiran-title">{{ $sectionTitle }}</div>
-        @foreach ($groups as [$groupLabel, $type])
+        @php
+            $sectionDocs = $docsByType->get($type, collect());
+        @endphp
+        @if ($sectionDocs->isEmpty())
+            <p class="file-line">-</p>
+        @else
+            @foreach ($sectionDocs as $doc)
+                @if ($isImageFile($p = $documentPath($doc)))
+                    <div style="margin-bottom: 8px;">
+                        <img src="{{ $p }}" style="max-width: 100%; max-height: 280px;">
+                    </div>
+                @else
+                    <p class="file-line link-line">
+                        {{ $doc->file_name }}
+                        @if ($url = $docUrl($doc))
+                            <br><a href="{{ $url }}">{{ $url }}</a>
+                        @endif
+                    </p>
+                @endif
+            @endforeach
+        @endif
+    @endforeach
+
+    @if ($isAsistensi)
+        <div class="lampiran-title">Lampiran IV: Dokumen Konsultasi</div>
+        @foreach ([
+            'rencana_bangunan_instalasi' => 'Dokumen Rencana Bangunan dan Instalasi di Laut',
+            'informasi_pemanfaatan_ruang_laut' => 'Dokumen Informasi Pemanfaatan Ruang Laut',
+            'data_kondisi_terkini' => 'Dokumen Data Kondisi Terkini Lokasi dan Sekitar',
+            'persyaratan_lainnya' => 'Dokumen Persyaratan Lainnya',
+            'titik_koordinat' => 'Dokumen Titik Koordinat Lokasi',
+        ] as $type => $label)
             @php
-                $groupDocs = $docsByType->get($type, collect());
+                $matchingDocs = $docsByType->get($type, collect());
             @endphp
-            @if ($groupLabel)
-                <p class="file-line"><strong>{{ $groupLabel }}:</strong>{{ $groupDocs->isEmpty() ? ' -' : '' }}</p>
-            @elseif ($groupDocs->isEmpty())
-                <p class="file-line">-</p>
-            @endif
-            @foreach ($groupDocs as $doc)
-                @php
-                    $docUrl = $doc->file_path ? \Illuminate\Support\Facades\Storage::disk('public')->url($doc->file_path) : null;
-                @endphp
+            <p class="file-line"><strong>{{ $label }}:</strong>{{ $matchingDocs->isEmpty() ? ' -' : '' }}</p>
+            @foreach ($matchingDocs as $doc)
                 <p class="file-line link-line">
                     {{ $loop->iteration }}. {{ $doc->file_name }}
-                    @if ($docUrl)
-                        <br><a href="{{ $docUrl }}">{{ $docUrl }}</a>
+                    @if ($url = $docUrl($doc))
+                        <br><a href="{{ $url }}">{{ $url }}</a>
                     @endif
                 </p>
             @endforeach
         @endforeach
-    @endforeach
+    @endif
     </div><!-- /lampiran-column -->
 
 </body>
