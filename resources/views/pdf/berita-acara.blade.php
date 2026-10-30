@@ -20,8 +20,8 @@
         }
         
         p {
-            margin: 0 0 0.2em 0;
-            line-height: 1.3;
+            margin: 0 0 0.1em 0;
+            line-height: 1.2;
         }
 
         /* ── Kop Surat 1:1 Resmi KKP ────────────────────── */
@@ -159,7 +159,7 @@
         .intro {
             text-align: justify;
             margin: 4px 0;
-            line-height: 1.4;
+            line-height: 1.2;
         }
 
         ol.attendees {
@@ -174,7 +174,7 @@
         .section-title {
             font-weight: bold;
             font-size: 11pt;
-            margin: 4px 0 2px 0;
+            margin: 2px 0 1px 0;
             color: #000;
         }
 
@@ -226,7 +226,7 @@
 
         .closing {
             text-align: justify;
-            margin: 12px 0 10px 0;
+            margin: 8px 0 6px 0;
             line-height: 1.4;
         }
 
