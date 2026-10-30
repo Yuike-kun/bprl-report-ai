@@ -1,5 +1,4 @@
 import { Link, useForm, usePage } from '@inertiajs/react';
-import swal from 'sweetalert';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { LucideIcon } from 'lucide-react';
 import {
@@ -22,6 +21,7 @@ import {
     Globe,
 } from 'lucide-react';
 import { useRef, useState } from 'react';
+import swal from 'sweetalert';
 
 import { ComboboxSearch } from '@/components/backend/combobox-searchable';
 import { FileUpload } from '@/components/berita_acara_components/FileUpload';
