@@ -38,16 +38,9 @@ class BeritaAcaraPdfRenderer
         $requester_filename = $beritaAcara->request_form->nama_pemohon ?? ($beritaAcara->requester_name ?? 'pemohon');
         $filename = "Berita Acara - {$requester_filename} - {$time_file}.pdf";
 
-        $pdfDocs = $beritaAcara->documents
-            ->filter(function ($doc) {
-                if (! $doc->file_path) {
-                    return false;
-                }
-                $ext = strtolower(pathinfo($doc->file_path, PATHINFO_EXTENSION));
-
-                return $ext === 'pdf' && Storage::disk('public')->exists($doc->file_path);
-            })
-            ->values();
+        // We will not merge any PDF attachments; all documents will be listed in the lampiran section
+        $pdfDocs = collect();
+        $otherDocs = $beritaAcara->documents;
 
         if ($pdfDocs->isNotEmpty()) {
             try {
